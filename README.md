@@ -1,44 +1,42 @@
 # 💈 BarberPro
 
-## ↪ Tecnologias
-
-Esse projeto foi desenvolvido com as seguintes tecnologias:
+## ↪ Tech stack
 
 - [Node.js](https://nodejs.org/) + [Express](https://expressjs.com/)
-- [Sequelize](https://sequelize.org/) com [PostgreSQL](https://www.postgresql.org/)
-- [Mongoose](https://mongoosejs.com/) com [MongoDB](https://www.mongodb.com/) para as notificações
-- [Bee-Queue](https://github.com/bee-queue/bee-queue) com [Redis](https://redis.io/) para a fila de e-mails
-- [Nodemailer](https://nodemailer.com/) com templates Handlebars
-- [Sentry](https://sentry.io/) para monitoramento de erros
+- [Sequelize](https://sequelize.org/) with [PostgreSQL](https://www.postgresql.org/)
+- [Mongoose](https://mongoosejs.com/) with [MongoDB](https://www.mongodb.com/) for notifications
+- [Bee-Queue](https://github.com/bee-queue/bee-queue) with [Redis](https://redis.io/) for the email queue
+- [Nodemailer](https://nodemailer.com/) with Handlebars templates
+- [Sentry](https://sentry.io/) for error monitoring
 
-## ↪ Projeto
+## ↪ About
 
-API REST em JavaScript, no padrão MVC, para agendamento de horários em barbearias. Clientes se cadastram, escolhem um prestador, consultam os horários livres e marcam ou cancelam atendimentos. Prestadores veem a agenda do dia e recebem notificações de cada novo agendamento. Um cancelamento dispara um e-mail para o prestador.
+A REST API in JavaScript, following MVC, for booking barbershop appointments. Customers sign up, pick a provider, check open time slots, and book or cancel appointments. Providers see their daily schedule and get a notification for every new booking. A cancellation sends the provider an email.
 
-## ↪ Rotas
+## ↪ Routes
 
-| Método | Rota | Descrição |
+| Method | Route | Description |
 | --- | --- | --- |
-| `POST` | `/users` | Cadastro de usuário |
-| `POST` | `/sessions` | Login (JWT) |
-| `PUT` | `/users` | Atualização do perfil |
-| `GET` | `/providers` | Lista de prestadores |
-| `GET` | `/providers/:providerId/available` | Horários livres de um prestador |
-| `GET` | `/appointments` | Agendamentos do usuário |
-| `POST` | `/appointments` | Novo agendamento |
-| `DELETE` | `/appointments/:id` | Cancelamento |
-| `GET` | `/schedule` | Agenda do prestador |
-| `GET` | `/notifications` | Notificações do prestador |
-| `PUT` | `/notifications/:id` | Marca notificação como lida |
-| `POST` | `/files` | Upload de avatar |
+| `POST` | `/users` | Sign up |
+| `POST` | `/sessions` | Log in (JWT) |
+| `PUT` | `/users` | Update profile |
+| `GET` | `/providers` | List providers |
+| `GET` | `/providers/:providerId/available` | A provider's open slots |
+| `GET` | `/appointments` | The user's appointments |
+| `POST` | `/appointments` | Book an appointment |
+| `DELETE` | `/appointments/:id` | Cancel an appointment |
+| `GET` | `/schedule` | The provider's schedule |
+| `GET` | `/notifications` | The provider's notifications |
+| `PUT` | `/notifications/:id` | Mark a notification as read |
+| `POST` | `/files` | Upload an avatar |
 
-Todas as rotas, exceto `POST /users` e `POST /sessions`, exigem o header `Authorization: Bearer <token>`.
+Every route except `POST /users` and `POST /sessions` requires an `Authorization: Bearer <token>` header.
 
-## ↪ Como executar
+## ↪ Running it
 
-- Clone o repositório
-- Instale as dependências com `yarn`
-- Copie `.env.example` para `.env` e preencha as variáveis
-- Suba PostgreSQL, MongoDB e Redis
-- Rode as migrations com `yarn sequelize db:migrate`
-- Inicie a API com `yarn dev` e a fila com `yarn queue`
+- Clone the repository
+- Install dependencies with `yarn`
+- Copy `.env.example` to `.env` and fill in the variables
+- Start PostgreSQL, MongoDB and Redis
+- Run the migrations with `yarn sequelize db:migrate`
+- Start the API with `yarn dev` and the queue with `yarn queue`
