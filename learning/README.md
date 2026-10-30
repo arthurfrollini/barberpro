@@ -13,6 +13,7 @@ Material de estudo do BarberPro API: como o sistema funciona, por que ele é ass
 7. [Barbearias e convites](Barbearias-e-Convites.md): PostGIS, busca por trigramas, convites, uploads, DataLoader (fase 2).
 8. [Agenda e regras](Agenda-e-Regras.md): horários livres, fuso horário, regra das 2 horas, exclusion constraint, travas (fase 3).
 9. [Notificações, filas e tempo real](Notificacoes-Filas-e-Tempo-Real.md): eventos, BullMQ, lembretes, subscription (fase 4).
+10. [Apresentação](Apresentacao.md): roteiro de demo e perguntas prováveis com respostas.
 
 ## Em uma frase
 

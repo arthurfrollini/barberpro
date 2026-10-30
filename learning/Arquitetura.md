@@ -3,49 +3,51 @@
 ## Visão geral
 
 ```
-                 ┌───────────────────────────────────────────┐
-  cliente  ───▶  │ Fastify                                   │
-  (app, web)     │  ├─ GET /health          (REST)           │  adapters de entrada
-                 │  └─ /graphql  → GraphQL Yoga → resolvers  │  ("driving")
-                 └──────────────────────┬────────────────────┘
-                                        │ chamam
-                 ┌──────────────────────▼────────────────────┐
-                 │ application: casos de uso + portas        │  signUp, refreshSession...
-                 └──────────────────────┬────────────────────┘
-                                        │ usam
-                 ┌──────────────────────▼────────────────────┐
-                 │ domain: entidades, value objects, erros   │  User, Email, DomainError
-                 └───────────────────────────────────────────┘
-                                        ▲ implementam as portas
-                 ┌──────────────────────┴────────────────────┐
-                 │ adapters de saída ("driven"): TypeORM,    │
-                 │ argon2, jose (JWT), Redis, relógio        │
-                 └───────────────────────────────────────────┘
+  app (celular) / dashboard (web)
+            │  HTTP: POST /graphql, GET /health, POST /uploads, GET /files/:id
+            ▼                         SSE/WebSocket: subscription agendaChanged
+┌──────────────────────── API (Fastify + GraphQL Yoga) ────────────────────────┐
+│ adapters de entrada: resolvers GraphQL, rotas REST                            │
+│        │                                                                      │
+│ application: casos de uso + portas      identity · shops · scheduling ·       │
+│        │                                notifications                         │
+│ domain: entidades, value objects, erros (sem framework)                       │
+│        ▲                                                                      │
+│ adapters de saída: TypeORM, argon2, jose, disco, BullMQ, Redis pub/sub        │
+└───────┬──────────────────────┬───────────────────────────┬────────────────────┘
+        ▼                      ▼                           ▼
+  PostgreSQL + PostGIS      Redis (filas, pub/sub)     worker (src/worker.ts)
+                                   ▲                       │ email (SMTP/Mailpit)
+                                   └────── consome ────────┘ lembretes
 ```
 
-**Hexagonal** (ou "ports and adapters") quer dizer: o centro (domínio e casos de uso) não sabe que existe GraphQL, Postgres ou Redis. Ele declara **portas** (interfaces como `UserRepository`, `PasswordHasher`, `Clock`) e o mundo de fora pluga **adaptadores** nelas.
+**Hexagonal** (ou "ports and adapters") quer dizer: o centro (domínio e casos de uso) não sabe que existe GraphQL, Postgres ou Redis. Ele declara **portas** (interfaces como `UserRepository`, `Clock`, `SchedulingEvents`, `MailQueue`) e o mundo de fora pluga **adaptadores** nelas.
+
+São **dois processos** com o mesmo código: a API (`src/main.ts`) e o worker (`src/worker.ts`), que consome as filas de email e lembretes.
 
 ## Pastas
 
 ```
 src/
-  main.ts              sobe o servidor
-  app.ts               monta o Fastify: /health e /graphql
+  main.ts / worker.ts  os dois processos
+  app.ts               monta o Fastify: /health, uploads e /graphql
   container.ts         composition root: cria cada adaptador e liga nas portas
   config.ts            lê e valida o .env com zod
-  shared/              o que todo módulo usa (DomainError, Clock, GraphQL, banco)
+  shared/              o que todo módulo usa: DomainError, Clock, fuso horário,
+                       GraphQL (Yoga, erros, DataLoaders, pub/sub), banco, filas, uploads
   modules/
-    identity/
-      domain/          User, Email, política de senha
-      application/     signUp, signIn, refreshSession, getMe, updateProfile, ports.ts
-      adapters/
-        graphql/       identity.graphql + resolvers
-        persistence/   UserRecord, RefreshTokenRecord, mapper, repositórios TypeORM
-        security/      argon2, JWT (jose), tokens aleatórios
-      testing/         adaptadores em memória para os testes unitários
+    identity/          usuários, login, tokens
+    shops/             barbearias, convites, barbeiros, serviços
+    scheduling/        horários semanais, folgas, horários livres, agendamentos
+    notifications/     notificações, emails, lembretes, agenda ao vivo
+      domain/ application/ adapters/ testing/   (mesmo formato em todos)
 ```
 
-Cada módulo novo (shops, scheduling, notifications) segue o mesmo formato.
+### Como os módulos conversam
+
+- `scheduling` lê barbeiros e serviços por uma porta própria (`ShopDirectory`), que o container liga aos repositórios de `shops`.
+- `shops` chama `persistRemoval` ao remover um barbeiro; o container faz a remoção e os cancelamentos da agenda numa transação só.
+- `scheduling` publica eventos (`SchedulingEvents`); `notifications` é o adaptador dessa porta. A agenda não sabe que notificações existem.
 
 ## O caminho de uma requisição: `signUp`
 
