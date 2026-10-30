@@ -124,8 +124,19 @@ export class TypeOrmBarberRepository implements BarberRepository {
   }
 
   async save(barber: Barber) {
+    const r = barberMapper.toRecord(barber);
+    // removed_at never goes back to null: a stale copy saved after a removal cannot undo it
+    const write = this.manager.query(
+      `INSERT INTO barbers (id, shop_id, user_id, bio, avatar_file_id, created_at, removed_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (id) DO UPDATE SET
+         bio = EXCLUDED.bio,
+         avatar_file_id = EXCLUDED.avatar_file_id,
+         removed_at = COALESCE(barbers.removed_at, EXCLUDED.removed_at)`,
+      [r.id, r.shopId, r.userId, r.bio, r.avatarFileId, r.createdAt, r.removedAt],
+    );
     await guardUnique(
-      this.manager.upsert(BarberRecord, barberMapper.toRecord(barber), ['id']),
+      write,
       'barbers_active_user_idx',
       () => new DomainError('ALREADY_A_BARBER', 'This person is already a barber in a shop.'),
     );
@@ -164,9 +175,44 @@ export class TypeOrmInviteRepository implements InviteRepository {
     return rows.map(inviteMapper.toDomain);
   }
 
+  async markAccepted(id: string, at: Date): Promise<boolean> {
+    // conditional: of an accept racing a revoke (or another accept), only one wins
+    const result = await this.manager
+      .createQueryBuilder()
+      .update(InviteRecord)
+      .set({ acceptedAt: at })
+      .where('id = :id AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > :at', {
+        id,
+        at,
+      })
+      .execute();
+    return result.affected === 1;
+  }
+
   async save(invite: Invite) {
+    const r = inviteMapper.toRecord(invite);
+    // accepted_at and revoked_at are set once; a stale copy cannot clear them
+    const write = this.manager.query(
+      `INSERT INTO invites
+         (id, shop_id, email, token_hash, invited_by, expires_at, accepted_at, revoked_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (id) DO UPDATE SET
+         accepted_at = COALESCE(invites.accepted_at, EXCLUDED.accepted_at),
+         revoked_at = COALESCE(invites.revoked_at, EXCLUDED.revoked_at)`,
+      [
+        r.id,
+        r.shopId,
+        r.email,
+        r.tokenHash,
+        r.invitedBy,
+        r.expiresAt,
+        r.acceptedAt,
+        r.revokedAt,
+        r.createdAt,
+      ],
+    );
     await guardUnique(
-      this.manager.upsert(InviteRecord, inviteMapper.toRecord(invite), ['id']),
+      write,
       'invites_open_idx',
       () => new DomainError('INVITE_ALREADY_SENT', 'An invite to this email is still pending.'),
     );

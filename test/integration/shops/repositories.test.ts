@@ -160,4 +160,55 @@ describe('shops repositories', () => {
     expect(await repos.services.findByBarbers([barber.id], true)).toHaveLength(2);
     expect((await repos.services.findById(corte.id))?.priceCents).toBe(5000);
   });
+
+  it('never brings a removed barber back when a stale copy is saved', async () => {
+    const s = await shop('Mega', paulista);
+    const barber = Barber.create({ shopId: s.id, userId: (await user('jose@x.com')).id }, now);
+    await repos.barbers.save(barber);
+    const stale = (await repos.barbers.findById(barber.id))!;
+    const fresh = (await repos.barbers.findById(barber.id))!;
+
+    fresh.remove(now);
+    await repos.barbers.save(fresh);
+    stale.updateProfile({ bio: 'Degradê' });
+    await repos.barbers.save(stale);
+
+    const stored = (await repos.barbers.findById(barber.id))!;
+    expect(stored.isActive).toBe(false);
+    expect(stored.bio).toBe('Degradê');
+  });
+
+  it('accepts an invite only while it is still open', async () => {
+    const s = await shop('Mega', paulista);
+    const invite = Invite.create(
+      { shopId: s.id, email: Email.parse('jose@x.com'), tokenHash: 'b'.repeat(64), invitedBy: s.ownerId },
+      now,
+    );
+    await repos.invites.save(invite);
+    const stale = (await repos.invites.findById(invite.id))!;
+    const fresh = (await repos.invites.findById(invite.id))!;
+
+    fresh.revoke(now);
+    await repos.invites.save(fresh);
+    await repos.invites.save(stale);
+
+    expect((await repos.invites.findById(invite.id))!.status(now)).toBe('revoked');
+    expect(await repos.invites.markAccepted(invite.id, now)).toBe(false);
+  });
+
+  it('marks an open invite accepted exactly once', async () => {
+    const s = await shop('Mega', paulista);
+    const invite = Invite.create(
+      { shopId: s.id, email: Email.parse('jose@x.com'), tokenHash: 'c'.repeat(64), invitedBy: s.ownerId },
+      now,
+    );
+    await repos.invites.save(invite);
+
+    const results = await Promise.all([
+      repos.invites.markAccepted(invite.id, now),
+      repos.invites.markAccepted(invite.id, now),
+    ]);
+
+    expect(results.sort()).toEqual([false, true]);
+  });
 });

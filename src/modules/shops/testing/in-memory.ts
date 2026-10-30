@@ -10,6 +10,7 @@ import type {
   Mailer,
   ServiceRepository,
   ShopsDeps,
+  ShopsRepositories,
 } from '../application/ports.js';
 import type { Barber } from '../domain/barber.js';
 import type { Barbershop } from '../domain/barbershop.js';
@@ -97,6 +98,12 @@ export class InMemoryInviteRepository implements InviteRepository {
   async listByShop(shopId: string) {
     return [...this.rows.values()].filter((i) => i.shopId === shopId);
   }
+  async markAccepted(id: string, at: Date) {
+    const invite = this.rows.get(id);
+    if (!invite || invite.status(at) !== 'pending') return false;
+    invite.accept(at);
+    return true;
+  }
   async save(invite: Invite) {
     this.rows.set(invite.id, invite);
   }
@@ -136,11 +143,15 @@ export class FakeMailer implements Mailer {
 
 export function inMemoryShopsDeps(clock: Clock) {
   let n = 0;
-  return {
+  const repos = {
     shops: new InMemoryBarbershopRepository(),
     barbers: new InMemoryBarberRepository(),
     invites: new InMemoryInviteRepository(),
     services: new InMemoryServiceRepository(),
+  };
+  return {
+    ...repos,
+    transaction: <T>(work: (r: ShopsRepositories) => Promise<T>) => work(repos),
     files: new InMemoryFileRepository(),
     users: new InMemoryUserRepository(),
     mailer: new FakeMailer(),

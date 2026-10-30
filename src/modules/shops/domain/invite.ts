@@ -47,7 +47,8 @@ export class Invite {
     return now >= this.props.expiresAt ? 'expired' : 'pending';
   }
 
-  accept(now: Date): void {
+  /** Throws unless the invite can be accepted at `now`. */
+  assertCanBeAccepted(now: Date): void {
     const status = this.status(now);
     if (status === 'expired') {
       throw new DomainError(
@@ -58,6 +59,10 @@ export class Invite {
     if (status !== 'pending') {
       throw new DomainError('INVITE_NOT_FOUND', 'This invite is no longer valid.');
     }
+  }
+
+  accept(now: Date): void {
+    this.assertCanBeAccepted(now);
     this.props.acceptedAt = now;
   }
 

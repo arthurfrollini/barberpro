@@ -77,12 +77,15 @@ export async function acceptInvite(deps: ShopsDeps, actorId: string, token: stri
     );
   }
   const now = deps.clock.now();
-  invite.accept(now);
+  invite.assertCanBeAccepted(now);
   await assertNotBarbering(deps, actorId);
 
   const barber = Barber.create({ shopId: invite.shopId, userId: actorId }, now);
-  // the barber row first: its unique index is what stops a double accept
-  await deps.barbers.save(barber);
-  await deps.invites.save(invite);
+  // one transaction: the conditional accept loses to a concurrent revoke, and the barber's
+  // unique index loses to a concurrent join; either way nothing is half done
+  await deps.transaction(async (tx) => {
+    if (!(await tx.invites.markAccepted(invite.id, now))) throw notFound();
+    await tx.barbers.save(barber);
+  });
   return barber;
 }

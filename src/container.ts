@@ -73,6 +73,7 @@ export async function createContainer(
 
   const shops: ShopsDeps = {
     ...shopsRepositories(dataSource.manager),
+    transaction: (work) => dataSource.transaction((manager) => work(shopsRepositories(manager))),
     files: files.files,
     users: identity.users,
     mailer: options.mailer ?? new SmtpMailer(config.smtpUrl, config.mailFrom),

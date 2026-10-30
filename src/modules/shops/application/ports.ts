@@ -35,6 +35,8 @@ export interface InviteRepository {
   /** The invite for this email that was neither accepted nor revoked (it may have expired). */
   findOpen(shopId: string, email: Email): Promise<Invite | null>;
   listByShop(shopId: string): Promise<Invite[]>;
+  /** Accepts the invite only if it is still open and unexpired; false means it was not. */
+  markAccepted(id: string, at: Date): Promise<boolean>;
   save(invite: Invite): Promise<void>;
 }
 
@@ -51,6 +53,13 @@ export interface Mailer {
   send(message: MailMessage): Promise<void>;
 }
 
+export type ShopsRepositories = {
+  shops: BarbershopRepository;
+  barbers: BarberRepository;
+  invites: InviteRepository;
+  services: ServiceRepository;
+};
+
 export type ShopsDeps = {
   shops: BarbershopRepository;
   barbers: BarberRepository;
@@ -61,4 +70,6 @@ export type ShopsDeps = {
   mailer: Mailer;
   secrets: Secrets;
   clock: Clock;
+  /** Runs `work` in one database transaction, with repositories bound to it. */
+  transaction<T>(work: (repos: ShopsRepositories) => Promise<T>): Promise<T>;
 };
