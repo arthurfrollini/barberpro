@@ -142,8 +142,8 @@ describe('notifications and the live agenda', () => {
         }),
       });
 
-    /** Reads the stream until the first `data:` line and parses it. */
-    const firstEvent = async (res: Response) => {
+    /** Reads the stream until `count` `data:` lines arrived and parses them. */
+    const events = async (res: Response, count: number) => {
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
       let text = '';
@@ -151,13 +151,14 @@ describe('notifications and the live agenda', () => {
         const { value, done } = await reader.read();
         if (done) throw new Error(`stream ended: ${text}`);
         text += decoder.decode(value);
-        const line = text.split('\n').find((l) => l.startsWith('data:') && l.length > 6);
-        if (line) {
+        const lines = text.split('\n').filter((l) => l.startsWith('data:') && l.length > 6);
+        if (lines.length >= count) {
           await reader.cancel();
-          return JSON.parse(line.slice(5));
+          return lines.slice(0, count).map((l) => JSON.parse(l.slice(5)));
         }
       }
     };
+    const firstEvent = async (res: Response) => (await events(res, 1))[0];
 
     it("pushes a new booking to the barber's open subscription", async () => {
       const joao = await barber('Joao');
@@ -172,6 +173,55 @@ describe('notifications and the live agenda', () => {
       expect(await event).toEqual({
         data: { agendaChanged: { type: 'BOOKED', appointment: { id, customer: { name: 'Ana' } } } },
       });
+    });
+
+    it('shows each change with the appointment as it is now, not as it was first seen', async () => {
+      const joao = await barber('Joao');
+      const ana = await signUp('Ana');
+      const stream = events(
+        await fetch(`${base}/graphql`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            accept: 'text/event-stream',
+            authorization: `Bearer ${joao.token}`,
+          },
+          body: JSON.stringify({
+            query: 'subscription { agendaChanged { type appointment { status startsAt } } }',
+          }),
+        }),
+        3,
+      );
+      await new Promise((r) => setTimeout(r, 300));
+
+      const id = (await book(ana, joao, '2026-11-02T17:00:00Z')).data!.bookAppointment.id;
+      await gql(
+        t.app,
+        'mutation ($id: ID!) { rescheduleAppointment(id: $id, startsAt: "2026-11-02T18:00:00Z") { id } }',
+        { id },
+        ana,
+      );
+      await gql(t.app, 'mutation ($id: ID!) { cancelAppointment(id: $id) { id } }', { id }, ana);
+
+      expect((await stream).map((e) => e.data.agendaChanged)).toEqual([
+        { type: 'BOOKED', appointment: { status: 'BOOKED', startsAt: '2026-11-02T17:00:00.000Z' } },
+        {
+          type: 'RESCHEDULED',
+          appointment: { status: 'BOOKED', startsAt: '2026-11-02T18:00:00.000Z' },
+        },
+        {
+          type: 'CANCELED',
+          appointment: { status: 'CANCELED', startsAt: '2026-11-02T18:00:00.000Z' },
+        },
+      ]);
+    });
+
+    it('refuses a subscription to someone who is not a barber', async () => {
+      const ana = await signUp('Ana');
+
+      const event = await firstEvent(await subscribe(ana));
+
+      expect(event.errors[0].extensions.code).toBe('NOT_A_BARBER');
     });
 
     it('refuses a subscription without a token', async () => {

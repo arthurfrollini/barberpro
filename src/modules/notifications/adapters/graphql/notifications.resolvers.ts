@@ -50,7 +50,11 @@ export function notificationsGraphQL(
     AgendaChange: {
       type: (m) => m.type.toUpperCase() as Uppercase<typeof m.type>,
       appointment: async (m, _, ctx) => {
-        const appointment = await ctx.loaders.appointmentById.load(m.appointmentId);
+        // a subscription keeps one context (and its DataLoaders) for the whole stream, so
+        // drop the cached copy: each event must show the appointment as it is now
+        const appointment = await ctx.loaders.appointmentById
+          .clear(m.appointmentId)
+          .load(m.appointmentId);
         if (!appointment)
           throw new Error(`agenda change for a missing appointment ${m.appointmentId}`);
         return appointment;
