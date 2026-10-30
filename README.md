@@ -24,7 +24,7 @@ The design is in [`docs/superpowers/specs`](docs/superpowers/specs/2026-10-30-ba
 - Node 24, TypeScript (strict, ESM)
 - Fastify 5 with GraphQL Yoga mounted on `/graphql`; SDL files plus GraphQL Code Generator for typed resolvers
 - PostgreSQL 17 with PostGIS, TypeORM with hand-written migrations
-- Redis (BullMQ queues and subscription pub/sub, from phase 4)
+- Redis: BullMQ queues (email, reminders) and pub/sub for GraphQL subscriptions
 - argon2id passwords, HS256 access tokens, rotating refresh tokens
 - Vitest (unit, integration, end to end), ESLint, Prettier, GitHub Actions
 - Docker Compose with Mailpit to catch email in development
@@ -36,7 +36,7 @@ cp .env.example .env
 docker compose up
 ```
 
-That starts Postgres, Redis, Mailpit and the API, runs the migrations and reloads on file changes. GraphiQL is at http://localhost:4000/graphql and Mailpit at http://localhost:8025.
+That starts Postgres, Redis, Mailpit, the API and the worker (email and reminders), runs the migrations and reloads on file changes. GraphiQL is at http://localhost:4000/graphql and Mailpit at http://localhost:8025.
 
 To run the API on the host instead, start only the services:
 
@@ -44,7 +44,8 @@ To run the API on the host instead, start only the services:
 docker compose up -d postgres redis mailpit
 npm install
 npm run migration:run
-npm run dev
+npm run dev          # the API
+npm run dev:worker   # email and reminders, in another terminal
 ```
 
 ## Example
@@ -125,6 +126,24 @@ mutation {
 
 Customers and barbers can cancel or reschedule up to 2 hours before. Barbers set weekly hours (`setWeeklySchedule`, `HH:MM` in the shop's time zone) and block days (`blockDate`). Both cancel the booked appointments 2 or more hours away that no longer fit, and return them.
 
+Each booking, cancellation and reschedule notifies the other party (`notifications`, plus the same text by email through the worker) and schedules the customer's reminder. Barbers can watch their agenda live:
+
+```graphql
+subscription {
+  agendaChanged {
+    type
+    previousStartsAt
+    appointment {
+      startsAt
+      serviceName
+      customer {
+        name
+      }
+    }
+  }
+}
+```
+
 Errors carry a stable code in `extensions.code` (`EMAIL_TAKEN`, `INVALID_CREDENTIALS`, `UNAUTHENTICATED`, ...). The codes each operation can return are listed in its SDL description.
 
 ## Architecture
@@ -136,10 +155,10 @@ Errors carry a stable code in `extensions.code` (`EMAIL_TAKEN`, `INVALID_CREDENT
               │
    domain: entities, value objects          Appointment, WeeklySchedule; no framework imports
               ▲
-   driven adapters implement the ports      TypeORM repositories, argon2, jose, clock
+   driven adapters implement the ports      TypeORM repositories, BullMQ, Redis pub/sub, SMTP, argon2, jose
 ```
 
-Code is grouped by module (`src/modules/identity`, `shops`, `scheduling`, later `notifications`), each with `domain/`, `application/` and `adapters/`. ESLint fails the build if domain or application code imports Fastify, GraphQL, TypeORM or an adapter. TypeORM decorators live only on the `*Record` classes in `adapters/persistence`, and a mapper turns each record into its domain class. `src/container.ts` wires every adapter by hand.
+Code is grouped by module (`src/modules/identity`, `shops`, `scheduling`, `notifications`), each with `domain/`, `application/` and `adapters/`. ESLint fails the build if domain or application code imports Fastify, GraphQL, TypeORM or an adapter. TypeORM decorators live only on the `*Record` classes in `adapters/persistence`, and a mapper turns each record into its domain class. `src/container.ts` wires every adapter by hand.
 
 The reasons behind the main choices are in [`docs/adr`](docs/adr).
 
