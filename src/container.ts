@@ -8,6 +8,9 @@ import { JoseAccessTokens } from './modules/identity/adapters/security/jose-acce
 import { nodeSecrets } from './modules/identity/adapters/security/node-secrets.js';
 import type { IdentityDeps } from './modules/identity/application/ports.js';
 import { shopsRepositories } from './modules/shops/adapters/persistence/repositories.js';
+import { schedulingRepositories } from './modules/scheduling/adapters/persistence/repositories.js';
+import type { SchedulingDeps, SchedulingEvents } from './modules/scheduling/application/ports.js';
+import { cancelFutureForBarber } from './modules/scheduling/application/schedule.js';
 import type { Mailer, ShopsDeps } from './modules/shops/application/ports.js';
 import { createDataSource } from './shared/adapters/database/data-source.js';
 import { detectImageType } from './shared/adapters/files/detect-image-type.js';
@@ -31,6 +34,7 @@ export type Container = {
   identity: IdentityDeps;
   files: FileDeps;
   shops: ShopsDeps;
+  scheduling: SchedulingDeps;
   close(): Promise<void>;
 };
 
@@ -39,6 +43,8 @@ export type ContainerOptions = {
   clock?: Clock;
   /** Tests pass a fake to read the emails the API sends. */
   mailer?: Mailer;
+  /** Tests pass a recorder to see what scheduling published. */
+  events?: SchedulingEvents;
 };
 
 export async function createContainer(
@@ -79,6 +85,25 @@ export async function createContainer(
     mailer: options.mailer ?? new SmtpMailer(config.smtpUrl, config.mailFrom),
     secrets: nodeSecrets,
     clock,
+    // rule 7; scheduling is declared below and only called at request time
+    onBarberRemoved: async (barber, byUserId) => {
+      await cancelFutureForBarber(scheduling, barber.id, byUserId);
+    },
+  };
+
+  const scheduling: SchedulingDeps = {
+    ...schedulingRepositories(dataSource.manager),
+    transaction: (work) =>
+      dataSource.transaction((manager) => work(schedulingRepositories(manager))),
+    directory: {
+      barber: (id) => shops.barbers.findById(id),
+      barberOfUser: (userId) => shops.barbers.findActiveByUser(userId),
+      shop: (id) => shops.shops.findById(id),
+      service: (id) => shops.services.findById(id),
+    },
+    // phase 4 plugs notifications and the live agenda in here
+    events: options.events ?? { publish: async () => {} },
+    clock,
   };
 
   return {
@@ -93,6 +118,7 @@ export async function createContainer(
     identity,
     files,
     shops,
+    scheduling,
     async close() {
       redis.disconnect();
       await dataSource.destroy();

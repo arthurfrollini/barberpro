@@ -155,6 +155,7 @@ export function inMemoryShopsDeps(clock: Clock) {
     files: new InMemoryFileRepository(),
     users: new InMemoryUserRepository(),
     mailer: new FakeMailer(),
+    onBarberRemoved: async (_barber: Barber, _byUserId: string) => {},
     secrets: { random: () => `token-${++n}`, hash: (raw: string) => `h(${raw})` },
     clock,
   } satisfies ShopsDeps;
