@@ -1,0 +1,62 @@
+name: barberpro
+
+services:
+  postgres:
+    # multi-arch PostGIS build (the official postgis/postgis image is amd64 only)
+    image: imresamu/postgis:17-3.5-alpine
+    environment:
+      POSTGRES_USER: barberpro
+      POSTGRES_PASSWORD: barberpro
+      POSTGRES_DB: barberpro
+    ports:
+      - '5442:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U barberpro']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - '6390:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    # catches every email the API sends; web UI on http://localhost:8025
+    image: axllent/mailpit:latest
+    ports:
+      - '8025:8025'
+      - '1025:1025'
+
+  api:
+    build:
+      context: .
+      target: dev
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://barberpro:barberpro@postgres:5432/barberpro
+      REDIS_URL: redis://redis:6379
+      SMTP_URL: smtp://mailpit:1025
+    ports:
+      - '4000:4000'
+    volumes:
+      - ./src:/app/src
+      - ./uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+volumes:
+  postgres-data:
