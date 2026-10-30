@@ -13,8 +13,8 @@ This is a rewrite of a 2021 Express project (kept under the [`v2021`](https://gi
 | Phase | Scope                                                                    | State   |
 | ----- | ------------------------------------------------------------------------ | ------- |
 | 1     | Skeleton, Docker Compose, CI, auth (sign up, sign in, refresh, me)       | done    |
-| 2     | Barbershops (nearby, search), uploads, invites, barbers, services        | next    |
-| 3     | Weekly schedules, days off, available slots, booking, cancel, reschedule | planned |
+| 2     | Barbershops (nearby, search), uploads, invites, barbers, services        | done    |
+| 3     | Weekly schedules, days off, available slots, booking, cancel, reschedule | next    |
 | 4     | Notifications: email queue, reminders, live agenda subscription          | planned |
 
 The design is in [`docs/superpowers/specs`](docs/superpowers/specs/2026-10-30-barberpro-api-design.md) and each phase has its plan in [`docs/superpowers/plans`](docs/superpowers/plans).
@@ -75,12 +75,36 @@ Then send `Authorization: Bearer <accessToken>`:
 }
 ```
 
+Anyone can browse, without a token:
+
+```graphql
+{
+  barbershopsNearby(latitude: -23.5614, longitude: -46.6559, radiusKm: 5) {
+    distanceKm
+    barbershop {
+      name
+      yearsActive
+      barbers {
+        name
+        services {
+          name
+          priceCents
+          durationMinutes
+        }
+      }
+    }
+  }
+}
+```
+
+An owner creates the shop and invites barbers by email; the invite email carries a code for `acceptInvite`. Logos and avatars go to `POST /uploads` (multipart, JPEG/PNG/WebP up to 2 MB), which returns the id to pass as `logoFileId` or `avatarFileId`.
+
 Errors carry a stable code in `extensions.code` (`EMAIL_TAKEN`, `INVALID_CREDENTIALS`, `UNAUTHENTICATED`, ...). The codes each operation can return are listed in its SDL description.
 
 ## Architecture
 
 ```
- GraphQL (Yoga) · REST (/health)          driving adapters
+ GraphQL (Yoga) · REST (/health, uploads)  driving adapters
               │
    application: use cases + ports          signUp, refreshSession, ...
               │
@@ -89,7 +113,7 @@ Errors carry a stable code in `extensions.code` (`EMAIL_TAKEN`, `INVALID_CREDENT
    driven adapters implement the ports      TypeORM repositories, argon2, jose, clock
 ```
 
-Code is grouped by module (`src/modules/identity`, later `shops`, `scheduling`, `notifications`), each with `domain/`, `application/` and `adapters/`. ESLint fails the build if domain or application code imports Fastify, GraphQL, TypeORM or an adapter. TypeORM decorators live only on the `*Record` classes in `adapters/persistence`, and a mapper turns each record into its domain class. `src/container.ts` wires every adapter by hand.
+Code is grouped by module (`src/modules/identity`, `shops`, later `scheduling` and `notifications`), each with `domain/`, `application/` and `adapters/`. ESLint fails the build if domain or application code imports Fastify, GraphQL, TypeORM or an adapter. TypeORM decorators live only on the `*Record` classes in `adapters/persistence`, and a mapper turns each record into its domain class. `src/container.ts` wires every adapter by hand.
 
 The reasons behind the main choices are in [`docs/adr`](docs/adr).
 
