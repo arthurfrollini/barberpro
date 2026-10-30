@@ -44,6 +44,11 @@ LIMIT :limit
 
 Regras extras: um convite pendente bloqueia outro igual (`INVITE_ALREADY_SENT`), um vencido é substituído, e o dono pode revogar. Convite por SMS ou WhatsApp ficou fora do v1 porque precisa de um provedor pago.
 
+**O que a revisão do PR pegou** (e virou teste):
+
+- Um "salvar" que reescrevia a linha inteira deixava uma cópia velha desfazer uma remoção ou uma revogação. Agora `removed_at`, `accepted_at` e `revoked_at` só são gravados uma vez (`COALESCE` no upsert), e aceitar é um `UPDATE ... WHERE accepted_at IS NULL AND revoked_at IS NULL` na mesma transação que cria o barbeiro.
+- Se o email do convite falhasse, o convite ficava pendente sem ninguém ter o código, bloqueando um novo envio por 7 dias. Agora ele é revogado e o dono recebe `EMAIL_NOT_SENT`.
+
 No banco, o índice único parcial `invites (shop_id, email) WHERE accepted_at IS NULL AND revoked_at IS NULL` impede dois convites abertos mesmo com duas requisições ao mesmo tempo.
 
 ## Uploads (REST)
