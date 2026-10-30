@@ -27,7 +27,7 @@ bookAppointment ──commit──▶ evento "booked" (porta SchedulingEvents)
 
 ## Tempo real: `agendaChanged`
 
-- Subscription GraphQL: o barbeiro abre o stream e recebe cada mudança da própria agenda. O Yoga entrega por **SSE** (Server-Sent Events, HTTP comum) ou WebSocket.
+- Subscription GraphQL: o barbeiro abre o stream e recebe cada mudança da própria agenda. O Yoga entrega por **SSE** (Server-Sent Events, HTTP comum). WebSocket ainda não está ligado.
 - A autorização roda **uma vez, ao abrir o stream**: sem token dá `UNAUTHENTICATED`, e quem não é barbeiro recebe `NOT_A_BARBER`. Cada barbeiro tem o próprio tópico (`agendaChanged:<barberId>`), então não tem como ouvir a agenda de outro.
 - O pub/sub passa pelo **Redis**, não pela memória do processo. Com duas instâncias da API, a reserva feita numa chega no barbeiro conectado na outra.
 - A mensagem leva só o id do agendamento; o resolver carrega o resto com DataLoader. Mandar o objeto inteiro pelo Redis exigiria serializar e reconstruir a classe de domínio.
