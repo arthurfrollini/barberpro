@@ -18,6 +18,7 @@ import type { Mailer, ShopsDeps } from './modules/shops/application/ports.js';
 import { createDataSource } from './shared/adapters/database/data-source.js';
 import { detectImageType } from './shared/adapters/files/detect-image-type.js';
 import { DiskFileStorage } from './shared/adapters/files/disk-file-storage.js';
+import { type AgendaPubSub, createAgendaPubSub } from './shared/adapters/graphql/pubsub.js';
 import { logSafeError } from './shared/adapters/log-safe-error.js';
 import {
   BullMqMailQueue,
@@ -44,6 +45,7 @@ export type Container = {
   shops: ShopsDeps;
   scheduling: SchedulingDeps;
   notifications: NotifyDeps;
+  pubSub: AgendaPubSub;
   close(): Promise<void>;
 };
 
@@ -69,6 +71,7 @@ export async function createContainer(
   const queueConnection = createQueueConnection(config.redisUrl);
   const mailQueue = new BullMqMailQueue(queueConnection, config.queuePrefix);
   const reminders = new BullMqReminders(queueConnection, config.queuePrefix, clock);
+  const agendaPubSub = createAgendaPubSub(config.redisUrl);
 
   const identityRepositories = (manager: EntityManager) => ({
     users: new TypeOrmUserRepository(manager),
@@ -132,7 +135,15 @@ export async function createContainer(
     notifications: new TypeOrmNotificationRepository(dataSource.manager),
     mailQueue,
     reminders,
-    agenda: { publish: async () => {} },
+    agenda: {
+      publish: async (barberId, change) => {
+        agendaPubSub.pubSub.publish('agendaChanged', barberId, {
+          type: change.type,
+          appointmentId: change.appointment.id,
+          previousStartsAt: change.previousStartsAt?.toISOString() ?? null,
+        });
+      },
+    },
     people: {
       user: async (id) => {
         const user = await identity.users.findById(id);
@@ -166,7 +177,9 @@ export async function createContainer(
     shops,
     scheduling,
     notifications,
+    pubSub: agendaPubSub.pubSub,
     async close() {
+      agendaPubSub.close();
       await Promise.all([mailQueue.close(), reminders.close()]);
       queueConnection.disconnect();
       redis.disconnect();

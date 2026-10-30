@@ -1,0 +1,46 @@
+enum NotificationType {
+  APPOINTMENT_BOOKED
+  APPOINTMENT_CANCELED
+  APPOINTMENT_RESCHEDULED
+  APPOINTMENT_REMINDER
+}
+
+"An entry in the signed-in user's list. The same text also goes out by email."
+type Notification {
+  id: ID!
+  type: NotificationType!
+  title: String!
+  body: String!
+  appointment: Appointment
+  read: Boolean!
+  createdAt: DateTime!
+}
+
+enum AgendaChangeType {
+  BOOKED
+  CANCELED
+  RESCHEDULED
+}
+
+type AgendaChange {
+  type: AgendaChangeType!
+  appointment: Appointment!
+  "Set for RESCHEDULED."
+  previousStartsAt: DateTime
+}
+
+type Query {
+  "Newest first; limit up to 50."
+  notifications(limit: Int = 20, offset: Int = 0): [Notification!]!
+  unreadNotificationCount: Int!
+}
+
+type Mutation {
+  "Errors: NOTIFICATION_NOT_FOUND."
+  markNotificationRead(id: ID!): Boolean!
+}
+
+type Subscription {
+  "The signed-in barber's agenda as it changes: bookings, cancellations, reschedules. Errors: UNAUTHENTICATED, NOT_A_BARBER."
+  agendaChanged: AgendaChange!
+}
