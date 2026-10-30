@@ -15,7 +15,7 @@ This is a rewrite of a 2021 Express project (kept under the [`v2021`](https://gi
 | 1     | Skeleton, Docker Compose, CI, auth (sign up, sign in, refresh, me)       | done  |
 | 2     | Barbershops (nearby, search), uploads, invites, barbers, services        | done  |
 | 3     | Weekly schedules, days off, available slots, booking, cancel, reschedule | done  |
-| 4     | Notifications: email queue, reminders, live agenda subscription          | next  |
+| 4     | Notifications: email queue, reminders, live agenda subscription          | done  |
 
 The design is in [`docs/superpowers/specs`](docs/superpowers/specs/2026-10-30-barberpro-api-design.md) and each phase has its plan in [`docs/superpowers/plans`](docs/superpowers/plans).
 
