@@ -85,7 +85,8 @@ export class Appointment {
     return this.props.startsAt.getTime() - now.getTime() >= CHANGE_WINDOW_MINUTES * 60_000;
   }
 
-  private assertChangeable(now: Date): void {
+  /** Throws unless the appointment is booked and starts at least 2 hours after `now`. */
+  assertChangeable(now: Date): void {
     if (this.props.status === 'canceled') {
       throw new DomainError('APPOINTMENT_CANCELED', 'This appointment was already canceled.');
     }
