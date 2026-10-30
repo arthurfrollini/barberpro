@@ -8,8 +8,12 @@ import { JoseAccessTokens } from './modules/identity/adapters/security/jose-acce
 import { nodeSecrets } from './modules/identity/adapters/security/node-secrets.js';
 import type { IdentityDeps } from './modules/identity/application/ports.js';
 import { createDataSource } from './shared/adapters/database/data-source.js';
+import { detectImageType } from './shared/adapters/files/detect-image-type.js';
+import { DiskFileStorage } from './shared/adapters/files/disk-file-storage.js';
+import { TypeOrmFileRepository } from './shared/adapters/files/typeorm-file-repository.js';
 import type { HealthChecks } from './shared/adapters/http/health.js';
 import { type Clock, systemClock } from './shared/application/clock.js';
+import type { FileDeps } from './shared/application/files.js';
 
 /**
  * The composition root: the one place that knows which adapter implements which port.
@@ -22,6 +26,7 @@ export type Container = {
   redis: Redis;
   healthChecks: HealthChecks;
   identity: IdentityDeps;
+  files: FileDeps;
   close(): Promise<void>;
 };
 
@@ -53,6 +58,13 @@ export async function createContainer(
     refreshTokenTtlDays: config.refreshTokenTtlDays,
   };
 
+  const files: FileDeps = {
+    files: new TypeOrmFileRepository(dataSource.manager),
+    storage: new DiskFileStorage(config.uploadDir),
+    clock,
+    detectType: detectImageType,
+  };
+
   return {
     config,
     clock,
@@ -63,6 +75,7 @@ export async function createContainer(
       redis: () => redis.ping(),
     },
     identity,
+    files,
     async close() {
       redis.disconnect();
       await dataSource.destroy();

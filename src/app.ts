@@ -3,6 +3,7 @@ import type { Container } from './container.js';
 import { identityGraphQL } from './modules/identity/adapters/graphql/identity.resolvers.js';
 import { logSafeError } from './shared/adapters/log-safe-error.js';
 import { createGraphQLServer } from './shared/adapters/graphql/yoga.js';
+import { registerUploadRoutes } from './shared/adapters/files/uploads-routes.js';
 import { registerHealthRoute } from './shared/adapters/http/health.js';
 
 export async function buildApp(container: Container): Promise<FastifyInstance> {
@@ -10,16 +11,24 @@ export async function buildApp(container: Container): Promise<FastifyInstance> {
     logger: container.config.nodeEnv === 'test' ? false : { level: 'info' },
   });
 
-  registerHealthRoute(app, container.healthChecks);
-
   const { accessTokens } = container.identity;
+  const authenticate = async (authorization: string | null | undefined) => {
+    const token = authorization?.startsWith('Bearer ') ? authorization.slice(7) : null;
+    return token ? accessTokens.verify(token) : null;
+  };
+
+  registerHealthRoute(app, container.healthChecks);
+  await registerUploadRoutes(app, {
+    ...container.files,
+    authenticate,
+    publicUrl: container.config.publicUrl,
+  });
+
   const yoga = createGraphQLServer({
     modules: [identityGraphQL(container.identity)],
-    context: async (request) => {
-      const header = request.headers.get('authorization') ?? '';
-      const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-      return { currentUserId: token ? await accessTokens.verify(token) : null };
-    },
+    context: async (request) => ({
+      currentUserId: await authenticate(request.headers.get('authorization')),
+    }),
     logError: (error) => app.log.error({ error: logSafeError(error) }, 'unexpected GraphQL error'),
     graphiql: container.config.nodeEnv !== 'production',
   });
