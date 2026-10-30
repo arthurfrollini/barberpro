@@ -23,7 +23,7 @@ import { logSafeError } from './shared/adapters/log-safe-error.js';
 import {
   BullMqMailQueue,
   BullMqReminders,
-  createQueueConnection,
+  createProducerConnection,
 } from './shared/adapters/queue/bullmq.js';
 import { TypeOrmFileRepository } from './shared/adapters/files/typeorm-file-repository.js';
 import type { HealthChecks } from './shared/adapters/http/health.js';
@@ -68,10 +68,14 @@ export async function createContainer(
   const dataSource = createDataSource(config.databaseUrl);
   await dataSource.initialize();
   const redis = new Redis(config.redisUrl, { maxRetriesPerRequest: 1 });
-  const queueConnection = createQueueConnection(config.redisUrl);
+  const logError =
+    options.logError ??
+    ((error: unknown) =>
+      console.error(JSON.stringify({ msg: 'background failure', error: logSafeError(error) })));
+  const queueConnection = createProducerConnection(config.redisUrl);
   const mailQueue = new BullMqMailQueue(queueConnection, config.queuePrefix);
   const reminders = new BullMqReminders(queueConnection, config.queuePrefix, clock);
-  const agendaPubSub = createAgendaPubSub(config.redisUrl);
+  const agendaPubSub = createAgendaPubSub(config.redisUrl, logError);
 
   const identityRepositories = (manager: EntityManager) => ({
     users: new TypeOrmUserRepository(manager),
@@ -157,10 +161,7 @@ export async function createContainer(
     },
     appointments: { findById: (id) => scheduling.appointments.findById(id) },
     clock,
-    logError:
-      options.logError ??
-      ((error) =>
-        console.error(JSON.stringify({ msg: 'notification failed', error: logSafeError(error) }))),
+    logError,
   };
 
   return {
