@@ -14,10 +14,17 @@ export interface ScheduleRepository {
   replaceWeekly(barberId: string, schedule: WeeklySchedule): Promise<void>;
   block(barberId: string, date: string): Promise<void>;
   unblock(barberId: string, date: string): Promise<void>;
+  /**
+   * Locks the barber's row until the transaction ends. Bookings, cancels and reschedules
+   * take it shared; blocking a day, new hours and removal take it exclusive. So an agenda
+   * change waits for in-flight bookings and new bookings wait for the change, then see it.
+   */
+  lockBarber(barberId: string, mode: 'share' | 'update'): Promise<void>;
 }
 
 export interface AppointmentRepository {
-  findById(id: string): Promise<Appointment | null>;
+  /** `forUpdate` locks the row until the transaction ends. */
+  findById(id: string, options?: { forUpdate?: boolean }): Promise<Appointment | null>;
   findByIds(ids: readonly string[]): Promise<Appointment[]>;
   /** Throws SLOT_UNAVAILABLE or CUSTOMER_BUSY when the database refuses an overlap. */
   insert(appointment: Appointment): Promise<void>;
@@ -37,10 +44,11 @@ export type SchedulingRepositories = {
   appointments: AppointmentRepository;
 };
 
+/** `byUserId` is who acted; notifications go to the other party. */
 export type SchedulingEvent =
-  | { type: 'booked'; appointment: Appointment }
-  | { type: 'canceled'; appointment: Appointment }
-  | { type: 'rescheduled'; appointment: Appointment; previousStartsAt: Date };
+  | { type: 'booked'; appointment: Appointment; byUserId: string }
+  | { type: 'canceled'; appointment: Appointment; byUserId: string }
+  | { type: 'rescheduled'; appointment: Appointment; byUserId: string; previousStartsAt: Date };
 
 /** Phase 4 turns these into notifications, reminders and the live agenda. */
 export interface SchedulingEvents {

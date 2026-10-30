@@ -4,11 +4,13 @@ import type { Barbershop } from '../../shops/domain/barbershop.js';
 import { Appointment } from '../domain/appointment.js';
 import { BOOKING_HORIZON_DAYS, availableStarts } from '../domain/availability.js';
 import { bookableBarber, bookableService } from './lookups.js';
-import type { SchedulingDeps } from './ports.js';
+import type { SchedulingDeps, SchedulingRepositories } from './ports.js';
+
+type Reads = Pick<SchedulingDeps, 'clock'> & SchedulingRepositories;
 
 /** Free start times of one barber on one local date, for a service of a given length. */
 async function startsOn(
-  deps: SchedulingDeps,
+  deps: Reads,
   input: {
     barberId: string;
     shop: Barbershop;
@@ -39,7 +41,7 @@ async function startsOn(
 
 /** Rejects a start time the customer could not have picked from availableSlots. */
 async function assertStartAvailable(
-  deps: SchedulingDeps,
+  deps: Reads,
   input: {
     barberId: string;
     shop: Barbershop;
@@ -77,6 +79,10 @@ export async function availableSlots(
   });
 }
 
+/**
+ * Checks and inserts in one transaction holding the barber's row shared, so a blocked day,
+ * new hours or a removal committed meanwhile is seen here, never slipped past.
+ */
 export async function bookAppointment(
   deps: SchedulingDeps,
   customerId: string,
@@ -87,58 +93,84 @@ export async function bookAppointment(
     reminderLeadMinutes: number | null;
   },
 ): Promise<Appointment> {
-  const { barber, shop } = await bookableBarber(deps, input.barberId);
-  if (barber.userId === customerId) {
-    throw new DomainError(
-      'BARBER_CANNOT_BOOK_SELF',
-      'You cannot book an appointment with yourself.',
-    );
-  }
-  const service = await bookableService(deps, barber.id, input.serviceId);
-  await assertStartAvailable(deps, {
-    barberId: barber.id,
-    shop,
-    startsAt: input.startsAt,
-    durationMinutes: service.durationMinutes,
-  });
-  const appointment = Appointment.book(
-    {
-      barberId: barber.id,
-      customerId,
-      service: {
-        id: service.id,
-        name: service.name,
-        priceCents: service.priceCents,
+  const appointment = await deps.transaction(async (tx) => {
+    await tx.schedules.lockBarber(input.barberId, 'share');
+    const { barber, shop } = await bookableBarber(deps, input.barberId);
+    if (barber.userId === customerId) {
+      throw new DomainError(
+        'BARBER_CANNOT_BOOK_SELF',
+        'You cannot book an appointment with yourself.',
+      );
+    }
+    const service = await bookableService(deps, barber.id, input.serviceId);
+    await assertStartAvailable(
+      { ...tx, clock: deps.clock },
+      {
+        barberId: barber.id,
+        shop,
+        startsAt: input.startsAt,
         durationMinutes: service.durationMinutes,
       },
-      startsAt: input.startsAt,
-      reminderLeadMinutes: input.reminderLeadMinutes,
-    },
-    deps.clock.now(),
-  );
-  // a concurrent booking can still win between the check and here; the exclusion
-  // constraints refuse ours with SLOT_UNAVAILABLE or CUSTOMER_BUSY
-  await deps.appointments.insert(appointment);
-  await deps.events.publish([{ type: 'booked', appointment }]);
+    );
+    const booked = Appointment.book(
+      {
+        barberId: barber.id,
+        customerId,
+        service: {
+          id: service.id,
+          name: service.name,
+          priceCents: service.priceCents,
+          durationMinutes: service.durationMinutes,
+        },
+        startsAt: input.startsAt,
+        reminderLeadMinutes: input.reminderLeadMinutes,
+      },
+      deps.clock.now(),
+    );
+    // two bookings for one slot can both pass the check; the exclusion constraints
+    // refuse the second with SLOT_UNAVAILABLE or CUSTOMER_BUSY
+    await tx.appointments.insert(booked);
+    return booked;
+  });
+  await deps.events.publish([{ type: 'booked', appointment, byUserId: customerId }]);
   return appointment;
 }
 
-/** The appointment and the role the actor plays in it (customer or barber). */
-async function ownAppointment(deps: SchedulingDeps, actorId: string, id: string) {
-  const appointment = await deps.appointments.findById(id);
-  if (appointment) {
-    if (appointment.customerId === actorId) return { appointment, role: 'customer' as const };
+/**
+ * Runs `change` on the appointment inside a transaction: barber row shared, then the
+ * appointment row exclusive (always in that order, so agenda changes cannot deadlock with
+ * it). Two writers on one appointment take turns, and the second sees the first's result.
+ */
+async function changeAppointment<T>(
+  deps: SchedulingDeps,
+  actorId: string,
+  id: string,
+  change: (
+    tx: SchedulingRepositories,
+    appointment: Appointment,
+    role: 'customer' | 'barber',
+  ) => Promise<T>,
+): Promise<T> {
+  const notFound = () => new DomainError('APPOINTMENT_NOT_FOUND', 'Appointment not found.');
+  return deps.transaction(async (tx) => {
+    const peek = await tx.appointments.findById(id);
+    if (!peek) throw notFound();
+    await tx.schedules.lockBarber(peek.barberId, 'share');
+    const appointment = (await tx.appointments.findById(id, { forUpdate: true }))!;
+    if (appointment.customerId === actorId) return change(tx, appointment, 'customer');
     const barber = await deps.directory.barber(appointment.barberId);
-    if (barber?.userId === actorId) return { appointment, role: 'barber' as const };
-  }
-  throw new DomainError('APPOINTMENT_NOT_FOUND', 'Appointment not found.');
+    if (barber?.userId === actorId) return change(tx, appointment, 'barber');
+    throw notFound();
+  });
 }
 
 export async function cancelAppointment(deps: SchedulingDeps, actorId: string, id: string) {
-  const { appointment, role } = await ownAppointment(deps, actorId, id);
-  appointment.cancel({ userId: actorId, reason: role }, deps.clock.now());
-  await deps.appointments.update(appointment);
-  await deps.events.publish([{ type: 'canceled', appointment }]);
+  const appointment = await changeAppointment(deps, actorId, id, async (tx, a, role) => {
+    a.cancel({ userId: actorId, reason: role }, deps.clock.now());
+    await tx.appointments.update(a);
+    return a;
+  });
+  await deps.events.publish([{ type: 'canceled', appointment, byUserId: actorId }]);
   return appointment;
 }
 
@@ -149,20 +181,28 @@ export async function rescheduleAppointment(
   id: string,
   newStartsAt: Date,
 ) {
-  const { appointment } = await ownAppointment(deps, actorId, id);
-  const now = deps.clock.now();
-  appointment.assertChangeable(now);
-  const { shop } = await bookableBarber(deps, appointment.barberId);
-  await assertStartAvailable(deps, {
-    barberId: appointment.barberId,
-    shop,
-    startsAt: newStartsAt,
-    durationMinutes: appointment.durationMinutes,
-    excludeId: appointment.id,
+  let previousStartsAt!: Date;
+  const appointment = await changeAppointment(deps, actorId, id, async (tx, a) => {
+    const now = deps.clock.now();
+    a.assertChangeable(now);
+    const { shop } = await bookableBarber(deps, a.barberId);
+    await assertStartAvailable(
+      { ...tx, clock: deps.clock },
+      {
+        barberId: a.barberId,
+        shop,
+        startsAt: newStartsAt,
+        durationMinutes: a.durationMinutes,
+        excludeId: a.id,
+      },
+    );
+    previousStartsAt = a.startsAt;
+    a.reschedule(newStartsAt, now);
+    await tx.appointments.update(a);
+    return a;
   });
-  const previousStartsAt = appointment.startsAt;
-  appointment.reschedule(newStartsAt, now);
-  await deps.appointments.update(appointment);
-  await deps.events.publish([{ type: 'rescheduled', appointment, previousStartsAt }]);
+  await deps.events.publish([
+    { type: 'rescheduled', appointment, byUserId: actorId, previousStartsAt },
+  ]);
   return appointment;
 }

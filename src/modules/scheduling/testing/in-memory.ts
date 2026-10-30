@@ -32,6 +32,8 @@ export class InMemoryScheduleRepository implements ScheduleRepository {
   async unblock(barberId: string, date: string) {
     this.blocked.get(barberId)?.delete(date);
   }
+  // single-threaded: nothing to wait for
+  async lockBarber() {}
 }
 
 const copy = (a: Appointment) =>

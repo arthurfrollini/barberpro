@@ -45,6 +45,14 @@ export class TypeOrmScheduleRepository implements ScheduleRepository {
   async unblock(barberId: string, date: string) {
     await this.manager.delete(BlockedDateRecord, { barberId, date });
   }
+
+  async lockBarber(barberId: string, mode: 'share' | 'update') {
+    if (!isUuid(barberId)) return;
+    await this.manager.query(
+      `SELECT id FROM barbers WHERE id = $1 ${mode === 'share' ? 'FOR SHARE' : 'FOR UPDATE'}`,
+      [barberId],
+    );
+  }
 }
 
 const toDomain = (r: AppointmentRecord) => Appointment.restore({ ...r });
@@ -88,9 +96,12 @@ async function guardOverlap(write: Promise<unknown>): Promise<void> {
 export class TypeOrmAppointmentRepository implements AppointmentRepository {
   constructor(private readonly manager: EntityManager) {}
 
-  async findById(id: string) {
+  async findById(id: string, options: { forUpdate?: boolean } = {}) {
     if (!isUuid(id)) return null;
-    const r = await this.manager.findOneBy(AppointmentRecord, { id });
+    const r = await this.manager.findOne(AppointmentRecord, {
+      where: { id },
+      ...(options.forUpdate ? { lock: { mode: 'pessimistic_write' as const } } : {}),
+    });
     return r ? toDomain(r) : null;
   }
 

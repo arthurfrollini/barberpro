@@ -10,7 +10,7 @@ import type { IdentityDeps } from './modules/identity/application/ports.js';
 import { shopsRepositories } from './modules/shops/adapters/persistence/repositories.js';
 import { schedulingRepositories } from './modules/scheduling/adapters/persistence/repositories.js';
 import type { SchedulingDeps, SchedulingEvents } from './modules/scheduling/application/ports.js';
-import { cancelFutureForBarber } from './modules/scheduling/application/schedule.js';
+import { cancelFutureWithin, publishCanceled } from './modules/scheduling/application/schedule.js';
 import type { Mailer, ShopsDeps } from './modules/shops/application/ports.js';
 import { createDataSource } from './shared/adapters/database/data-source.js';
 import { detectImageType } from './shared/adapters/files/detect-image-type.js';
@@ -85,9 +85,15 @@ export async function createContainer(
     mailer: options.mailer ?? new SmtpMailer(config.smtpUrl, config.mailFrom),
     secrets: nodeSecrets,
     clock,
-    // rule 7; scheduling is declared below and only called at request time
-    onBarberRemoved: async (barber, byUserId) => {
-      await cancelFutureForBarber(scheduling, barber.id, byUserId);
+    // rule 7: the removal and the cancellations share one transaction
+    persistRemoval: async (barber, byUserId) => {
+      const canceled = await dataSource.transaction(async (manager) => {
+        const tx = schedulingRepositories(manager);
+        const future = await cancelFutureWithin(tx, barber.id, byUserId, clock.now());
+        await shopsRepositories(manager).barbers.save(barber);
+        return future;
+      });
+      await publishCanceled(scheduling, canceled, byUserId);
     },
   };
 

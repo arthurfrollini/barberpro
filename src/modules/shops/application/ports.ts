@@ -70,8 +70,11 @@ export type ShopsDeps = {
   mailer: Mailer;
   secrets: Secrets;
   clock: Clock;
-  /** Called after a barber leaves a shop; scheduling cancels their future appointments. */
-  onBarberRemoved: (barber: Barber, byUserId: string) => Promise<void>;
+  /**
+   * Saves a removed barber together with the cancellation of their appointments 2 hours or
+   * more away (scheduling), in one transaction: either both happen or neither does.
+   */
+  persistRemoval: (barber: Barber, byUserId: string) => Promise<void>;
   /** Runs `work` in one database transaction, with repositories bound to it. */
   transaction<T>(work: (repos: ShopsRepositories) => Promise<T>): Promise<T>;
 };

@@ -3,7 +3,7 @@ import { localDate, toLocal, toUtc } from '../../../shared/domain/zoned-time.js'
 import { type Appointment, CHANGE_WINDOW_MINUTES } from '../domain/appointment.js';
 import { type WeeklyInterval, WeeklySchedule } from '../domain/weekly-schedule.js';
 import { barberOfUser } from './lookups.js';
-import type { SchedulingDeps } from './ports.js';
+import type { SchedulingDeps, SchedulingRepositories } from './ports.js';
 
 /** Appointments starting this late or later may still be canceled by agenda changes. */
 const cutoff = (now: Date) => new Date(now.getTime() + CHANGE_WINDOW_MINUTES * 60_000);
@@ -16,9 +16,14 @@ function fits(appointment: Appointment, schedule: WeeklySchedule, timezone: stri
   return schedule.fits(start.weekday, start.minuteOfDay, endMinute);
 }
 
-async function publishCanceled(deps: SchedulingDeps, canceled: Appointment[]) {
+/** Events go out after the transaction commits, never for work that was rolled back. */
+export async function publishCanceled(
+  deps: Pick<SchedulingDeps, 'events'>,
+  canceled: Appointment[],
+  byUserId: string,
+) {
   await deps.events.publish(
-    canceled.map((appointment) => ({ type: 'canceled' as const, appointment })),
+    canceled.map((appointment) => ({ type: 'canceled' as const, appointment, byUserId })),
   );
 }
 
@@ -35,6 +40,8 @@ export async function setWeeklySchedule(
   const schedule = WeeklySchedule.of(intervals);
   const now = deps.clock.now();
   const canceled = await deps.transaction(async (tx) => {
+    // exclusive: in-flight bookings finish first, new ones wait and then see the new hours
+    await tx.schedules.lockBarber(barber.id, 'update');
     await tx.schedules.replaceWeekly(barber.id, schedule);
     const outside = (await tx.appointments.bookedFrom(barber.id, cutoff(now))).filter(
       (a) => !fits(a, schedule, shop.timezone),
@@ -45,7 +52,7 @@ export async function setWeeklySchedule(
     }
     return outside;
   });
-  await publishCanceled(deps, canceled);
+  await publishCanceled(deps, canceled, actorId);
   return { schedule, canceled };
 }
 
@@ -58,6 +65,7 @@ export async function blockDate(deps: SchedulingDeps, actorId: string, rawDate: 
     throw new DomainError('INVALID_DATE', 'This date has already passed.');
   }
   const canceled = await deps.transaction(async (tx) => {
+    await tx.schedules.lockBarber(barber.id, 'update');
     await tx.schedules.block(barber.id, date);
     const day = await tx.appointments.forBarberBetween(
       barber.id,
@@ -71,7 +79,7 @@ export async function blockDate(deps: SchedulingDeps, actorId: string, rawDate: 
     }
     return toCancel;
   });
-  await publishCanceled(deps, canceled);
+  await publishCanceled(deps, canceled, actorId);
   return canceled;
 }
 
@@ -85,21 +93,34 @@ export async function mySchedule(deps: SchedulingDeps, actorId: string) {
   return deps.schedules.get(barber.id);
 }
 
-/** Rule 7: when a barber leaves a shop, appointments 2 hours or more away are canceled. */
+/**
+ * Rule 7, inside a transaction the caller owns: the barber's row is locked and booked
+ * appointments 2 hours or more away are canceled. The caller saves the removal in the same
+ * transaction, then publishes the returned appointments.
+ */
+export async function cancelFutureWithin(
+  tx: SchedulingRepositories,
+  barberId: string,
+  byUserId: string,
+  now: Date,
+): Promise<Appointment[]> {
+  await tx.schedules.lockBarber(barberId, 'update');
+  const future = await tx.appointments.bookedFrom(barberId, cutoff(now));
+  for (const a of future) {
+    a.cancelBySystem('barber_removed', byUserId, now);
+    await tx.appointments.update(a);
+  }
+  return future;
+}
+
 export async function cancelFutureForBarber(
   deps: SchedulingDeps,
   barberId: string,
   byUserId: string,
 ): Promise<Appointment[]> {
-  const now = deps.clock.now();
-  const canceled = await deps.transaction(async (tx) => {
-    const future = await tx.appointments.bookedFrom(barberId, cutoff(now));
-    for (const a of future) {
-      a.cancelBySystem('barber_removed', byUserId, now);
-      await tx.appointments.update(a);
-    }
-    return future;
-  });
-  await publishCanceled(deps, canceled);
+  const canceled = await deps.transaction((tx) =>
+    cancelFutureWithin(tx, barberId, byUserId, deps.clock.now()),
+  );
+  await publishCanceled(deps, canceled, byUserId);
   return canceled;
 }

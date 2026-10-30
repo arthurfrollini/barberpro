@@ -151,11 +151,12 @@ export function inMemoryShopsDeps(clock: Clock) {
   };
   return {
     ...repos,
+    // no scheduling here: removal is just the save
+    persistRemoval: (barber: Barber) => repos.barbers.save(barber),
     transaction: <T>(work: (r: ShopsRepositories) => Promise<T>) => work(repos),
     files: new InMemoryFileRepository(),
     users: new InMemoryUserRepository(),
     mailer: new FakeMailer(),
-    onBarberRemoved: async (_barber: Barber, _byUserId: string) => {},
     secrets: { random: () => `token-${++n}`, hash: (raw: string) => `h(${raw})` },
     clock,
   } satisfies ShopsDeps;

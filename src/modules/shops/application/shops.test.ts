@@ -285,9 +285,9 @@ describe('shops use cases', () => {
       ).rejects.toEqual(code('NOT_A_BARBER'));
     });
 
-    it('tells scheduling when a barber is removed', async () => {
+    it('hands the removal to persistRemoval, which also cancels appointments', async () => {
       const removed: string[] = [];
-      deps.onBarberRemoved = async (barber) => {
+      deps.persistRemoval = async (barber) => {
         removed.push(barber.id);
       };
       const barber = await becomeBarber(deps, owner.id);
