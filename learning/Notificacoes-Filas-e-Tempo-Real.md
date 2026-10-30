@@ -33,6 +33,14 @@ bookAppointment ──commit──▶ evento "booked" (porta SchedulingEvents)
 - A mensagem leva só o id do agendamento; o resolver carrega o resto com DataLoader. Mandar o objeto inteiro pelo Redis exigiria serializar e reconstruir a classe de domínio.
 - O teste e2e sobe o servidor numa porta de verdade, assina via SSE, faz uma reserva e lê o primeiro evento.
 
+## O que a revisão do PR pegou
+
+1. **Agenda ao vivo com dado velho.** O Yoga cria um contexto por subscription, então o DataLoader vivia o stream inteiro e guardava a primeira leitura: um cancelamento aparecia como "marcado às 14:00". Agora cada evento limpa o cache do agendamento antes de carregar. O teste lê três eventos seguidos.
+2. **Reserva travada com o Redis fora do ar.** A conexão das filas esperava o Redis voltar; o cliente dava timeout, tentava de novo e recebia `SLOT_UNAVAILABLE` para a própria reserva. A API agora usa uma conexão que falha rápido (sem fila offline) e desiste de enfileirar em 2 segundos. Os workers continuam com a conexão que espera.
+3. **API caindo numa queda do Redis.** O adaptador de pub/sub do Yoga não trata erro de `publish`/`subscribe`; a promise rejeitada sem tratamento derrubava o processo. Os clientes Redis agora são "protegidos" e reportam o erro.
+4. **Convite travado.** Com o email na fila, uma falha de SMTP não chegava mais ao `inviteBarber`. Agora o email leva o id do convite, e quando o worker desiste (última tentativa) o convite é revogado; o dono pode mandar de novo.
+5. **Um passo derrubava os outros.** Lembrete, notificação e agenda ao vivo agora são passos separados, cada um com o próprio tratamento de erro.
+
 ## Prova manual
 
 Com `docker compose up`, uma reserva feita pelo GraphQL gerou o email "New booking" no Mailpit (http://localhost:8025), enviado pelo worker, e o job do lembrete ficou no conjunto de atrasados do Redis.
