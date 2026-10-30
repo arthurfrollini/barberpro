@@ -18,7 +18,7 @@ jobs:
         ports:
           - 5442:5432
         options: >-
-          --health-cmd "pg_isready -U barberpro"
+          --health-cmd "pg_isready -h 127.0.0.1 -U barberpro -d barberpro_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
