@@ -127,7 +127,7 @@ type Mutation {
   createBarbershop(input: CreateBarbershopInput!): Barbershop!
   "Edits the shop the signed-in user owns. Errors: NOT_SHOP_OWNER."
   updateBarbershop(input: UpdateBarbershopInput!): Barbershop!
-  "Emails a 7-day invite. Errors: NOT_SHOP_OWNER, ALREADY_A_BARBER, INVITE_ALREADY_SENT."
+  "Emails a 7-day invite. Errors: NOT_SHOP_OWNER, ALREADY_A_BARBER, INVITE_ALREADY_SENT, EMAIL_NOT_SENT."
   inviteBarber(email: String!): Invite!
   revokeInvite(id: ID!): Invite!
   "token is the code from the invite email. Errors: INVITE_NOT_FOUND, INVITE_EXPIRED, INVITE_EMAIL_MISMATCH, ALREADY_A_BARBER."

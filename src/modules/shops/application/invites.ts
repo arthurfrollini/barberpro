@@ -41,14 +41,21 @@ export async function inviteBarber(
     now,
   );
   await deps.invites.save(invite);
-  await deps.mailer.send({
-    to: email.value,
-    subject: `You were invited to join ${shop.name}`,
-    text:
-      `You were invited to join ${shop.name} as a barber on BarberPro.\n\n` +
-      `Sign in with this email and accept the invite with this code: ${token}\n\n` +
-      `The invite expires on ${invite.expiresAt.toISOString().slice(0, 10)}.`,
-  });
+  try {
+    await deps.mailer.send({
+      to: email.value,
+      subject: `You were invited to join ${shop.name}`,
+      text:
+        `You were invited to join ${shop.name} as a barber on BarberPro.\n\n` +
+        `Sign in with this email and accept the invite with this code: ${token}\n\n` +
+        `The invite expires on ${invite.expiresAt.toISOString().slice(0, 10)}.`,
+    });
+  } catch {
+    // nobody has the code, so the invite would only block a retry for 7 days
+    invite.revoke(deps.clock.now());
+    await deps.invites.save(invite);
+    throw new DomainError('EMAIL_NOT_SENT', 'We could not send the invite email. Try again.');
+  }
   return invite;
 }
 

@@ -192,6 +192,20 @@ describe('shops use cases', () => {
       expect((await acceptInvite(deps, jose.id, token)).userId).toBe(jose.id);
     });
 
+    it('does not leave a stuck invite when the email fails', async () => {
+      const send = deps.mailer.send.bind(deps.mailer);
+      deps.mailer.send = async () => {
+        throw new Error('SMTP down');
+      };
+      await expect(inviteBarber(deps, owner.id, 'jose@x.com')).rejects.toEqual(
+        code('EMAIL_NOT_SENT'),
+      );
+
+      deps.mailer.send = send;
+      const token = await inviteJose();
+      expect((await acceptInvite(deps, jose.id, token)).userId).toBe(jose.id);
+    });
+
     it('refuses to invite someone already barbering in the shop', async () => {
       await acceptInvite(deps, jose.id, await inviteJose());
 
