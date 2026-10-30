@@ -17,7 +17,7 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
-  /** An instant in ISO 8601, always UTC (2026-11-02T13:30:00.000Z). */
+  /** An instant in ISO 8601. Inputs must carry Z or an offset; outputs are always UTC (2026-11-02T13:30:00.000Z). */
   DateTime: { input: Date; output: Date; }
 };
 
