@@ -109,7 +109,7 @@ export type Mutation = {
   createBarbershop: Barbershop;
   /** Errors: NOT_A_BARBER, INVALID_PRICE, INVALID_DURATION. */
   createService: Service;
-  /** Emails a 7-day invite. Errors: NOT_SHOP_OWNER, ALREADY_A_BARBER, INVITE_ALREADY_SENT. */
+  /** Emails a 7-day invite. Errors: NOT_SHOP_OWNER, ALREADY_A_BARBER, INVITE_ALREADY_SENT, EMAIL_NOT_SENT. */
   inviteBarber: Invite;
   /** Swaps a refresh token for a new session. Errors: INVALID_REFRESH_TOKEN. */
   refreshToken: AuthPayload;
