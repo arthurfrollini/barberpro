@@ -30,6 +30,9 @@ export function createShopsLoaders(
     shopById: new DataLoader<string, Barbershop | null>(async (ids) =>
       byId(ids, await deps.shops.findByIds(ids)),
     ),
+    barberById: new DataLoader<string, Barber | null>(async (ids) =>
+      byId(ids, await deps.barbers.findByIds(ids)),
+    ),
     barbersByShop: new DataLoader<string, Barber[]>(async (shopIds) =>
       groupBy(shopIds, await deps.barbers.findActiveByShops(shopIds), (b) => b.shopId),
     ),

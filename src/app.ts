@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { Container } from './container.js';
+import { schedulingGraphQL } from './modules/scheduling/adapters/graphql/scheduling.resolvers.js';
 import { identityGraphQL } from './modules/identity/adapters/graphql/identity.resolvers.js';
 import { createShopsLoaders } from './modules/shops/adapters/graphql/loaders.js';
 import { shopsGraphQL } from './modules/shops/adapters/graphql/shops.resolvers.js';
@@ -30,6 +31,7 @@ export async function buildApp(container: Container): Promise<FastifyInstance> {
     modules: [
       identityGraphQL(container.identity),
       shopsGraphQL(container.shops, container.config.publicUrl),
+      schedulingGraphQL(container.scheduling),
     ],
     context: async (request) => ({
       currentUserId: await authenticate(request.headers.get('authorization')),

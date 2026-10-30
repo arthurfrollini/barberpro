@@ -6,8 +6,11 @@ import type { Appointment } from '../domain/appointment.js';
 import type { TimeRange } from '../domain/availability.js';
 import type { WeeklySchedule } from '../domain/weekly-schedule.js';
 
+export type ScheduleView = { schedule: WeeklySchedule; blockedDates: Set<string> };
+export type ScheduleUpdate = { schedule: WeeklySchedule; canceled: Appointment[] };
+
 export interface ScheduleRepository {
-  get(barberId: string): Promise<{ schedule: WeeklySchedule; blockedDates: Set<string> }>;
+  get(barberId: string): Promise<ScheduleView>;
   replaceWeekly(barberId: string, schedule: WeeklySchedule): Promise<void>;
   block(barberId: string, date: string): Promise<void>;
   unblock(barberId: string, date: string): Promise<void>;
