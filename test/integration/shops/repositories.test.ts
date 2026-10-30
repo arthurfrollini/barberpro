@@ -181,7 +181,12 @@ describe('shops repositories', () => {
   it('accepts an invite only while it is still open', async () => {
     const s = await shop('Mega', paulista);
     const invite = Invite.create(
-      { shopId: s.id, email: Email.parse('jose@x.com'), tokenHash: 'b'.repeat(64), invitedBy: s.ownerId },
+      {
+        shopId: s.id,
+        email: Email.parse('jose@x.com'),
+        tokenHash: 'b'.repeat(64),
+        invitedBy: s.ownerId,
+      },
       now,
     );
     await repos.invites.save(invite);
@@ -199,7 +204,12 @@ describe('shops repositories', () => {
   it('marks an open invite accepted exactly once', async () => {
     const s = await shop('Mega', paulista);
     const invite = Invite.create(
-      { shopId: s.id, email: Email.parse('jose@x.com'), tokenHash: 'c'.repeat(64), invitedBy: s.ownerId },
+      {
+        shopId: s.id,
+        email: Email.parse('jose@x.com'),
+        tokenHash: 'c'.repeat(64),
+        invitedBy: s.ownerId,
+      },
       now,
     );
     await repos.invites.save(invite);
