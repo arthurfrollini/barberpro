@@ -57,10 +57,33 @@ CONSTRAINT appointments_barber_no_overlap
 - Uma constraint igual para `customer_id` impede o cliente de marcar dois horários sobrepostos com barbeiros diferentes (`CUSTOMER_BUSY`).
 - A violação (`SQLSTATE 23P01`) vira `SLOT_UNAVAILABLE` no repositório. O teste `lets exactly one of two simultaneous bookings for the same slot win` dispara duas reservas em paralelo e espera uma só.
 
+## Concorrência além da dupla reserva (o que a revisão do PR pegou)
+
+A exclusion constraint só impede **sobreposição**. A revisão provou três outras corridas, pausando uma requisição entre a checagem e a escrita:
+
+1. Um reagendamento lido antes de um cancelamento regravava a linha inteira e "ressuscitava" o agendamento cancelado.
+2. Uma reserva checada antes de o barbeiro bloquear o dia era gravada depois do bloqueio.
+3. Remover o barbeiro e cancelar os horários dele eram duas transações: se a segunda falhasse, o barbeiro ficava removido com horários marcados, e tentar de novo dava `BARBER_NOT_FOUND`.
+
+A correção é uma regra só: **toda escrita na agenda de um barbeiro trava a linha dele em `barbers`**, numa transação.
+
+| Operação                                             | Trava        | Por quê                                                                                                               |
+| ---------------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------- |
+| reservar, cancelar, reagendar                        | `FOR SHARE`  | várias podem rodar juntas; a exclusion constraint resolve sobreposição entre elas                                     |
+| bloquear dia, novo horário semanal, remover barbeiro | `FOR UPDATE` | espera as reservas em andamento terminarem e segura as novas até gravar; quando elas continuam, já enxergam a mudança |
+
+Cancelar e reagendar também travam a linha do agendamento (`SELECT ... FOR UPDATE`), sempre **depois** da do barbeiro. A ordem fixa evita deadlock. Duas escritas no mesmo agendamento se revezam, e a segunda vê o resultado da primeira (`APPOINTMENT_CANCELED`, por exemplo). A remoção do barbeiro grava a remoção e os cancelamentos na mesma transação (`persistRemoval`). Os eventos só saem depois do commit.
+
+Os testes ficam em `test/integration/scheduling/races.test.ts`. Um "portão" pausa a primeira requisição logo depois da checagem de disponibilidade, a segunda roda, e o teste confere que o estado final é coerente. Para a remoção, um trigger no banco força o cancelamento a falhar, e o barbeiro tem que continuar ativo.
+
+## Horário de verão
+
+São Paulo não tem horário de verão desde 2019, mas o código serve para qualquer fuso. Quando o relógio pula (Nova York, 08/03/2026, de 02:00 para 03:00), o horário 02:30 não existe. O `toUtc` segue o modo "compatible" do Temporal: um horário que não existe anda para frente, e um que se repete no fim do horário de verão vira a primeira ocorrência. Os horários livres pulam o que não existe no relógio. Antes da correção, 02:00 virava 01:00 e o horário aparecia duas vezes.
+
 ## Eventos (gancho da fase 4)
 
 Cada reserva, cancelamento e remarcação publica um evento (`booked`, `canceled`, `rescheduled`) numa porta `SchedulingEvents`. Na fase 3 ninguém escuta; na fase 4 eles viram notificações, emails, lembretes e a agenda ao vivo, sem mexer nos casos de uso.
 
 ## Frase para entrevista
 
-"Availability is one pure function: every 15 minutes from the start of each working interval, as long as the whole service fits, minus blocked days, busy time, the past and anything beyond 60 days. Booking validates against that same function, and Postgres has the last word with an exclusion constraint on a tstzrange, so two concurrent bookings for the same slot can't both succeed. Times are stored in UTC and converted with the shop's IANA zone."
+"Availability is one pure function: every 15 minutes from the start of each working interval, as long as the whole service fits, minus blocked days, busy time, the past and anything beyond 60 days. Booking validates against that same function, and Postgres has the last word with an exclusion constraint on a tstzrange, so two concurrent bookings for the same slot can't both succeed. Every write to a barber's agenda also locks the barber's row, shared for bookings and exclusive for blocking a day or changing hours, so a booking can't slip onto a day that was just blocked."
