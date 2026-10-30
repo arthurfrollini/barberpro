@@ -125,6 +125,37 @@ describe('handleSchedulingEvents', () => {
     expect(deps.reminderJobs.get(a.id)).toEqual(at('2026-11-02T18:45:00Z'));
   });
 
+  it('still moves the reminder and updates the live agenda when the notification fails', async () => {
+    const a = appointment();
+    const previous = a.startsAt;
+    a.reschedule(at('2026-11-02T19:00:00Z'), clock.now());
+    deps.notifications.insert = async () => {
+      throw new Error('db down');
+    };
+
+    await handleSchedulingEvents(deps, [
+      { type: 'rescheduled', appointment: a, byUserId: ANA, previousStartsAt: previous },
+    ]);
+
+    expect(deps.errors).toHaveLength(1);
+    expect(deps.reminderJobs.get(a.id)).toEqual(at('2026-11-02T18:45:00Z'));
+    expect(deps.agendaChanges.map((c) => c.change.type)).toEqual(['rescheduled']);
+  });
+
+  it('tells the barber when the customer reschedules', async () => {
+    const a = appointment();
+    const previous = a.startsAt;
+    a.reschedule(at('2026-11-02T19:00:00Z'), clock.now());
+
+    await handleSchedulingEvents(deps, [
+      { type: 'rescheduled', appointment: a, byUserId: ANA, previousStartsAt: previous },
+    ]);
+
+    expect(deps.saved.map((n) => [n.userId, n.body])).toEqual([
+      [JOAO, 'Ana moved Corte from Mon, Nov 2 at 14:00 to Mon, Nov 2 at 16:00.'],
+    ]);
+  });
+
   it('logs a failure instead of throwing, and goes on with the next event', async () => {
     const broken = appointment();
     const fine = appointment('2026-11-02T20:00:00Z');

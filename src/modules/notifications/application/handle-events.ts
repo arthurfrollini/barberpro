@@ -25,7 +25,23 @@ async function scheduleReminder(deps: NotifyDeps, appointment: Appointment) {
   if (runAt > deps.clock.now()) await deps.reminders.schedule(appointment.id, runAt);
 }
 
-async function handle(deps: NotifyDeps, event: SchedulingEvent) {
+/** Runs one step; a failure is logged and the next step still runs. */
+async function step(deps: NotifyDeps, work: () => Promise<void>) {
+  try {
+    await work();
+  } catch (error) {
+    deps.logError(error);
+  }
+}
+
+async function updateReminder(deps: NotifyDeps, event: SchedulingEvent) {
+  const a = event.appointment;
+  if (event.type !== 'booked') await deps.reminders.cancel(a.id);
+  if (event.type !== 'canceled') await scheduleReminder(deps, a);
+}
+
+/** The in-app notification and email for whoever did not make the change. */
+async function notifyOtherParty(deps: NotifyDeps, event: SchedulingEvent) {
   const a = event.appointment;
   const barber = await deps.people.barber(a.barberId);
   const barberUser = barber ? await deps.people.user(barber.userId) : null;
@@ -36,12 +52,11 @@ async function handle(deps: NotifyDeps, event: SchedulingEvent) {
   const tz = barber.timezone;
   const toBarber = { userId: barber.userId, email: barberUser.email };
   const toCustomer = { userId: a.customerId, email: customer.email };
-  // whoever acted already knows; the other side gets told
   const byCustomer = event.byUserId === a.customerId;
 
   switch (event.type) {
     case 'booked':
-      await notify(
+      return notify(
         deps,
         toBarber,
         'appointment_booked',
@@ -49,12 +64,9 @@ async function handle(deps: NotifyDeps, event: SchedulingEvent) {
         `${customer.name} booked ${a.serviceName} on ${when(a.startsAt, tz)}.`,
         a.id,
       );
-      await scheduleReminder(deps, a);
-      break;
     case 'canceled': {
-      await deps.reminders.cancel(a.id);
       if (byCustomer) {
-        await notify(
+        return notify(
           deps,
           toBarber,
           'appointment_canceled',
@@ -62,25 +74,21 @@ async function handle(deps: NotifyDeps, event: SchedulingEvent) {
           `${customer.name} canceled ${a.serviceName} on ${when(a.startsAt, tz)}.`,
           a.id,
         );
-      } else {
-        const why = cancelReasonText(a.cancelReason);
-        await notify(
-          deps,
-          toCustomer,
-          'appointment_canceled',
-          'Appointment canceled',
-          `Your ${a.serviceName} with ${barberUser.name} on ${when(a.startsAt, tz)} was canceled${why ? `: ${why}` : ''}.`,
-          a.id,
-        );
       }
-      break;
+      const why = cancelReasonText(a.cancelReason);
+      return notify(
+        deps,
+        toCustomer,
+        'appointment_canceled',
+        'Appointment canceled',
+        `Your ${a.serviceName} with ${barberUser.name} on ${when(a.startsAt, tz)} was canceled${why ? `: ${why}` : ''}.`,
+        a.id,
+      );
     }
     case 'rescheduled': {
-      await deps.reminders.cancel(a.id);
-      await scheduleReminder(deps, a);
       const moved = `from ${when(event.previousStartsAt, tz)} to ${when(a.startsAt, tz)}`;
       if (byCustomer) {
-        await notify(
+        return notify(
           deps,
           toBarber,
           'appointment_rescheduled',
@@ -88,37 +96,34 @@ async function handle(deps: NotifyDeps, event: SchedulingEvent) {
           `${customer.name} moved ${a.serviceName} ${moved}.`,
           a.id,
         );
-      } else {
-        await notify(
-          deps,
-          toCustomer,
-          'appointment_rescheduled',
-          'Appointment moved',
-          `Your ${a.serviceName} with ${barberUser.name} moved ${moved}.`,
-          a.id,
-        );
       }
-      break;
+      return notify(
+        deps,
+        toCustomer,
+        'appointment_rescheduled',
+        'Appointment moved',
+        `Your ${a.serviceName} with ${barberUser.name} moved ${moved}.`,
+        a.id,
+      );
     }
   }
-
-  await deps.agenda.publish(a.barberId, {
-    type: event.type,
-    appointment: a,
-    ...(event.type === 'rescheduled' ? { previousStartsAt: event.previousStartsAt } : {}),
-  });
 }
 
 /**
- * The adapter behind scheduling's SchedulingEvents port. A failure here is logged and never
- * thrown: the booking that caused the event is already committed and must not look failed.
+ * The adapter behind scheduling's SchedulingEvents port. Each step (reminder, notification,
+ * live agenda) fails on its own: errors are logged, never thrown, because the booking that
+ * caused the event is already committed and must not look failed.
  */
 export async function handleSchedulingEvents(deps: NotifyDeps, events: SchedulingEvent[]) {
   for (const event of events) {
-    try {
-      await handle(deps, event);
-    } catch (error) {
-      deps.logError(error);
-    }
+    await step(deps, () => updateReminder(deps, event));
+    await step(deps, () => notifyOtherParty(deps, event));
+    await step(deps, () =>
+      deps.agenda.publish(event.appointment.barberId, {
+        type: event.type,
+        appointment: event.appointment,
+        ...(event.type === 'rescheduled' ? { previousStartsAt: event.previousStartsAt } : {}),
+      }),
+    );
   }
 }
