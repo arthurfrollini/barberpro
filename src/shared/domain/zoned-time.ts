@@ -62,13 +62,27 @@ export function localDate(value: string): string {
   return value;
 }
 
-/** The instant when the clock in `timeZone` shows `date` at `minuteOfDay` (0 to 1440). */
+/**
+ * The instant when the clock in `timeZone` shows `date` at `minuteOfDay` (0 to 1440).
+ * Around a DST change, like Temporal's "compatible" mode: a repeated wall time gives the
+ * first instant, and a wall time that does not exist moves forward by the gap.
+ */
 export function toUtc(date: string, minuteOfDay: number, timeZone: string): Date {
-  const [y, m, d] = localDate(date).split('-').map(Number) as [number, number, number];
-  const wall = Date.UTC(y, m - 1, d, 0, minuteOfDay);
-  // first guess with the offset at the wall time, then correct once for a DST change between
-  const guess = wall - offsetMinutes(new Date(wall), timeZone) * 60_000;
-  return new Date(wall - offsetMinutes(new Date(guess), timeZone) * 60_000);
+  const day = addDays(date, Math.floor(minuteOfDay / 1440));
+  const minute = minuteOfDay % 1440;
+  const [y, m, d] = day.split('-').map(Number) as [number, number, number];
+  const wall = Date.UTC(y, m - 1, d, 0, minute);
+  // the offsets in force half a day before and after cover any single transition
+  const candidates = [
+    ...new Set([-12, 12].map((h) => offsetMinutes(new Date(wall + h * 3_600_000), timeZone))),
+  ]
+    .map((offset) => wall - offset * 60_000)
+    .sort((a, b) => a - b);
+  const exact = candidates.filter((t) => {
+    const local = toLocal(new Date(t), timeZone);
+    return local.date === day && local.minuteOfDay === minute;
+  });
+  return new Date(exact.length > 0 ? exact[0]! : candidates.at(-1)!);
 }
 
 /** What a clock in `timeZone` shows at `instant`. Weekday 0 is Sunday. */

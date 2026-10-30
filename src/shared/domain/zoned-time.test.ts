@@ -27,6 +27,22 @@ describe('zoned time', () => {
     expect(toLocal(instant, NY)).toMatchObject({ date: '2026-03-08', minuteOfDay: 210 });
   });
 
+  it('moves a wall time that does not exist (DST gap) forward, never back', () => {
+    // 02:30 does not exist in New York on 2026-03-08; the clock shows 03:30 EDT then
+    expect(toUtc('2026-03-08', 2 * 60 + 30, NY).toISOString()).toBe('2026-03-08T07:30:00.000Z');
+    // Santiago jumps from 00:00 to 01:00 on 2026-09-06: the day starts at 01:00, same date
+    const santiagoMidnight = toUtc('2026-09-06', 0, 'America/Santiago');
+    expect(toLocal(santiagoMidnight, 'America/Santiago')).toMatchObject({
+      date: '2026-09-06',
+      minuteOfDay: 60,
+    });
+  });
+
+  it('picks the first of two repeated wall times (DST overlap)', () => {
+    // New York repeats 01:00-02:00 on 2026-11-01: first EDT (05:30Z), then EST (06:30Z)
+    expect(toUtc('2026-11-01', 90, NY).toISOString()).toBe('2026-11-01T05:30:00.000Z');
+  });
+
   it('handles minute 1440 as the end of the day', () => {
     expect(toUtc('2026-11-02', 1440, SP).toISOString()).toBe('2026-11-03T03:00:00.000Z');
   });

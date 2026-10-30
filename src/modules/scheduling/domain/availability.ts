@@ -1,4 +1,4 @@
-import { toUtc, weekdayOf } from '../../../shared/domain/zoned-time.js';
+import { toLocal, toUtc, weekdayOf } from '../../../shared/domain/zoned-time.js';
 import type { WeeklySchedule } from './weekly-schedule.js';
 
 export const SLOT_STEP_MINUTES = 15;
@@ -34,6 +34,9 @@ export function availableStarts(input: {
   for (const interval of input.schedule.intervalsOn(weekdayOf(input.date))) {
     for (let m = interval.startMinute; m + input.durationMinutes <= interval.endMinute; m += step) {
       const startsAt = toUtc(input.date, m, input.timezone);
+      // a wall time skipped by a DST change does not exist; don't offer it shifted
+      const local = toLocal(startsAt, input.timezone);
+      if (local.date !== input.date || local.minuteOfDay !== m) continue;
       const endsAt = new Date(startsAt.getTime() + durationMs);
       if (startsAt <= input.now || startsAt.getTime() > horizon) continue;
       if (input.busy.some((b) => startsAt < b.endsAt && b.startsAt < endsAt)) continue;

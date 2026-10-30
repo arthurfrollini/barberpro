@@ -112,6 +112,27 @@ describe('availableStarts', () => {
     expect(availableStarts({ ...base, date: farMonday })).toEqual([]);
   });
 
+  it('never offers a start that does not exist on the clock (DST gap)', () => {
+    // New York, Sunday 2026-03-08: 02:00-03:00 does not exist
+    const sunday = WeeklySchedule.of([{ weekday: 0, startMinute: h(1), endMinute: h(5) }]);
+
+    const starts = iso(
+      availableStarts({
+        ...base,
+        schedule: sunday,
+        date: '2026-03-08',
+        timezone: 'America/New_York',
+        now: new Date('2026-03-07T12:00:00Z'),
+      }),
+    );
+
+    expect(new Set(starts).size).toBe(starts.length);
+    expect(starts).toContain('2026-03-08T06:00:00.000Z'); // 01:00 EST
+    expect(starts).toContain('2026-03-08T07:00:00.000Z'); // 03:00 EDT
+    expect(starts).toContain('2026-03-08T06:45:00.000Z'); // 01:45 EST, the last before the jump
+    expect(starts).toHaveLength(4 + 7); // 01:00-01:45, then 03:00-04:30; nothing for 02:xx
+  });
+
   it('is empty on a weekday without hours', () => {
     expect(availableStarts({ ...base, date: '2026-11-01' })).toEqual([]);
   });
