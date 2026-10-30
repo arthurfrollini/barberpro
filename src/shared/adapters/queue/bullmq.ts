@@ -1,11 +1,10 @@
 import { type Job, Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import type {
-  MailMessage,
   MailQueue,
   ReminderScheduler,
 } from '../../../modules/notifications/application/ports.js';
-import type { Mailer } from '../../../modules/shops/application/ports.js';
+import type { MailMessage, Mailer } from '../../../modules/shops/application/ports.js';
 import type { Clock } from '../../application/clock.js';
 
 export const MAIL_QUEUE = 'mail';
@@ -50,14 +49,18 @@ function withTimeout<T>(work: Promise<T>, what: string): Promise<T> {
 export class BullMqMailQueue implements MailQueue, Mailer {
   private readonly queue: Queue<MailMessage>;
 
-  constructor(connection: Redis, prefix: string) {
+  constructor(
+    connection: Redis,
+    prefix: string,
+    private readonly retry = { attempts: 5 },
+  ) {
     this.queue = new Queue(MAIL_QUEUE, { connection, prefix });
   }
 
   async enqueue(message: MailMessage): Promise<void> {
     await withTimeout(
       this.queue.add('send', message, {
-        attempts: 5,
+        attempts: this.retry.attempts,
         backoff: { type: 'exponential', delay: 5_000 },
         removeOnComplete: 1_000,
         removeOnFail: 5_000,
@@ -129,6 +132,8 @@ export function startWorkers(input: {
   prefix: string;
   mailer: Mailer;
   sendReminder: (appointmentId: string) => Promise<void>;
+  /** An email that failed its last attempt. */
+  onMailGaveUp?: (message: MailMessage) => Promise<void>;
   onError?: (error: unknown, job?: Job) => void;
 }) {
   const mail = new Worker<MailMessage>(MAIL_QUEUE, (job) => input.mailer.send(job.data), {
@@ -143,6 +148,11 @@ export function startWorkers(input: {
   for (const worker of [mail, reminders]) {
     worker.on('failed', (job, error) => input.onError?.(error, job));
   }
+  mail.on('failed', (job) => {
+    if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
+      input.onMailGaveUp?.(job.data).catch((error) => input.onError?.(error, job));
+    }
+  });
   return {
     async close() {
       await Promise.all([mail.close(), reminders.close()]);

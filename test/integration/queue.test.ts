@@ -71,4 +71,35 @@ describe('BullMQ adapters', () => {
 
     await waitFor(() => remindersSent.includes(id));
   });
+
+  it('reports an email it gave up on, so an undelivered invite can be revoked', async () => {
+    const failingPrefix = `${prefix}-fail`;
+    const queue = new BullMqMailQueue(connection, failingPrefix, { attempts: 1 });
+    const gaveUp: string[] = [];
+    const failing = startWorkers({
+      connection,
+      prefix: failingPrefix,
+      mailer: {
+        send: async () => {
+          throw new Error('SMTP down');
+        },
+      },
+      sendReminder: async () => {},
+      onMailGaveUp: async (message) => {
+        gaveUp.push(message.inviteId ?? 'none');
+      },
+    });
+
+    await queue.enqueue({
+      to: 'jose@x.com',
+      subject: 'Invite',
+      text: 'code',
+      inviteId: 'invite-1',
+    });
+
+    await waitFor(() => gaveUp.length === 1);
+    expect(gaveUp).toEqual(['invite-1']);
+    await failing.close();
+    await queue.close();
+  });
 });

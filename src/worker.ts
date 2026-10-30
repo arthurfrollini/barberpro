@@ -2,6 +2,7 @@ import { loadConfig } from './config.js';
 import { createContainer } from './container.js';
 import { loadEnvFile } from './load-env-file.js';
 import { sendReminder } from './modules/notifications/application/reminders.js';
+import { revokeUndeliveredInvite } from './modules/shops/application/invites.js';
 import { logSafeError } from './shared/adapters/log-safe-error.js';
 import { SmtpMailer } from './shared/adapters/mail/smtp-mailer.js';
 import { createQueueConnection, startWorkers } from './shared/adapters/queue/bullmq.js';
@@ -17,6 +18,9 @@ const workers = startWorkers({
   prefix: config.queuePrefix,
   mailer: new SmtpMailer(config.smtpUrl, config.mailFrom),
   sendReminder: (appointmentId) => sendReminder(container.notifications, appointmentId),
+  onMailGaveUp: async (message) => {
+    if (message.inviteId) await revokeUndeliveredInvite(container.shops, message.inviteId);
+  },
   onError: (error, job) =>
     console.error(
       JSON.stringify({ msg: 'job failed', queue: job?.queueName, error: logSafeError(error) }),
