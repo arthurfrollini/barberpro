@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { Container } from './container.js';
+import { identityGraphQL } from './modules/identity/adapters/graphql/identity.resolvers.js';
 import { createGraphQLServer } from './shared/adapters/graphql/yoga.js';
 import { registerHealthRoute } from './shared/adapters/http/health.js';
 
@@ -10,9 +11,14 @@ export async function buildApp(container: Container): Promise<FastifyInstance> {
 
   registerHealthRoute(app, container.healthChecks);
 
+  const { accessTokens } = container.identity;
   const yoga = createGraphQLServer({
-    modules: [],
-    context: async () => ({ currentUserId: null }),
+    modules: [identityGraphQL(container.identity)],
+    context: async (request) => {
+      const header = request.headers.get('authorization') ?? '';
+      const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+      return { currentUserId: token ? await accessTokens.verify(token) : null };
+    },
     logError: (error) => app.log.error({ err: error }, 'unexpected GraphQL error'),
     graphiql: container.config.nodeEnv !== 'production',
   });

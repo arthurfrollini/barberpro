@@ -42,5 +42,10 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // tests read loosely typed GraphQL responses
+    files: ['test/**/*.ts', 'src/**/*.test.ts'],
+    rules: { '@typescript-eslint/no-explicit-any': 'off' },
+  },
   prettier,
 );

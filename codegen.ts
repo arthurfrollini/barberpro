@@ -12,6 +12,12 @@ const config: CodegenConfig = {
         useTypeImports: true,
         enumsAsTypes: true,
         scalars: { DateTime: 'Date' },
+        // resolvers return domain objects; codegen checks the fields the SDL adds on top
+        mapperTypeSuffix: 'Model',
+        mappers: {
+          User: '../../../../modules/identity/domain/user.js#User',
+          AuthPayload: '../../../../modules/identity/application/ports.js#Session',
+        },
       },
     },
   },

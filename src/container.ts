@@ -1,6 +1,12 @@
 import { Redis } from 'ioredis';
 import type { DataSource } from 'typeorm';
 import type { Config } from './config.js';
+import { TypeOrmRefreshTokenRepository } from './modules/identity/adapters/persistence/typeorm-refresh-token-repository.js';
+import { TypeOrmUserRepository } from './modules/identity/adapters/persistence/typeorm-user-repository.js';
+import { Argon2PasswordHasher } from './modules/identity/adapters/security/argon2-password-hasher.js';
+import { JoseAccessTokens } from './modules/identity/adapters/security/jose-access-tokens.js';
+import { nodeSecrets } from './modules/identity/adapters/security/node-secrets.js';
+import type { IdentityDeps } from './modules/identity/application/ports.js';
 import { createDataSource } from './shared/adapters/database/data-source.js';
 import type { HealthChecks } from './shared/adapters/http/health.js';
 import { type Clock, systemClock } from './shared/application/clock.js';
@@ -15,23 +21,44 @@ export type Container = {
   dataSource: DataSource;
   redis: Redis;
   healthChecks: HealthChecks;
+  identity: IdentityDeps;
   close(): Promise<void>;
 };
 
-export async function createContainer(config: Config): Promise<Container> {
+export type ContainerOptions = {
+  /** Tests pass a FixedClock to control "now". */
+  clock?: Clock;
+};
+
+export async function createContainer(
+  config: Config,
+  options: ContainerOptions = {},
+): Promise<Container> {
+  const clock = options.clock ?? systemClock;
   const dataSource = createDataSource(config.databaseUrl);
   await dataSource.initialize();
   const redis = new Redis(config.redisUrl, { maxRetriesPerRequest: 1 });
 
+  const identity: IdentityDeps = {
+    users: new TypeOrmUserRepository(dataSource.manager),
+    refreshTokens: new TypeOrmRefreshTokenRepository(dataSource.manager),
+    hasher: new Argon2PasswordHasher(),
+    accessTokens: new JoseAccessTokens(config.jwtSecret, config.accessTokenTtlSeconds, clock),
+    secrets: nodeSecrets,
+    clock,
+    refreshTokenTtlDays: config.refreshTokenTtlDays,
+  };
+
   return {
     config,
-    clock: systemClock,
+    clock,
     dataSource,
     redis,
     healthChecks: {
       postgres: () => dataSource.query('SELECT 1'),
       redis: () => redis.ping(),
     },
+    identity,
     async close() {
       redis.disconnect();
       await dataSource.destroy();
