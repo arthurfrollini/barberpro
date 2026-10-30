@@ -50,7 +50,11 @@ export function shopsGraphQL(deps: ShopsDeps, publicUrl: string): GraphQLModule 
           limit: args.limit ?? 20,
           offset: args.offset ?? 0,
         }),
-      barber: (_, { id }) => deps.barbers.findById(id),
+      // a removed barber keeps its row for history but is no longer public
+      barber: async (_, { id }) => {
+        const barber = await deps.barbers.findById(id);
+        return barber?.isActive ? barber : null;
+      },
       myBarbershop: (_, __, ctx) => deps.shops.findByOwner(requireUser(ctx)),
       myBarberProfile: (_, __, ctx) => deps.barbers.findActiveByUser(requireUser(ctx)),
     },

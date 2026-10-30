@@ -1,5 +1,6 @@
 import type { EntityManager } from 'typeorm';
 import type { FileRepository, StoredFile } from '../../application/files.js';
+import { isUuid } from '../../domain/uuid.js';
 import { FileRecord } from './file.record.js';
 
 export class TypeOrmFileRepository implements FileRepository {
@@ -10,6 +11,7 @@ export class TypeOrmFileRepository implements FileRepository {
   }
 
   async findById(id: string): Promise<StoredFile | null> {
+    if (!isUuid(id)) return null;
     const r = await this.manager.findOneBy(FileRecord, { id });
     return r
       ? {

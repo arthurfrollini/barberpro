@@ -190,3 +190,54 @@ describe('shops over GraphQL', () => {
     query.mockRestore();
   });
 });
+
+describe('shops review fixes', () => {
+  let t: TestApp;
+  const mailer = new FakeMailer();
+  beforeAll(async () => {
+    t = await createTestApp(undefined, { mailer });
+  });
+  beforeEach(() => truncateAll(t.container.dataSource));
+  afterAll(() => t.close());
+
+  const token = async (email: string) =>
+    (
+      await gql(
+        t.app,
+        'mutation ($input: SignUpInput!) { signUp(input: $input) { accessToken } }',
+        { input: { name: email, email, password: 'correct horse' } },
+      )
+    ).data!.signUp.accessToken as string;
+
+  it('answers FILE_NOT_FOUND for a malformed file id', async () => {
+    const owner = await token('owner@x.com');
+
+    const res = await gql(
+      t.app,
+      `mutation { createBarbershop(input: { name: "Mega", foundedYear: 2010, address: "Rua 1",
+        latitude: -23.56, longitude: -46.65, logoFileId: "abc" }) { id } }`,
+      {},
+      owner,
+    );
+
+    expect(errorCode(res)).toBe('FILE_NOT_FOUND');
+  });
+
+  it('hides a removed barber from the public barber query', async () => {
+    const owner = await token('owner@x.com');
+    await gql(
+      t.app,
+      `mutation { createBarbershop(input: { name: "Mega", foundedYear: 2010, address: "Rua 1",
+        latitude: -23.56, longitude: -46.65 }) { id } }`,
+      {},
+      owner,
+    );
+    const id = (await gql(t.app, 'mutation { becomeBarber { id } }', {}, owner)).data!.becomeBarber
+      .id;
+    await gql(t.app, 'mutation ($id: ID!) { removeBarber(id: $id) { id } }', { id }, owner);
+
+    const res = await gql(t.app, 'query ($id: ID!) { barber(id: $id) { id } }', { id });
+
+    expect(res.data!.barber).toBeNull();
+  });
+});
