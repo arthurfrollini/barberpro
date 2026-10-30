@@ -7,6 +7,9 @@ import { Argon2PasswordHasher } from './modules/identity/adapters/security/argon
 import { JoseAccessTokens } from './modules/identity/adapters/security/jose-access-tokens.js';
 import { nodeSecrets } from './modules/identity/adapters/security/node-secrets.js';
 import type { IdentityDeps } from './modules/identity/application/ports.js';
+import { TypeOrmNotificationRepository } from './modules/notifications/adapters/persistence/typeorm-notification-repository.js';
+import { handleSchedulingEvents } from './modules/notifications/application/handle-events.js';
+import type { NotifyDeps } from './modules/notifications/application/ports.js';
 import { shopsRepositories } from './modules/shops/adapters/persistence/repositories.js';
 import { schedulingRepositories } from './modules/scheduling/adapters/persistence/repositories.js';
 import type { SchedulingDeps, SchedulingEvents } from './modules/scheduling/application/ports.js';
@@ -15,7 +18,12 @@ import type { Mailer, ShopsDeps } from './modules/shops/application/ports.js';
 import { createDataSource } from './shared/adapters/database/data-source.js';
 import { detectImageType } from './shared/adapters/files/detect-image-type.js';
 import { DiskFileStorage } from './shared/adapters/files/disk-file-storage.js';
-import { SmtpMailer } from './shared/adapters/mail/smtp-mailer.js';
+import { logSafeError } from './shared/adapters/log-safe-error.js';
+import {
+  BullMqMailQueue,
+  BullMqReminders,
+  createQueueConnection,
+} from './shared/adapters/queue/bullmq.js';
 import { TypeOrmFileRepository } from './shared/adapters/files/typeorm-file-repository.js';
 import type { HealthChecks } from './shared/adapters/http/health.js';
 import { type Clock, systemClock } from './shared/application/clock.js';
@@ -35,6 +43,7 @@ export type Container = {
   files: FileDeps;
   shops: ShopsDeps;
   scheduling: SchedulingDeps;
+  notifications: NotifyDeps;
   close(): Promise<void>;
 };
 
@@ -45,6 +54,8 @@ export type ContainerOptions = {
   mailer?: Mailer;
   /** Tests pass a recorder to see what scheduling published. */
   events?: SchedulingEvents;
+  /** Where failures to notify are reported; they never fail the request. */
+  logError?: (error: unknown) => void;
 };
 
 export async function createContainer(
@@ -55,6 +66,9 @@ export async function createContainer(
   const dataSource = createDataSource(config.databaseUrl);
   await dataSource.initialize();
   const redis = new Redis(config.redisUrl, { maxRetriesPerRequest: 1 });
+  const queueConnection = createQueueConnection(config.redisUrl);
+  const mailQueue = new BullMqMailQueue(queueConnection, config.queuePrefix);
+  const reminders = new BullMqReminders(queueConnection, config.queuePrefix, clock);
 
   const identityRepositories = (manager: EntityManager) => ({
     users: new TypeOrmUserRepository(manager),
@@ -82,7 +96,8 @@ export async function createContainer(
     transaction: (work) => dataSource.transaction((manager) => work(shopsRepositories(manager))),
     files: files.files,
     users: identity.users,
-    mailer: options.mailer ?? new SmtpMailer(config.smtpUrl, config.mailFrom),
+    // invites go through the same mail queue the worker drains
+    mailer: options.mailer ?? mailQueue,
     secrets: nodeSecrets,
     clock,
     // rule 7: the removal and the cancellations share one transaction
@@ -107,9 +122,34 @@ export async function createContainer(
       shop: (id) => shops.shops.findById(id),
       service: (id) => shops.services.findById(id),
     },
-    // phase 4 plugs notifications and the live agenda in here
-    events: options.events ?? { publish: async () => {} },
+    events: options.events ?? {
+      publish: (events) => handleSchedulingEvents(notifications, events),
+    },
     clock,
+  };
+
+  const notifications: NotifyDeps = {
+    notifications: new TypeOrmNotificationRepository(dataSource.manager),
+    mailQueue,
+    reminders,
+    agenda: { publish: async () => {} },
+    people: {
+      user: async (id) => {
+        const user = await identity.users.findById(id);
+        return user ? { name: user.name, email: user.email.value } : null;
+      },
+      barber: async (barberId) => {
+        const barber = await shops.barbers.findById(barberId);
+        const shop = barber ? await shops.shops.findById(barber.shopId) : null;
+        return barber && shop ? { userId: barber.userId, timezone: shop.timezone } : null;
+      },
+    },
+    appointments: { findById: (id) => scheduling.appointments.findById(id) },
+    clock,
+    logError:
+      options.logError ??
+      ((error) =>
+        console.error(JSON.stringify({ msg: 'notification failed', error: logSafeError(error) }))),
   };
 
   return {
@@ -125,7 +165,10 @@ export async function createContainer(
     files,
     shops,
     scheduling,
+    notifications,
     async close() {
+      await Promise.all([mailQueue.close(), reminders.close()]);
+      queueConnection.disconnect();
       redis.disconnect();
       await dataSource.destroy();
     },
