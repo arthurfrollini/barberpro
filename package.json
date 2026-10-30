@@ -28,7 +28,9 @@
   },
   "dependencies": {
     "@fastify/multipart": "^10.1.6",
+    "@graphql-yoga/redis-event-target": "^4.0.0",
     "argon2": "^0.45.1",
+    "bullmq": "^6.5.2",
     "dataloader": "^2.2.3",
     "fastify": "^5.12.7",
     "graphql": "^17.0.2",
