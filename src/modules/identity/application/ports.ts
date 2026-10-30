@@ -18,7 +18,11 @@ export type StoredRefreshToken = {
 
 export interface RefreshTokenRepository {
   create(token: Omit<StoredRefreshToken, 'revokedAt'>): Promise<void>;
-  findByHash(tokenHash: string): Promise<StoredRefreshToken | null>;
+  /** `forUpdate` locks the row until the surrounding transaction ends. */
+  findByHash(
+    tokenHash: string,
+    options?: { forUpdate?: boolean },
+  ): Promise<StoredRefreshToken | null>;
   /** Revokes the token only if it is still active; false means someone used it first. */
   revoke(id: string, at: Date): Promise<boolean>;
   revokeAllForUser(userId: string, at: Date): Promise<void>;
@@ -41,6 +45,11 @@ export interface Secrets {
   hash(raw: string): string;
 }
 
+export type IdentityRepositories = {
+  users: UserRepository;
+  refreshTokens: RefreshTokenRepository;
+};
+
 export type IdentityDeps = {
   users: UserRepository;
   refreshTokens: RefreshTokenRepository;
@@ -49,6 +58,8 @@ export type IdentityDeps = {
   secrets: Secrets;
   clock: Clock;
   refreshTokenTtlDays: number;
+  /** Runs `work` in one database transaction, with repositories bound to it. */
+  transaction<T>(work: (repos: IdentityRepositories) => Promise<T>): Promise<T>;
 };
 
 export type Session = {

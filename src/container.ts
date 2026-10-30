@@ -1,5 +1,5 @@
 import { Redis } from 'ioredis';
-import type { DataSource } from 'typeorm';
+import type { DataSource, EntityManager } from 'typeorm';
 import type { Config } from './config.js';
 import { TypeOrmRefreshTokenRepository } from './modules/identity/adapters/persistence/typeorm-refresh-token-repository.js';
 import { TypeOrmUserRepository } from './modules/identity/adapters/persistence/typeorm-user-repository.js';
@@ -39,9 +39,13 @@ export async function createContainer(
   await dataSource.initialize();
   const redis = new Redis(config.redisUrl, { maxRetriesPerRequest: 1 });
 
+  const identityRepositories = (manager: EntityManager) => ({
+    users: new TypeOrmUserRepository(manager),
+    refreshTokens: new TypeOrmRefreshTokenRepository(manager),
+  });
   const identity: IdentityDeps = {
-    users: new TypeOrmUserRepository(dataSource.manager),
-    refreshTokens: new TypeOrmRefreshTokenRepository(dataSource.manager),
+    ...identityRepositories(dataSource.manager),
+    transaction: (work) => dataSource.transaction((manager) => work(identityRepositories(manager))),
     hasher: new Argon2PasswordHasher(),
     accessTokens: new JoseAccessTokens(config.jwtSecret, config.accessTokenTtlSeconds, clock),
     secrets: nodeSecrets,

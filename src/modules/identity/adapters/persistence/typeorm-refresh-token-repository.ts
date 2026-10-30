@@ -9,8 +9,14 @@ export class TypeOrmRefreshTokenRepository implements RefreshTokenRepository {
     await this.manager.insert(RefreshTokenRecord, { ...token, revokedAt: null });
   }
 
-  async findByHash(tokenHash: string): Promise<StoredRefreshToken | null> {
-    const r = await this.manager.findOneBy(RefreshTokenRecord, { tokenHash });
+  async findByHash(
+    tokenHash: string,
+    options: { forUpdate?: boolean } = {},
+  ): Promise<StoredRefreshToken | null> {
+    const r = await this.manager.findOne(RefreshTokenRecord, {
+      where: { tokenHash },
+      ...(options.forUpdate ? { lock: { mode: 'pessimistic_write' as const } } : {}),
+    });
     return r
       ? {
           id: r.id,

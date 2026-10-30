@@ -2,6 +2,7 @@ import type { Clock } from '../../../shared/application/clock.js';
 import type {
   AccessTokens,
   IdentityDeps,
+  IdentityRepositories,
   PasswordHasher,
   RefreshTokenRepository,
   Secrets,
@@ -80,9 +81,14 @@ export function fakeSecrets(): Secrets {
 }
 
 export function inMemoryIdentityDeps(clock: Clock) {
+  const users = new InMemoryUserRepository();
+  const refreshTokens = new InMemoryRefreshTokenRepository();
   return {
-    users: new InMemoryUserRepository(),
-    refreshTokens: new InMemoryRefreshTokenRepository(),
+    users,
+    refreshTokens,
+    // single-threaded and in memory: running the work directly is already atomic enough
+    transaction: <T>(work: (repos: IdentityRepositories) => Promise<T>) =>
+      work({ users, refreshTokens }),
     hasher: fakeHasher,
     accessTokens: fakeAccessTokens(clock),
     secrets: fakeSecrets(),
