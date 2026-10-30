@@ -5,7 +5,7 @@
 ```
   app (celular) / dashboard (web)
             │  HTTP: POST /graphql, GET /health, POST /uploads, GET /files/:id
-            ▼                         SSE/WebSocket: subscription agendaChanged
+            ▼                         SSE: subscription agendaChanged
 ┌──────────────────────── API (Fastify + GraphQL Yoga) ────────────────────────┐
 │ adapters de entrada: resolvers GraphQL, rotas REST                            │
 │        │                                                                      │
