@@ -19,6 +19,12 @@ export class InMemoryUserRepository implements UserRepository {
     const user = this.rows.get(id);
     return user ? User.restore({ ...snapshot(user) }) : null;
   }
+  async findByIds(ids: readonly string[]) {
+    return ids.flatMap((id) => {
+      const user = this.rows.get(id);
+      return user ? [User.restore(snapshot(user))] : [];
+    });
+  }
   async findByEmail(email: Email) {
     const user = [...this.rows.values()].find((u) => u.email.equals(email));
     return user ? User.restore({ ...snapshot(user) }) : null;

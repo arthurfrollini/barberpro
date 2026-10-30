@@ -1,6 +1,7 @@
 import { type EntityManager, In, IsNull } from 'typeorm';
 import { isUniqueViolation } from '../../../../shared/adapters/database/unique-violation.js';
 import { DomainError } from '../../../../shared/domain/domain-error.js';
+import { isUuid } from '../../../../shared/domain/uuid.js';
 import type { Email } from '../../../identity/domain/email.js';
 import type {
   BarberRepository,
@@ -36,13 +37,15 @@ export class TypeOrmBarbershopRepository implements BarbershopRepository {
   constructor(private readonly manager: EntityManager) {}
 
   async findById(id: string) {
+    if (!isUuid(id)) return null;
     const r = await this.manager.findOneBy(BarbershopRecord, { id });
     return r ? barbershopMapper.toDomain(r) : null;
   }
 
   async findByIds(ids: readonly string[]) {
-    if (ids.length === 0) return [];
-    const rows = await this.manager.findBy(BarbershopRecord, { id: In([...ids]) });
+    const valid = ids.filter(isUuid);
+    if (valid.length === 0) return [];
+    const rows = await this.manager.findBy(BarbershopRecord, { id: In(valid) });
     return rows.map(barbershopMapper.toDomain);
   }
 
@@ -95,15 +98,15 @@ export class TypeOrmBarberRepository implements BarberRepository {
   constructor(private readonly manager: EntityManager) {}
 
   async findById(id: string) {
+    if (!isUuid(id)) return null;
     const r = await this.manager.findOneBy(BarberRecord, { id });
     return r ? barberMapper.toDomain(r) : null;
   }
 
   async findByIds(ids: readonly string[]) {
-    if (ids.length === 0) return [];
-    return (await this.manager.findBy(BarberRecord, { id: In([...ids]) })).map(
-      barberMapper.toDomain,
-    );
+    const valid = ids.filter(isUuid);
+    if (valid.length === 0) return [];
+    return (await this.manager.findBy(BarberRecord, { id: In(valid) })).map(barberMapper.toDomain);
   }
 
   async findActiveByUser(userId: string) {
@@ -133,6 +136,7 @@ export class TypeOrmInviteRepository implements InviteRepository {
   constructor(private readonly manager: EntityManager) {}
 
   async findById(id: string) {
+    if (!isUuid(id)) return null;
     const r = await this.manager.findOneBy(InviteRecord, { id });
     return r ? inviteMapper.toDomain(r) : null;
   }
@@ -173,6 +177,7 @@ export class TypeOrmServiceRepository implements ServiceRepository {
   constructor(private readonly manager: EntityManager) {}
 
   async findById(id: string) {
+    if (!isUuid(id)) return null;
     const r = await this.manager.findOneBy(ServiceRecord, { id });
     return r ? serviceMapper.toDomain(r) : null;
   }

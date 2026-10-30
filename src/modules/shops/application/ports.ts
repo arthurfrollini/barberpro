@@ -8,16 +8,14 @@ import type { Invite } from '../domain/invite.js';
 import type { Location } from '../domain/location.js';
 import type { Service } from '../domain/service.js';
 
+export type NearbyShop = { shop: Barbershop; distanceKm: number };
+
 export interface BarbershopRepository {
   findById(id: string): Promise<Barbershop | null>;
   findByIds(ids: readonly string[]): Promise<Barbershop[]>;
   findByOwner(ownerId: string): Promise<Barbershop | null>;
   /** Nearest first, only shops within `radiusKm`. */
-  findNearby(
-    from: Location,
-    radiusKm: number,
-    limit: number,
-  ): Promise<{ shop: Barbershop; distanceKm: number }[]>;
+  findNearby(from: Location, radiusKm: number, limit: number): Promise<NearbyShop[]>;
   /** Fuzzy match on the name (typos and partial words), best match first. */
   search(query: string, limit: number, offset: number): Promise<Barbershop[]>;
   save(shop: Barbershop): Promise<void>;

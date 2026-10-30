@@ -17,6 +17,11 @@ const config: CodegenConfig = {
         mappers: {
           User: '../../../../modules/identity/domain/user.js#User',
           AuthPayload: '../../../../modules/identity/application/ports.js#Session',
+          Barbershop: '../../../../modules/shops/domain/barbershop.js#Barbershop',
+          NearbyBarbershop: '../../../../modules/shops/application/ports.js#NearbyShop',
+          Barber: '../../../../modules/shops/domain/barber.js#Barber',
+          Service: '../../../../modules/shops/domain/service.js#Service',
+          Invite: '../../../../modules/shops/domain/invite.js#Invite',
         },
       },
     },

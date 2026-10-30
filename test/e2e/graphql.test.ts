@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import type { GraphQLContext } from '../../src/shared/adapters/graphql/context.js';
 import { createGraphQLServer, type GraphQLModule } from '../../src/shared/adapters/graphql/yoga.js';
 import { DomainError } from '../../src/shared/domain/domain-error.js';
 import { createTestApp, type TestApp } from '../support/app.js';
@@ -40,7 +41,7 @@ describe('GraphQL error mapping', () => {
         } as GraphQLModule['resolvers'],
       },
     ],
-    context: async () => ({ currentUserId: null }),
+    context: async () => ({ currentUserId: null, loaders: {} as GraphQLContext['loaders'] }),
     logError: (error) => logged.push(error),
   });
 

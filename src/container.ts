@@ -7,9 +7,12 @@ import { Argon2PasswordHasher } from './modules/identity/adapters/security/argon
 import { JoseAccessTokens } from './modules/identity/adapters/security/jose-access-tokens.js';
 import { nodeSecrets } from './modules/identity/adapters/security/node-secrets.js';
 import type { IdentityDeps } from './modules/identity/application/ports.js';
+import { shopsRepositories } from './modules/shops/adapters/persistence/repositories.js';
+import type { Mailer, ShopsDeps } from './modules/shops/application/ports.js';
 import { createDataSource } from './shared/adapters/database/data-source.js';
 import { detectImageType } from './shared/adapters/files/detect-image-type.js';
 import { DiskFileStorage } from './shared/adapters/files/disk-file-storage.js';
+import { SmtpMailer } from './shared/adapters/mail/smtp-mailer.js';
 import { TypeOrmFileRepository } from './shared/adapters/files/typeorm-file-repository.js';
 import type { HealthChecks } from './shared/adapters/http/health.js';
 import { type Clock, systemClock } from './shared/application/clock.js';
@@ -27,12 +30,15 @@ export type Container = {
   healthChecks: HealthChecks;
   identity: IdentityDeps;
   files: FileDeps;
+  shops: ShopsDeps;
   close(): Promise<void>;
 };
 
 export type ContainerOptions = {
   /** Tests pass a FixedClock to control "now". */
   clock?: Clock;
+  /** Tests pass a fake to read the emails the API sends. */
+  mailer?: Mailer;
 };
 
 export async function createContainer(
@@ -65,6 +71,15 @@ export async function createContainer(
     detectType: detectImageType,
   };
 
+  const shops: ShopsDeps = {
+    ...shopsRepositories(dataSource.manager),
+    files: files.files,
+    users: identity.users,
+    mailer: options.mailer ?? new SmtpMailer(config.smtpUrl, config.mailFrom),
+    secrets: nodeSecrets,
+    clock,
+  };
+
   return {
     config,
     clock,
@@ -76,6 +91,7 @@ export async function createContainer(
     },
     identity,
     files,
+    shops,
     async close() {
       redis.disconnect();
       await dataSource.destroy();

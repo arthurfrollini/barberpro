@@ -1,0 +1,146 @@
+"A shop's public page. Booking rules live with each barber, not here."
+type Barbershop {
+  id: ID!
+  name: String!
+  description: String!
+  foundedYear: Int!
+  "Years since the shop was founded."
+  yearsActive: Int!
+  logoUrl: String
+  address: String!
+  latitude: Float!
+  longitude: Float!
+  "IANA time zone; weekly schedules are in this zone."
+  timezone: String!
+  "Active barbers, oldest first."
+  barbers: [Barber!]!
+  "Owner only. Errors: NOT_SHOP_OWNER."
+  invites: [Invite!]!
+}
+
+type NearbyBarbershop {
+  barbershop: Barbershop!
+  distanceKm: Float!
+}
+
+type Barber {
+  id: ID!
+  name: String!
+  bio: String!
+  avatarUrl: String
+  barbershop: Barbershop!
+  "Services that can be booked (archived ones are left out)."
+  services: [Service!]!
+}
+
+type Service {
+  id: ID!
+  name: String!
+  description: String!
+  "Price in cents of BRL: 5000 is R$ 50,00."
+  priceCents: Int!
+  durationMinutes: Int!
+  archived: Boolean!
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+type Invite {
+  id: ID!
+  email: String!
+  status: InviteStatus!
+  expiresAt: DateTime!
+  createdAt: DateTime!
+}
+
+input CreateBarbershopInput {
+  name: String!
+  description: String = ""
+  foundedYear: Int!
+  "Id returned by POST /uploads."
+  logoFileId: ID
+  address: String!
+  latitude: Float!
+  longitude: Float!
+  timezone: String = "America/Sao_Paulo"
+}
+
+input UpdateBarbershopInput {
+  name: String
+  description: String
+  foundedYear: Int
+  "null removes the logo."
+  logoFileId: ID
+  address: String
+  latitude: Float
+  longitude: Float
+  timezone: String
+}
+
+input UpdateBarberProfileInput {
+  bio: String
+  "Id returned by POST /uploads; null removes the photo."
+  avatarFileId: ID
+}
+
+input CreateServiceInput {
+  name: String!
+  description: String = ""
+  priceCents: Int!
+  "5 to 480, in steps of 5."
+  durationMinutes: Int!
+}
+
+input UpdateServiceInput {
+  name: String
+  description: String
+  priceCents: Int
+  durationMinutes: Int
+}
+
+type Query {
+  "null when no shop has this id."
+  barbershop(id: ID!): Barbershop
+  "Nearest first. radiusKm up to 50, limit up to 50. Errors: INVALID_RADIUS, INVALID_LOCATION."
+  barbershopsNearby(
+    latitude: Float!
+    longitude: Float!
+    radiusKm: Float = 10
+    limit: Int = 20
+  ): [NearbyBarbershop!]!
+  "Matches names with typos. Errors: INVALID_SEARCH (fewer than 2 characters)."
+  searchBarbershops(query: String!, limit: Int = 20, offset: Int = 0): [Barbershop!]!
+  barber(id: ID!): Barber
+  "The shop the signed-in user owns, if any."
+  myBarbershop: Barbershop
+  "The signed-in user's barber profile, if they barber somewhere."
+  myBarberProfile: Barber
+}
+
+type Mutation {
+  "Errors: SHOP_ALREADY_OWNED, FILE_NOT_FOUND, INVALID_* for each field."
+  createBarbershop(input: CreateBarbershopInput!): Barbershop!
+  "Edits the shop the signed-in user owns. Errors: NOT_SHOP_OWNER."
+  updateBarbershop(input: UpdateBarbershopInput!): Barbershop!
+  "Emails a 7-day invite. Errors: NOT_SHOP_OWNER, ALREADY_A_BARBER, INVITE_ALREADY_SENT."
+  inviteBarber(email: String!): Invite!
+  revokeInvite(id: ID!): Invite!
+  "token is the code from the invite email. Errors: INVITE_NOT_FOUND, INVITE_EXPIRED, INVITE_EMAIL_MISMATCH, ALREADY_A_BARBER."
+  acceptInvite(token: String!): Barber!
+  "The owner joins their own shop as a barber."
+  becomeBarber: Barber!
+  "Errors: NOT_SHOP_OWNER, BARBER_NOT_FOUND."
+  removeBarber(id: ID!): Barber!
+  "Errors: NOT_A_BARBER."
+  updateBarberProfile(input: UpdateBarberProfileInput!): Barber!
+  "Errors: NOT_A_BARBER, INVALID_PRICE, INVALID_DURATION."
+  createService(input: CreateServiceInput!): Service!
+  "Errors: SERVICE_NOT_FOUND, NOT_SERVICE_OWNER."
+  updateService(id: ID!, input: UpdateServiceInput!): Service!
+  archiveService(id: ID!): Service!
+}
