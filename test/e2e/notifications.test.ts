@@ -37,7 +37,8 @@ describe('notifications and the live agenda', () => {
       {},
       token,
     );
-    const barberId = (await gql(t.app, 'mutation { becomeBarber { id } }', {}, token)).data!.becomeBarber.id;
+    const barberId = (await gql(t.app, 'mutation { becomeBarber { id } }', {}, token)).data!
+      .becomeBarber.id;
     const serviceId = (
       await gql(
         t.app,
@@ -59,11 +60,14 @@ describe('notifications and the live agenda', () => {
     gql(
       t.app,
       'mutation ($input: BookAppointmentInput!) { bookAppointment(input: $input) { id } }',
-      { input: { barberId: b.barberId, serviceId: b.serviceId, startsAt, reminderLeadMinutes: 15 } },
+      {
+        input: { barberId: b.barberId, serviceId: b.serviceId, startsAt, reminderLeadMinutes: 15 },
+      },
       token,
     );
 
-  const NOTIFICATIONS = '{ notifications { id type title body read appointment { id } } unreadNotificationCount }';
+  const NOTIFICATIONS =
+    '{ notifications { id type title body read appointment { id } } unreadNotificationCount }';
 
   it('tells the barber about a booking and the customer about a cancellation', async () => {
     const joao = await barber('Joao');
@@ -82,10 +86,17 @@ describe('notifications and the live agenda', () => {
       }),
     ]);
 
-    await gql(t.app, 'mutation ($id: ID!) { cancelAppointment(id: $id) { id } }', { id }, joao.token);
+    await gql(
+      t.app,
+      'mutation ($id: ID!) { cancelAppointment(id: $id) { id } }',
+      { id },
+      joao.token,
+    );
 
     const forAna = (await gql(t.app, NOTIFICATIONS, {}, ana)).data!;
-    expect(forAna.notifications.map((n: { type: string }) => n.type)).toEqual(['APPOINTMENT_CANCELED']);
+    expect(forAna.notifications.map((n: { type: string }) => n.type)).toEqual([
+      'APPOINTMENT_CANCELED',
+    ]);
   });
 
   it('marks a notification read for its owner only', async () => {
@@ -102,7 +113,12 @@ describe('notifications and the live agenda', () => {
     );
     expect(errorCode(stranger)).toBe('NOTIFICATION_NOT_FOUND');
 
-    await gql(t.app, 'mutation ($id: ID!) { markNotificationRead(id: $id) }', { id: note.id }, joao.token);
+    await gql(
+      t.app,
+      'mutation ($id: ID!) { markNotificationRead(id: $id) }',
+      { id: note.id },
+      joao.token,
+    );
     expect((await gql(t.app, NOTIFICATIONS, {}, joao.token)).data!.unreadNotificationCount).toBe(0);
   });
 
