@@ -17,6 +17,6 @@ Uma API GraphQL de agendamento de barbearia: o cliente acha barbearias perto del
 
 ## Números (fase 1, outubro de 2026)
 
-- 53 testes: 34 unitários, 6 de integração, 13 end to end.
+- 58 testes: 36 unitários, 6 de integração, 16 end to end.
 - 1 módulo completo (`identity`), 4 ADRs, 1 migration.
 - Fases: 1 esqueleto + login (feito), 2 barbearias, 3 agenda, 4 notificações. Depois, a dashboard do barbeiro.

@@ -3,7 +3,7 @@ import { Email } from '../domain/email.js';
 import { issueSession } from './issue-session.js';
 import type { IdentityDeps, Session } from './ports.js';
 
-// one error for both cases, so the API does not reveal which emails have an account
+// one error for both cases, so the message alone does not tell which emails have an account
 const invalid = () => new DomainError('INVALID_CREDENTIALS', 'Email or password is incorrect.');
 
 export async function signIn(
