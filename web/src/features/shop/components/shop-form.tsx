@@ -37,6 +37,7 @@ export function ShopForm({ shop, onCreated }: { shop?: ShopFields; onCreated?: (
   });
   const { errors, isDirty, isSubmitting } = form.formState;
   const [locating, setLocating] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const zones =
     shop && !TIME_ZONES.some((z) => z.value === shop.timezone)
@@ -99,6 +100,7 @@ export function ShopForm({ shop, onCreated }: { shop?: ShopFields; onCreated?: (
             shape="square"
             url={field.value.url}
             onChange={(next) => field.onChange(next)}
+            onUploadingChange={setUploading}
           />
         )}
       />
@@ -186,7 +188,7 @@ export function ShopForm({ shop, onCreated }: { shop?: ShopFields; onCreated?: (
       </FormField>
 
       <div>
-        <Button type="submit" disabled={(shop && !isDirty) || isSubmitting}>
+        <Button type="submit" disabled={(shop && !isDirty) || uploading || isSubmitting}>
           {shop ? 'Salvar' : 'Criar barbearia'}
         </Button>
       </div>
