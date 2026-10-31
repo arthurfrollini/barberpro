@@ -16,6 +16,7 @@ const apiEnv = {
   PUBLIC_URL: API_URL,
   QUEUE_PREFIX: 'barberpro-web-e2e',
   UPLOAD_DIR: 'uploads/web-e2e',
+  DASHBOARD_URL: `http://localhost:${WEB_PORT}`,
 };
 
 export default defineConfig({
@@ -40,6 +41,16 @@ export default defineConfig({
       env: apiEnv,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
+    },
+    {
+      // sends the queued email (invites) to Mailpit
+      name: 'worker',
+      cwd: '..',
+      command: 'npx tsx src/worker.ts',
+      wait: { stdout: /worker started/ },
+      env: apiEnv,
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
     },
     {
       name: 'web',
