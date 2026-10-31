@@ -20,6 +20,7 @@ Material de estudo do BarberPro (API e dashboard): como o sistema funciona, por 
 11. [Arquitetura do front](Frontend-Arquitetura.md): features, hooks e chamadas separadas, GraphQL sem Apollo, sessão entre abas, rotas por papel.
 12. [Testes no front](Testes-no-Front.md): Vitest, Testing Library, MSW e Playwright contra a API real.
 13. [Agenda no front](Agenda-no-Front.md): fuso horário, linha do tempo, cache depois de mutations, regra das 2 horas, SSE e notificações.
+14. [Formulários](Formularios.md): React Hook Form com zod, transformações, listas dinâmicas, só o que mudou.
 
 ## Em uma frase
 
