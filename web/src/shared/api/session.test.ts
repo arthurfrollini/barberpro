@@ -113,4 +113,23 @@ describe('session store', () => {
     store.clear();
     expect(seen).toEqual(['a', null, 'b']);
   });
+
+  it('remembers whether the last sign-out was on purpose', async () => {
+    const { store, refresh } = setup({ stored: session('a', 0) });
+    expect(store.signedOutOnPurpose()).toBe(false);
+    refresh.mockRejectedValueOnce(new ApiError('INVALID_REFRESH_TOKEN', 'nope'));
+    await store.accessToken();
+    expect(store.signedOutOnPurpose()).toBe(false);
+    store.set(session('b', 900));
+    store.clear({ onPurpose: true });
+    expect(store.signedOutOnPurpose()).toBe(true);
+    store.set(session('c', 900));
+    expect(store.signedOutOnPurpose()).toBe(false);
+    // another tab signing out counts as on purpose
+    localStorage.removeItem(SESSION_KEY);
+    const stop = store.subscribe(() => {});
+    window.dispatchEvent(new StorageEvent('storage', { key: SESSION_KEY }));
+    stop();
+    expect(store.signedOutOnPurpose()).toBe(true);
+  });
 });

@@ -53,6 +53,8 @@ describe('navigation', () => {
     await user.click(await screen.findByRole('menuitem', { name: 'Sair' }));
     expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/entrar');
+    // signing out on purpose is not an interruption: no page to come back to
+    expect(router.state.location.search).toBe('');
     expect(session.get()).toBeNull();
   });
 });

@@ -31,6 +31,9 @@ export function createSessionStore(options: {
   const { storage, refresh, lock = browserLock, now = Date.now } = options;
   const listeners = new Set<(session: Session | null) => void>();
   let inflight: Promise<string | null> | null = null;
+  // whether the session ended because someone signed out (here or in another tab), as
+  // opposed to expiring: an interrupted user is sent back to their page after signing in
+  let onPurpose = false;
 
   const read = (): Session | null => {
     try {
@@ -48,19 +51,24 @@ export function createSessionStore(options: {
   };
   const fresh = (session: Session) => Date.parse(session.accessTokenExpiresAt) - now() > MARGIN_MS;
   const onStorage = (event: StorageEvent) => {
-    if (event.key === SESSION_KEY || event.key === null) notify();
+    if (event.key !== SESSION_KEY && event.key !== null) return;
+    onPurpose = read() === null;
+    notify();
   };
 
   const store = {
     get: read,
     set(session: Session) {
+      onPurpose = false;
       storage.setItem(SESSION_KEY, JSON.stringify(session));
       notify();
     },
-    clear() {
+    clear({ onPurpose: deliberate = false }: { onPurpose?: boolean } = {}) {
+      onPurpose = deliberate;
       storage.removeItem(SESSION_KEY);
       notify();
     },
+    signedOutOnPurpose: () => onPurpose,
     subscribe(listener: (session: Session | null) => void) {
       if (listeners.size === 0) window.addEventListener('storage', onStorage);
       listeners.add(listener);

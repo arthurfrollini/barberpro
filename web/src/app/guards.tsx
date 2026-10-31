@@ -2,13 +2,17 @@ import type { ReactNode } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router';
 import { useIsSignedIn } from '@/features/auth/hooks/use-auth';
 import { landingPath, useRoles } from '@/features/roles/hooks/use-roles';
+import { session } from '@/shared/api';
 import { ErrorState, PageSkeleton } from '@/shared/ui/states';
 
 export function RequireAuth() {
   const signedIn = useIsSignedIn();
   const { pathname, search } = useLocation();
   if (!signedIn) {
-    return <Navigate to={`/entrar?voltar=${encodeURIComponent(pathname + search)}`} replace />;
+    const back = session.signedOutOnPurpose()
+      ? ''
+      : `?voltar=${encodeURIComponent(pathname + search)}`;
+    return <Navigate to={`/entrar${back}`} replace />;
   }
   return <Outlet />;
 }

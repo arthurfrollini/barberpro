@@ -44,7 +44,7 @@ export function useSignOut() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   return useCallback(() => {
-    session.clear();
+    session.clear({ onPurpose: true });
     queryClient.clear();
     navigate('/entrar', { replace: true });
   }, [navigate, queryClient]);
