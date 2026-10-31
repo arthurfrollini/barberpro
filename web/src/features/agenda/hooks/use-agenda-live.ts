@@ -1,0 +1,42 @@
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { toast } from 'sonner';
+import { formatShortDateTime } from '@/shared/lib/time';
+import { watchAgenda, type AgendaChange, type AgendaWatcher } from '../api/live';
+import { agendaKeys } from './use-agenda';
+
+function describe(change: AgendaChange, timeZone: string): string {
+  const { customer, startsAt } = change.appointment;
+  const when = formatShortDateTime(startsAt, timeZone);
+  switch (change.type) {
+    case 'BOOKED':
+      return `Novo agendamento: ${customer.name}, ${when}`;
+    case 'CANCELED':
+      return `Agendamento cancelado: ${customer.name}, ${when}`;
+    case 'RESCHEDULED':
+      return `${customer.name} remarcou para ${when}`;
+  }
+}
+
+/**
+ * Keeps the agenda current while it is open: each change refetches the agenda and the
+ * notifications (the server is the source of truth, the event only says "look again") and
+ * shows what happened. After a dropped connection it refetches once, without toasts for
+ * whatever happened while offline.
+ */
+export function useAgendaLive(timeZone: string, watch: AgendaWatcher = watchAgenda) {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const refresh = () => {
+      void queryClient.invalidateQueries({ queryKey: agendaKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    };
+    return watch({
+      next: (change) => {
+        refresh();
+        toast(describe(change, timeZone));
+      },
+      reconnected: refresh,
+    });
+  }, [queryClient, timeZone, watch]);
+}

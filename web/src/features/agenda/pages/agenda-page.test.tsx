@@ -9,6 +9,9 @@ import { server } from '@/test/server';
 import type { AgendaAppointment } from '../api/agenda';
 
 const NOW = new Date('2026-11-02T12:00:00Z'); // Monday 09:00 in São Paulo
+// the live stream is covered by use-agenda-live.test.tsx and the Playwright test
+vi.mock('../hooks/use-agenda-live', () => ({ useAgendaLive: () => {} }));
+
 const MONDAY_HOURS = [{ weekday: 1, startTime: '08:00', endTime: '20:00' }];
 
 function mockApi(days: Record<string, AgendaAppointment[]>, blockedDates: string[] = []) {

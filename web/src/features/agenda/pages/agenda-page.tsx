@@ -10,12 +10,14 @@ import { AppointmentSheet } from '../components/appointment-sheet';
 import { DayToolbar } from '../components/day-toolbar';
 import { Timeline } from '../components/timeline';
 import { useAgenda, useMySchedule } from '../hooks/use-agenda';
+import { useAgendaLive } from '../hooks/use-agenda-live';
 import { appointmentsCount, capitalize } from '../lib/labels';
 
 export function AgendaPage() {
   const roles = useRoles();
   // RequireRole('barber') guarantees a shop here
   const timeZone = currentShop(roles.data!)!.timezone;
+  useAgendaLive(timeZone);
   const now = useNow();
   const today = todayIn(timeZone, now);
   const [search, setSearch] = useSearchParams();

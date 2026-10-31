@@ -21,6 +21,7 @@ type Documents = {
     "\n  mutation CancelAppointment($id: ID!) {\n    cancelAppointment(id: $id) {\n      ...AgendaAppointment\n    }\n  }\n": typeof types.CancelAppointmentDocument,
     "\n  mutation RescheduleAppointment($id: ID!, $startsAt: DateTime!) {\n    rescheduleAppointment(id: $id, startsAt: $startsAt) {\n      ...AgendaAppointment\n    }\n  }\n": typeof types.RescheduleAppointmentDocument,
     "\n  query RescheduleSlots($id: ID!, $date: String!) {\n    rescheduleSlots(appointmentId: $id, date: $date)\n  }\n": typeof types.RescheduleSlotsDocument,
+    "\n  subscription AgendaChanged {\n    agendaChanged {\n      type\n      previousStartsAt\n      appointment {\n        ...AgendaAppointment\n      }\n    }\n  }\n": typeof types.AgendaChangedDocument,
     "\n  mutation SignIn($input: SignInInput!) {\n    signIn(input: $input) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n      user {\n        id\n        name\n        email\n      }\n    }\n  }\n": typeof types.SignInDocument,
     "\n  mutation SignUp($input: SignUpInput!) {\n    signUp(input: $input) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n      user {\n        id\n        name\n        email\n      }\n    }\n  }\n": typeof types.SignUpDocument,
     "\n  query Me {\n    me {\n      id\n      name\n      email\n    }\n  }\n": typeof types.MeDocument,
@@ -34,6 +35,7 @@ const documents: Documents = {
     "\n  mutation CancelAppointment($id: ID!) {\n    cancelAppointment(id: $id) {\n      ...AgendaAppointment\n    }\n  }\n": types.CancelAppointmentDocument,
     "\n  mutation RescheduleAppointment($id: ID!, $startsAt: DateTime!) {\n    rescheduleAppointment(id: $id, startsAt: $startsAt) {\n      ...AgendaAppointment\n    }\n  }\n": types.RescheduleAppointmentDocument,
     "\n  query RescheduleSlots($id: ID!, $date: String!) {\n    rescheduleSlots(appointmentId: $id, date: $date)\n  }\n": types.RescheduleSlotsDocument,
+    "\n  subscription AgendaChanged {\n    agendaChanged {\n      type\n      previousStartsAt\n      appointment {\n        ...AgendaAppointment\n      }\n    }\n  }\n": types.AgendaChangedDocument,
     "\n  mutation SignIn($input: SignInInput!) {\n    signIn(input: $input) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n      user {\n        id\n        name\n        email\n      }\n    }\n  }\n": types.SignInDocument,
     "\n  mutation SignUp($input: SignUpInput!) {\n    signUp(input: $input) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n      user {\n        id\n        name\n        email\n      }\n    }\n  }\n": types.SignUpDocument,
     "\n  query Me {\n    me {\n      id\n      name\n      email\n    }\n  }\n": types.MeDocument,
@@ -65,6 +67,10 @@ export function graphql(source: "\n  mutation RescheduleAppointment($id: ID!, $s
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query RescheduleSlots($id: ID!, $date: String!) {\n    rescheduleSlots(appointmentId: $id, date: $date)\n  }\n"): typeof import('./graphql').RescheduleSlotsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  subscription AgendaChanged {\n    agendaChanged {\n      type\n      previousStartsAt\n      appointment {\n        ...AgendaAppointment\n      }\n    }\n  }\n"): typeof import('./graphql').AgendaChangedDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

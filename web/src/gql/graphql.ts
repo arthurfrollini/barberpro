@@ -4,6 +4,11 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 /** Internal type. DO NOT USE DIRECTLY. */
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 import type { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
+export type AgendaChangeType =
+  | 'BOOKED'
+  | 'CANCELED'
+  | 'RESCHEDULED';
+
 export type AppointmentStatus =
   | 'BOOKED'
   | 'CANCELED';
@@ -63,6 +68,11 @@ export type RescheduleSlotsQueryVariables = Exact<{
 
 
 export type RescheduleSlotsQuery = { rescheduleSlots: Array<string> };
+
+export type AgendaChangedSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AgendaChangedSubscription = { agendaChanged: { type: AgendaChangeType, previousStartsAt: string | null, appointment: { id: string, startsAt: string, endsAt: string, status: AppointmentStatus, serviceName: string, priceCents: number, durationMinutes: number, reminderLeadMinutes: number | null, cancelReason: CancelReason | null, canceledAt: string | null, customer: { id: string, name: string } } } };
 
 export type SignInMutationVariables = Exact<{
   input: SignInInput;
@@ -214,6 +224,32 @@ export const RescheduleSlotsDocument = new TypedDocumentString(`
   rescheduleSlots(appointmentId: $id, date: $date)
 }
     `) as unknown as TypedDocumentString<RescheduleSlotsQuery, RescheduleSlotsQueryVariables>;
+export const AgendaChangedDocument = new TypedDocumentString(`
+    subscription AgendaChanged {
+  agendaChanged {
+    type
+    previousStartsAt
+    appointment {
+      ...AgendaAppointment
+    }
+  }
+}
+    fragment AgendaAppointment on Appointment {
+  id
+  startsAt
+  endsAt
+  status
+  serviceName
+  priceCents
+  durationMinutes
+  reminderLeadMinutes
+  cancelReason
+  canceledAt
+  customer {
+    id
+    name
+  }
+}`) as unknown as TypedDocumentString<AgendaChangedSubscription, AgendaChangedSubscriptionVariables>;
 export const SignInDocument = new TypedDocumentString(`
     mutation SignIn($input: SignInInput!) {
   signIn(input: $input) {
