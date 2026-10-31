@@ -31,21 +31,27 @@ export const routes: RouteObject[] = [
             element: <AppLayout />,
             children: [
               {
-                element: <RequireRole role="barber" />,
+                // a crash inside a page keeps the navigation around it
+                errorElement: <RouteError inline />,
                 children: [
-                  { path: '/agenda', element: <AgendaPage /> },
-                  { path: '/horarios', element: <SchedulePage /> },
-                  { path: '/servicos', element: <ServicesPage /> },
+                  {
+                    element: <RequireRole role="barber" />,
+                    children: [
+                      { path: '/agenda', element: <AgendaPage /> },
+                      { path: '/horarios', element: <SchedulePage /> },
+                      { path: '/servicos', element: <ServicesPage /> },
+                    ],
+                  },
+                  {
+                    element: <RequireRole role="owner" />,
+                    children: [{ path: '/equipe', element: <PlaceholderPage title="Equipe" /> }],
+                  },
+                  // an owner edits the shop here; anyone else creates one from "Começar"
+                  { path: '/barbearia', element: <PlaceholderPage title="Barbearia" /> },
+                  { path: '/perfil', element: <ProfilePage /> },
+                  { path: '/comecar', element: <PlaceholderPage title="Começar" /> },
                 ],
               },
-              {
-                element: <RequireRole role="owner" />,
-                children: [{ path: '/equipe', element: <PlaceholderPage title="Equipe" /> }],
-              },
-              // an owner edits the shop here; anyone else creates one from "Começar"
-              { path: '/barbearia', element: <PlaceholderPage title="Barbearia" /> },
-              { path: '/perfil', element: <ProfilePage /> },
-              { path: '/comecar', element: <PlaceholderPage title="Começar" /> },
             ],
           },
         ],
