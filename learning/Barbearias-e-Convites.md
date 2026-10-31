@@ -38,7 +38,7 @@ LIMIT :limit
 
 ## Fluxo do convite
 
-1. O dono chama `inviteBarber(email)`. A API gera um código aleatório, guarda **só o hash** e manda o email ("You were invited to join Mega Barbearia SP") com o código.
+1. O dono chama `inviteBarber(email)`. A API gera um código aleatório, guarda **só o hash** e manda o email ("You were invited to join Mega Barbearia SP") com o código e um link para a dashboard (`DASHBOARD_URL/convite?codigo=...`), que já abre com o código preenchido.
 2. O convidado cria conta (ou entra) **com aquele email** e chama `acceptInvite(token)`.
 3. A API confere: o convite existe, não foi usado nem revogado, não passou de 7 dias, o email de quem está logado é o do convite, e a pessoa não é barbeira ativa em nenhum lugar. Aí cria a linha em `barbers`.
 

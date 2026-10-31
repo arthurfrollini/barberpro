@@ -54,7 +54,7 @@ Cada fase teve uma revisão independente do branch inteiro. Os achados que virar
 Eu travaria a linha do barbeiro desde o primeiro desenho da agenda. A exclusion constraint resolve sobreposição, mas não "o dia acabou de ser bloqueado", e isso só apareceu na revisão.
 
 **Próximo passo?**
-A dashboard web do barbeiro (agenda do dia ao vivo, horários, serviços, convites) e depois o app do cliente com push no lugar do email.
+O app do cliente (busca, reserva, lembretes), com push no lugar do email. A API e a dashboard já cobrem o lado da barbearia.
 
 **Por que a dashboard não usa Apollo?**
 O cache que importa é por tela, não por entidade. TanStack Query com chaves simples resolve, e o codegen tipa cada operação como string, sem runtime GraphQL no navegador. Menos coisa para explicar e para carregar.
