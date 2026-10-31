@@ -1,4 +1,5 @@
 import type { RouteObject } from 'react-router';
+import { AgendaPage } from '@/features/agenda/pages/agenda-page';
 import { SignInPage } from '@/features/auth/pages/sign-in-page';
 import { SignUpPage } from '@/features/auth/pages/sign-up-page';
 import { Landing, RedirectIfSignedIn, RequireAuth, RequireRole } from './guards';
@@ -24,7 +25,7 @@ export const routes: RouteObject[] = [
           {
             element: <RequireRole role="barber" />,
             children: [
-              { path: '/agenda', element: <PlaceholderPage title="Agenda" /> },
+              { path: '/agenda', element: <AgendaPage /> },
               { path: '/horarios', element: <PlaceholderPage title="Horários" /> },
               { path: '/servicos', element: <PlaceholderPage title="Serviços" /> },
             ],

@@ -56,3 +56,30 @@ const longDate = new Intl.DateTimeFormat('pt-BR', {
 export function formatLongDate(date: string): string {
   return longDate.format(utcDate(date));
 }
+
+/** The local date ("YYYY-MM-DD") of an instant in a zone. */
+export function localDateOf(iso: string, timeZone: string): string {
+  return isoDate(timeZone).format(new Date(iso));
+}
+
+const shortParts = (timeZone: string) =>
+  new Intl.DateTimeFormat('pt-BR', {
+    timeZone,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'numeric',
+  });
+
+/** "seg 2/11 às 14:00": compact enough for a toast. */
+export function formatShortDateTime(iso: string, timeZone: string): string {
+  const parts = shortParts(timeZone).formatToParts(new Date(iso));
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  const weekday = get('weekday').replace('.', '');
+  return `${weekday} ${Number(get('day'))}/${Number(get('month'))} às ${formatTime(iso, timeZone)}`;
+}
+
+/** A real calendar date in "YYYY-MM-DD" form (rejects 2026-02-30). */
+export function isIsoDate(value: string | null | undefined): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  return addDays(value, 0) === value;
+}
