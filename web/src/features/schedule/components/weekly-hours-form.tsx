@@ -26,6 +26,11 @@ function DayRow({ form, index, onCopy }: { form: Form; index: number; onCopy: ()
     name: `days.${index}.intervals`,
   });
   const errors = form.formState.errors.days?.[index]?.intervals;
+  // a message about two intervals (overlap) must go once either of them is fixed, not only
+  // when the field it sits on changes
+  const recheckDay = () => {
+    if (form.formState.isSubmitted) void form.trigger(`days.${index}.intervals`);
+  };
 
   return (
     <div
@@ -65,7 +70,9 @@ function DayRow({ form, index, onCopy }: { form: Form; index: number; onCopy: ()
                     inputMode="numeric"
                     placeholder="09:00"
                     className="w-24 tabular-nums"
-                    {...form.register(`days.${index}.intervals.${j}.start`)}
+                    {...form.register(`days.${index}.intervals.${j}.start`, {
+                      onChange: recheckDay,
+                    })}
                   />
                   <span className="text-muted-foreground">às</span>
                   <Input
@@ -74,13 +81,13 @@ function DayRow({ form, index, onCopy }: { form: Form; index: number; onCopy: ()
                     inputMode="numeric"
                     placeholder="18:00"
                     className="w-24 tabular-nums"
-                    {...form.register(`days.${index}.intervals.${j}.end`)}
+                    {...form.register(`days.${index}.intervals.${j}.end`, { onChange: recheckDay })}
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    aria-label="Remover intervalo"
+                    aria-label={`Remover ${label.toLowerCase()}`}
                     onClick={() => remove(j)}
                   >
                     <X />
@@ -133,15 +140,21 @@ export function WeeklyHoursForm({
 
   const copyFrom = (source: number) => {
     const intervals = form.getValues(`days.${source}.intervals`);
-    form.getValues('days').forEach((day, target) => {
-      if (target !== source && day.working) {
-        form.setValue(
-          `days.${target}.intervals`,
-          intervals.map((i) => ({ ...i })),
-          { shouldDirty: true },
-        );
-      }
-    });
+    const targets = form
+      .getValues('days')
+      .map((day, index) => ({ day, index }))
+      .filter(({ day, index }) => index !== source && day.working);
+    if (targets.length === 0) {
+      toast.info('Ligue os outros dias de trabalho primeiro; eles recebem estes horários.');
+      return;
+    }
+    for (const { index } of targets) {
+      form.setValue(
+        `days.${index}.intervals`,
+        intervals.map((i) => ({ ...i })),
+        { shouldDirty: true, shouldValidate: form.formState.isSubmitted },
+      );
+    }
   };
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -174,7 +187,12 @@ export function WeeklyHoursForm({
           </Button>
         </div>
       </div>
-      <CanceledDialog appointments={canceled} timeZone={timeZone} onClose={() => setCanceled([])} />
+      <CanceledDialog
+        appointments={canceled}
+        timeZone={timeZone}
+        reason="Ficaram fora dos novos horários."
+        onClose={() => setCanceled([])}
+      />
     </form>
   );
 }

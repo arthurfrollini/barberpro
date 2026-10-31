@@ -72,8 +72,9 @@ describe('days off', () => {
     expect(confirm).toHaveTextContent('Bloquear quinta-feira, 5 de novembro?');
     await user.click(within(confirm).getByRole('button', { name: 'Bloquear dia' }));
 
-    expect(calls).toEqual(['block 2026-11-05']);
     const dialog = await screen.findByRole('dialog', { name: '1 agendamento cancelado' });
+    expect(calls).toEqual(['block 2026-11-05']);
+    expect(dialog).toHaveTextContent('Eram do dia bloqueado.');
     expect(within(dialog).getByText('Ana, Corte, qui 5/11 às 14:00')).toBeInTheDocument();
   });
 

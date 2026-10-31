@@ -40,7 +40,9 @@ export function DaysOff({ schedule, timeZone }: { schedule: MySchedule; timeZone
   const upcoming = schedule.blockedDates.filter((d) => d >= today).sort();
   const error = block.error ?? unblock.error;
 
-  const confirmBlock = () =>
+  // one error on screen at a time: the latest action's
+  const confirmBlock = () => {
+    unblock.reset();
     block.mutate(date, {
       onSuccess: (result) => {
         toast.success(
@@ -52,6 +54,7 @@ export function DaysOff({ schedule, timeZone }: { schedule: MySchedule; timeZone
         setDate('');
       },
     });
+  };
 
   return (
     <section aria-labelledby="days-off-title" className="flex flex-col gap-4">
@@ -74,9 +77,10 @@ export function DaysOff({ schedule, timeZone }: { schedule: MySchedule; timeZone
                 size="sm"
                 aria-label={`Desbloquear ${longDate(day)}`}
                 disabled={unblock.isPending}
-                onClick={() =>
-                  unblock.mutate(day, { onSuccess: () => toast.success('Dia desbloqueado') })
-                }
+                onClick={() => {
+                  block.reset();
+                  unblock.mutate(day, { onSuccess: () => toast.success('Dia desbloqueado') });
+                }}
               >
                 Desbloquear
               </Button>
@@ -122,7 +126,12 @@ export function DaysOff({ schedule, timeZone }: { schedule: MySchedule; timeZone
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <CanceledDialog appointments={canceled} timeZone={timeZone} onClose={() => setCanceled([])} />
+      <CanceledDialog
+        appointments={canceled}
+        timeZone={timeZone}
+        reason="Eram do dia bloqueado."
+        onClose={() => setCanceled([])}
+      />
     </section>
   );
 }

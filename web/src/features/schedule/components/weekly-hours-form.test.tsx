@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { routes } from '@/app/routes';
 import { appointment } from '@/test/agenda-fixtures';
@@ -87,6 +87,30 @@ describe('weekly hours', () => {
       await within(monday).findByText('Os intervalos de segunda se sobrepõem'),
     ).toBeInTheDocument();
     expect(sent).toEqual([]);
+
+    // fixing the other interval clears the message without saving again
+    const firstEnd = within(monday).getByRole('textbox', { name: 'Segunda, intervalo 1, fim' });
+    await user.clear(firstEnd);
+    await user.type(firstEnd, '17:00');
+    await waitFor(() =>
+      expect(within(monday).queryByText('Os intervalos de segunda se sobrepõem')).toBeNull(),
+    );
+  });
+
+  it('says when there is no other working day to copy to', async () => {
+    const { user } = setup(NINE_TO_SIX([1]));
+    const monday = await day('Segunda');
+    await user.click(
+      within(monday).getByRole('button', {
+        name: 'Usar estes horários em todos os dias de trabalho',
+      }),
+    );
+    expect(
+      await screen.findByText(
+        'Ligue os outros dias de trabalho primeiro; eles recebem estes horários.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Salvar horários' })).toBeDisabled();
   });
 
   it('lists the appointments the new hours canceled', async () => {

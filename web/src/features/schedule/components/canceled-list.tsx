@@ -14,10 +14,13 @@ import type { AgendaAppointment } from '@/features/agenda/api/agenda';
 export function CanceledDialog({
   appointments,
   timeZone,
+  reason,
   onClose,
 }: {
   appointments: AgendaAppointment[];
   timeZone: string;
+  /** Why they were canceled, in one sentence. */
+  reason: string;
   onClose: () => void;
 }) {
   const count = appointments.length;
@@ -29,7 +32,7 @@ export function CanceledDialog({
             {count === 1 ? '1 agendamento cancelado' : `${count} agendamentos cancelados`}
           </DialogTitle>
           <DialogDescription>
-            Ficaram fora dos novos horários. Os clientes foram avisados por email e no app.
+            {reason} Os clientes foram avisados por email e no app.
           </DialogDescription>
         </DialogHeader>
         <ul className="flex flex-col gap-2 text-sm">
