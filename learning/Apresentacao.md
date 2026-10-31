@@ -10,6 +10,17 @@
 6. **Regras:** tentar reservar o mesmo horário com outra conta dá `SLOT_UNAVAILABLE`. `blockDate` cancela os horários a 2 horas ou mais e devolve quais foram cancelados.
 7. **Código:** `availability.ts` (uma função para listar e validar), a migration com `EXCLUDE USING gist` e o teste de corrida em `races.test.ts`.
 
+## Roteiro da dashboard (5 minutos)
+
+1. **`docker compose up`** e http://localhost:5180. Criar conta: cai em **Começar**.
+2. **Tenho uma barbearia:** preencher o formulário e "Usar minha localização". Cai em **Barbearia**; clicar "Atender também" e mostrar a navegação ganhando Agenda, Horários e Serviços.
+3. **Horários:** ligar segunda a sábado; quebrar um dia em dois intervalos e mostrar o erro de sobreposição com o nome do dia. Salvar. Bloquear um dia.
+4. **Serviços:** criar "Corte" por R$ 45, 30 min.
+5. **Equipe:** convidar um email, abrir o Mailpit, clicar no link em outra janela anônima, criar conta, o código já vem preenchido, aceitar.
+6. **Agenda ao vivo:** `npm run seed:demo` em `web/` cria um barbeiro com agendamentos. Entrar com ele, deixar a agenda aberta e reservar pela API (GraphiQL) com outra conta: o bloco aparece, o toast e o sino também, sem recarregar.
+7. **Cancelar e remarcar** pelo painel lateral; mostrar os botões travados a menos de 2 horas e o motivo.
+8. **Código:** `features/agenda/lib/timeline.ts` (funções puras com teste), `shared/api/session.ts` (refresh com Web Lock entre abas), `shared/api/subscriptions.ts` (stream que se reabre) e um teste do Playwright.
+
 ## Perguntas prováveis
 
 **Por que GraphQL aqui, se seus outros projetos são REST?**
@@ -44,3 +55,9 @@ Eu travaria a linha do barbeiro desde o primeiro desenho da agenda. A exclusion 
 
 **Próximo passo?**
 A dashboard web do barbeiro (agenda do dia ao vivo, horários, serviços, convites) e depois o app do cliente com push no lugar do email.
+
+**Por que a dashboard não usa Apollo?**
+O cache que importa é por tela, não por entidade. TanStack Query com chaves simples resolve, e o codegen tipa cada operação como string, sem runtime GraphQL no navegador. Menos coisa para explicar e para carregar.
+
+**Como você garante que front e API não quebram um ao outro?**
+A dashboard lê os `.graphql` da API no codegen. Uma mudança no schema que quebra uma operação falha o `typecheck` da dashboard no mesmo PR. E o Playwright roda contra a API de verdade no CI.

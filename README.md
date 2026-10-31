@@ -19,7 +19,7 @@ This is a rewrite of a 2021 Express project (kept under the [`v2021`](https://gi
 | Web 1 | Dashboard skeleton: sign in and up, session, role-based navigation       | done  |
 | Web 2 | Agenda: day timeline, cancel, reschedule, live updates, notifications    | done  |
 | Web 3 | Barber setup: weekly hours, days off, services, profile                  | done  |
-| Web 4 | Owner: shop page, team, invites                                          | next  |
+| Web 4 | Owner: getting started, shop page, team, invites                         | done  |
 
 The design is in [`docs/superpowers/specs`](docs/superpowers/specs/2026-10-30-barberpro-api-design.md) and each phase has its plan in [`docs/superpowers/plans`](docs/superpowers/plans).
 
@@ -102,7 +102,7 @@ Anyone can browse, without a token:
 }
 ```
 
-An owner creates the shop and invites barbers by email; the invite email carries a code for `acceptInvite`. Logos and avatars go to `POST /uploads` (multipart, JPEG/PNG/WebP up to 2 MB), which returns the id to pass as `logoFileId` or `avatarFileId`.
+An owner creates the shop and invites barbers by email; the invite email links to the dashboard (`DASHBOARD_URL/convite?codigo=...`) and also carries the code for `acceptInvite`. Logos and avatars go to `POST /uploads` (multipart, JPEG/PNG/WebP up to 2 MB), which returns the id to pass as `logoFileId` or `avatarFileId`.
 
 Booking takes one of the times `availableSlots` returns (every 15 minutes, in UTC):
 
@@ -153,6 +153,14 @@ Errors carry a stable code in `extensions.code` (`EMAIL_TAKEN`, `INVALID_CREDENT
 ## Dashboard
 
 `web/` is a React single-page app for barbers and owners, in Portuguese. It reads the API's SDL files to type every operation, so a schema change that breaks it fails CI in the same PR ([ADR 5](docs/adr/0005-dashboard-in-the-same-repo.md)).
+
+What it does:
+
+- **Agenda:** the barber's day on a timeline in the shop's time zone. Cancel or move a booking (within the 2-hour rule), and see new bookings arrive live over SSE.
+- **Horários, Serviços, Perfil:** weekly hours with breaks, days off, services with price and length, photo and bio.
+- **Barbearia, Equipe:** the shop page with logo and location, invites by email (the link opens the dashboard with the code filled in), and removing barbers.
+- **Começar:** a new user creates their shop or accepts an invite.
+- A notification bell, and every screen in Portuguese.
 
 - Vite, React 19, React Router, TanStack Query, React Hook Form with zod, Tailwind and shadcn/ui (Radix)
 - GraphQL Code Generator's client preset: typed string documents and a small `fetch` client, no Apollo
