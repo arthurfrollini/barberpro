@@ -20,6 +20,14 @@ export type CancelReason =
   | 'DAY_BLOCKED'
   | 'SCHEDULE_CHANGED';
 
+export type CreateServiceInput = {
+  description?: string | null | undefined;
+  /** 5 to 480, in steps of 5. */
+  durationMinutes: number;
+  name: string;
+  priceCents: number;
+};
+
 export type NotificationType =
   | 'APPOINTMENT_BOOKED'
   | 'APPOINTMENT_CANCELED'
@@ -36,6 +44,13 @@ export type SignUpInput = {
   name: string;
   /** 8 to 128 characters. */
   password: string;
+};
+
+export type UpdateServiceInput = {
+  description?: string | null | undefined;
+  durationMinutes?: number | null | undefined;
+  name?: string | null | undefined;
+  priceCents?: number | null | undefined;
 };
 
 export type WeeklyIntervalInput = {
@@ -152,6 +167,35 @@ export type UnblockDateMutationVariables = Exact<{
 
 export type UnblockDateMutation = { unblockDate: boolean };
 
+export type ServiceFieldsFragment = { id: string, name: string, description: string, priceCents: number, durationMinutes: number, archived: boolean };
+
+export type MyServicesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyServicesQuery = { myBarberProfile: { id: string, services: Array<{ id: string, name: string, description: string, priceCents: number, durationMinutes: number, archived: boolean }> } | null };
+
+export type CreateServiceMutationVariables = Exact<{
+  input: CreateServiceInput;
+}>;
+
+
+export type CreateServiceMutation = { createService: { id: string, name: string, description: string, priceCents: number, durationMinutes: number, archived: boolean } };
+
+export type UpdateServiceMutationVariables = Exact<{
+  id: string | number;
+  input: UpdateServiceInput;
+}>;
+
+
+export type UpdateServiceMutation = { updateService: { id: string, name: string, description: string, priceCents: number, durationMinutes: number, archived: boolean } };
+
+export type ArchiveServiceMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type ArchiveServiceMutation = { archiveService: { id: string, name: string, description: string, priceCents: number, durationMinutes: number, archived: boolean } };
+
 export type RefreshTokenMutationVariables = Exact<{
   token: string;
 }>;
@@ -195,6 +239,16 @@ export const AgendaAppointmentFragmentDoc = new TypedDocumentString(`
   }
 }
     `, {"fragmentName":"AgendaAppointment"}) as unknown as TypedDocumentString<AgendaAppointmentFragment, unknown>;
+export const ServiceFieldsFragmentDoc = new TypedDocumentString(`
+    fragment ServiceFields on Service {
+  id
+  name
+  description
+  priceCents
+  durationMinutes
+  archived
+}
+    `, {"fragmentName":"ServiceFields"}) as unknown as TypedDocumentString<ServiceFieldsFragment, unknown>;
 export const BarberAgendaDocument = new TypedDocumentString(`
     query BarberAgenda($date: String!) {
   barberAgenda(date: $date) {
@@ -454,6 +508,65 @@ export const UnblockDateDocument = new TypedDocumentString(`
   unblockDate(date: $date)
 }
     `) as unknown as TypedDocumentString<UnblockDateMutation, UnblockDateMutationVariables>;
+export const MyServicesDocument = new TypedDocumentString(`
+    query MyServices {
+  myBarberProfile {
+    id
+    services {
+      ...ServiceFields
+    }
+  }
+}
+    fragment ServiceFields on Service {
+  id
+  name
+  description
+  priceCents
+  durationMinutes
+  archived
+}`) as unknown as TypedDocumentString<MyServicesQuery, MyServicesQueryVariables>;
+export const CreateServiceDocument = new TypedDocumentString(`
+    mutation CreateService($input: CreateServiceInput!) {
+  createService(input: $input) {
+    ...ServiceFields
+  }
+}
+    fragment ServiceFields on Service {
+  id
+  name
+  description
+  priceCents
+  durationMinutes
+  archived
+}`) as unknown as TypedDocumentString<CreateServiceMutation, CreateServiceMutationVariables>;
+export const UpdateServiceDocument = new TypedDocumentString(`
+    mutation UpdateService($id: ID!, $input: UpdateServiceInput!) {
+  updateService(id: $id, input: $input) {
+    ...ServiceFields
+  }
+}
+    fragment ServiceFields on Service {
+  id
+  name
+  description
+  priceCents
+  durationMinutes
+  archived
+}`) as unknown as TypedDocumentString<UpdateServiceMutation, UpdateServiceMutationVariables>;
+export const ArchiveServiceDocument = new TypedDocumentString(`
+    mutation ArchiveService($id: ID!) {
+  archiveService(id: $id) {
+    ...ServiceFields
+  }
+}
+    fragment ServiceFields on Service {
+  id
+  name
+  description
+  priceCents
+  durationMinutes
+  archived
+}`) as unknown as TypedDocumentString<ArchiveServiceMutation, ArchiveServiceMutationVariables>;
 export const RefreshTokenDocument = new TypedDocumentString(`
     mutation RefreshToken($token: String!) {
   refreshToken(token: $token) {

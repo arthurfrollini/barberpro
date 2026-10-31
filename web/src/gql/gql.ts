@@ -32,6 +32,11 @@ type Documents = {
     "\n  mutation SetWeeklySchedule($intervals: [WeeklyIntervalInput!]!) {\n    setWeeklySchedule(intervals: $intervals) {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      canceledAppointments {\n        ...AgendaAppointment\n      }\n    }\n  }\n": typeof types.SetWeeklyScheduleDocument,
     "\n  mutation BlockDate($date: String!) {\n    blockDate(date: $date) {\n      ...AgendaAppointment\n    }\n  }\n": typeof types.BlockDateDocument,
     "\n  mutation UnblockDate($date: String!) {\n    unblockDate(date: $date)\n  }\n": typeof types.UnblockDateDocument,
+    "\n  fragment ServiceFields on Service {\n    id\n    name\n    description\n    priceCents\n    durationMinutes\n    archived\n  }\n": typeof types.ServiceFieldsFragmentDoc,
+    "\n  query MyServices {\n    myBarberProfile {\n      id\n      services {\n        ...ServiceFields\n      }\n    }\n  }\n": typeof types.MyServicesDocument,
+    "\n  mutation CreateService($input: CreateServiceInput!) {\n    createService(input: $input) {\n      ...ServiceFields\n    }\n  }\n": typeof types.CreateServiceDocument,
+    "\n  mutation UpdateService($id: ID!, $input: UpdateServiceInput!) {\n    updateService(id: $id, input: $input) {\n      ...ServiceFields\n    }\n  }\n": typeof types.UpdateServiceDocument,
+    "\n  mutation ArchiveService($id: ID!) {\n    archiveService(id: $id) {\n      ...ServiceFields\n    }\n  }\n": typeof types.ArchiveServiceDocument,
     "\n  mutation RefreshToken($token: String!) {\n    refreshToken(token: $token) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n    }\n  }\n": typeof types.RefreshTokenDocument,
 };
 const documents: Documents = {
@@ -52,6 +57,11 @@ const documents: Documents = {
     "\n  mutation SetWeeklySchedule($intervals: [WeeklyIntervalInput!]!) {\n    setWeeklySchedule(intervals: $intervals) {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      canceledAppointments {\n        ...AgendaAppointment\n      }\n    }\n  }\n": types.SetWeeklyScheduleDocument,
     "\n  mutation BlockDate($date: String!) {\n    blockDate(date: $date) {\n      ...AgendaAppointment\n    }\n  }\n": types.BlockDateDocument,
     "\n  mutation UnblockDate($date: String!) {\n    unblockDate(date: $date)\n  }\n": types.UnblockDateDocument,
+    "\n  fragment ServiceFields on Service {\n    id\n    name\n    description\n    priceCents\n    durationMinutes\n    archived\n  }\n": types.ServiceFieldsFragmentDoc,
+    "\n  query MyServices {\n    myBarberProfile {\n      id\n      services {\n        ...ServiceFields\n      }\n    }\n  }\n": types.MyServicesDocument,
+    "\n  mutation CreateService($input: CreateServiceInput!) {\n    createService(input: $input) {\n      ...ServiceFields\n    }\n  }\n": types.CreateServiceDocument,
+    "\n  mutation UpdateService($id: ID!, $input: UpdateServiceInput!) {\n    updateService(id: $id, input: $input) {\n      ...ServiceFields\n    }\n  }\n": types.UpdateServiceDocument,
+    "\n  mutation ArchiveService($id: ID!) {\n    archiveService(id: $id) {\n      ...ServiceFields\n    }\n  }\n": types.ArchiveServiceDocument,
     "\n  mutation RefreshToken($token: String!) {\n    refreshToken(token: $token) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n    }\n  }\n": types.RefreshTokenDocument,
 };
 
@@ -123,6 +133,26 @@ export function graphql(source: "\n  mutation BlockDate($date: String!) {\n    b
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation UnblockDate($date: String!) {\n    unblockDate(date: $date)\n  }\n"): typeof import('./graphql').UnblockDateDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment ServiceFields on Service {\n    id\n    name\n    description\n    priceCents\n    durationMinutes\n    archived\n  }\n"): typeof import('./graphql').ServiceFieldsFragmentDoc;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query MyServices {\n    myBarberProfile {\n      id\n      services {\n        ...ServiceFields\n      }\n    }\n  }\n"): typeof import('./graphql').MyServicesDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation CreateService($input: CreateServiceInput!) {\n    createService(input: $input) {\n      ...ServiceFields\n    }\n  }\n"): typeof import('./graphql').CreateServiceDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation UpdateService($id: ID!, $input: UpdateServiceInput!) {\n    updateService(id: $id, input: $input) {\n      ...ServiceFields\n    }\n  }\n"): typeof import('./graphql').UpdateServiceDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ArchiveService($id: ID!) {\n    archiveService(id: $id) {\n      ...ServiceFields\n    }\n  }\n"): typeof import('./graphql').ArchiveServiceDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
