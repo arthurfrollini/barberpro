@@ -90,7 +90,6 @@ export function ShopForm({ shop, onCreated }: { shop?: ShopFields; onCreated?: (
       noValidate
       className="flex max-w-2xl flex-col gap-6"
     >
-      <FormError message={errors.root?.message} />
       <Controller
         control={form.control}
         name="logo"
@@ -187,6 +186,8 @@ export function ShopForm({ shop, onCreated }: { shop?: ShopFields; onCreated?: (
         )}
       </FormField>
 
+      {/* next to the button, so a long form on a phone still shows why the save failed */}
+      <FormError message={errors.root?.message} />
       <div>
         <Button type="submit" disabled={(shop && !isDirty) || uploading || isSubmitting}>
           {shop ? 'Salvar' : 'Criar barbearia'}

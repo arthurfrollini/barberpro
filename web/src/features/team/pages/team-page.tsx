@@ -3,6 +3,7 @@ import type { MyShop } from '@/features/shop/api/shop';
 import { useMyShop } from '@/features/shop/hooks/use-shop';
 import { useRoles } from '@/features/roles/hooks/use-roles';
 import { formatDayMonth, localDateOf } from '@/shared/lib/time';
+import { toastError } from '@/shared/ui/toast-error';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,7 +53,11 @@ function Barbers({ shop, myBarberId }: { shop: MyShop; myBarberId: string | unde
             {!me && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={remove.isPending && remove.variables === barber.id}
+                  >
                     Remover
                   </Button>
                 </AlertDialogTrigger>
@@ -71,6 +76,7 @@ function Barbers({ shop, myBarberId }: { shop: MyShop; myBarberId: string | unde
                       onClick={() =>
                         remove.mutate(barber.id, {
                           onSuccess: () => toast.success(`${barber.name} saiu da equipe`),
+                          onError: (error) => toastError(error),
                         })
                       }
                     >
@@ -113,7 +119,10 @@ function Invites({ shop }: { shop: MyShop }) {
                 size="sm"
                 disabled={revoke.isPending}
                 onClick={() =>
-                  revoke.mutate(invite.id, { onSuccess: () => toast.success('Convite revogado') })
+                  revoke.mutate(invite.id, {
+                    onSuccess: () => toast.success('Convite revogado'),
+                    onError: (error) => toastError(error),
+                  })
                 }
               >
                 Revogar

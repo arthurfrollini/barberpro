@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { routes } from '@/app/routes';
 import { BARBER, ME, SHOP } from '@/test/fixtures';
-import { api, gqlData } from '@/test/graphql';
+import { api, gqlData, gqlError } from '@/test/graphql';
 import { renderRoutes, signIn } from '@/test/render';
 import { server } from '@/test/server';
 
@@ -116,6 +116,13 @@ describe('shop page', () => {
     expect(await within(nav).findByRole('link', { name: 'Agenda' })).toBeInTheDocument();
     expect(calls).toEqual([{ op: 'becomeBarber', variables: {} }]);
     expect(screen.queryByRole('button', { name: 'Atender também' })).not.toBeInTheDocument();
+  });
+
+  it('says when joining as a barber fails', async () => {
+    const { user } = setup();
+    server.use(api.mutation('BecomeBarber', () => gqlError('ALREADY_A_BARBER')));
+    await user.click(await screen.findByRole('button', { name: 'Atender também' }));
+    expect(await screen.findByText('Você já atende em uma barbearia.')).toBeInTheDocument();
   });
 
   it('does not offer it to an owner who already barbers', async () => {

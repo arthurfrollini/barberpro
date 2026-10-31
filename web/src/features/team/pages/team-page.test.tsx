@@ -134,4 +134,27 @@ describe('team', () => {
     ).not.toBeInTheDocument();
     expect(calls).toEqual(['remove barber-2']);
   });
+
+  it('says when removing a barber fails', async () => {
+    const { user } = setup();
+    server.use(api.mutation('RemoveBarber', () => gqlError('BARBER_NOT_FOUND')));
+    const marcos = within(await barbersList()).getByRole('listitem', { name: 'Marcos' });
+    await user.click(within(marcos).getByRole('button', { name: 'Remover' }));
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Remover' }),
+    );
+    expect(await screen.findByText('Barbeiro não encontrado.')).toBeInTheDocument();
+  });
+
+  it('says when revoking fails', async () => {
+    const { user } = setup();
+    server.use(api.mutation('RevokeInvite', () => gqlError('INVITE_NOT_FOUND')));
+    await user.type(await screen.findByLabelText('Email do barbeiro'), 'novo@example.com');
+    await user.click(screen.getByRole('button', { name: 'Enviar convite' }));
+    const row = within(await invitesList()).getByRole('listitem', { name: 'novo@example.com' });
+    await user.click(within(row).getByRole('button', { name: 'Revogar' }));
+    expect(
+      await screen.findByText('Convite não encontrado. Confira o código.'),
+    ).toBeInTheDocument();
+  });
 });
