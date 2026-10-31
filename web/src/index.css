@@ -1,0 +1,91 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/archivo';
+@import '@fontsource-variable/roboto-slab';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * The logo's palette: plum-grey ground, one orange accent, warm off-white text.
+ * Dark only; the names follow shadcn so its components pick them up.
+ */
+:root {
+  --radius: 0.5rem;
+  --background: #312e38;
+  --foreground: #f4ede8;
+  --card: #3e3b47;
+  --card-foreground: #f4ede8;
+  --popover: #3e3b47;
+  --popover-foreground: #f4ede8;
+  --primary: #ff9000;
+  --primary-foreground: #312e38;
+  --secondary: #3e3b47;
+  --secondary-foreground: #f4ede8;
+  --muted: #28262e;
+  --muted-foreground: #999591;
+  --accent: #46424f;
+  --accent-foreground: #f4ede8;
+  --destructive: #e5484d;
+  --border: #4a4654;
+  --input: #232129;
+  --ring: #ff9000;
+  --sidebar: #28262e;
+  --sidebar-foreground: #f4ede8;
+  --sidebar-primary: #ff9000;
+  --sidebar-primary-foreground: #312e38;
+  --sidebar-accent: #3e3b47;
+  --sidebar-accent-foreground: #f4ede8;
+  --sidebar-border: #3e3b47;
+  --sidebar-ring: #ff9000;
+}
+
+@theme inline {
+  --font-sans: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Roboto Slab Variable', Georgia, serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) * 1.25);
+  --radius-xl: calc(var(--radius) * 1.75);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+  }
+}
