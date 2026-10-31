@@ -157,6 +157,13 @@ export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type MeQuery = { me: { id: string, name: string, email: string } };
 
+export type AcceptInviteMutationVariables = Exact<{
+  token: string;
+}>;
+
+
+export type AcceptInviteMutation = { acceptInvite: { id: string, barbershop: { name: string } } };
+
 export type UnreadNotificationCountQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -476,6 +483,16 @@ export const MeDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<MeQuery, MeQueryVariables>;
+export const AcceptInviteDocument = new TypedDocumentString(`
+    mutation AcceptInvite($token: String!) {
+  acceptInvite(token: $token) {
+    id
+    barbershop {
+      name
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AcceptInviteMutation, AcceptInviteMutationVariables>;
 export const UnreadNotificationCountDocument = new TypedDocumentString(`
     query UnreadNotificationCount {
   unreadNotificationCount

@@ -28,7 +28,8 @@ const MESSAGES: Record<string, string> = {
   EMAIL_NOT_SENT: 'Não foi possível enviar o email do convite. Tente de novo.',
   INVITE_NOT_FOUND: 'Convite não encontrado. Confira o código.',
   INVITE_EXPIRED: 'Este convite expirou. Peça um novo ao dono da barbearia.',
-  INVITE_EMAIL_MISMATCH: 'Este convite foi enviado para outro email.',
+  INVITE_EMAIL_MISMATCH:
+    'Este convite foi enviado para outro email. Entre com o email que recebeu o convite.',
   BARBER_NOT_FOUND: 'Barbeiro não encontrado.',
   NOT_A_BARBER: 'Você ainda não atende em nenhuma barbearia.',
   INVALID_BIO: 'A bio está longa demais.',

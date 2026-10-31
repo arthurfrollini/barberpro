@@ -4,6 +4,8 @@ import { ProfilePage } from '@/features/profile/pages/profile-page';
 import { ShopPage } from '@/features/shop/pages/shop-page';
 import { SchedulePage } from '@/features/schedule/pages/schedule-page';
 import { ServicesPage } from '@/features/services/pages/services-page';
+import { AcceptInvitePage } from '@/features/invites/pages/accept-invite-page';
+import { StartPage } from '@/features/onboarding/pages/start-page';
 import { SignInPage } from '@/features/auth/pages/sign-in-page';
 import { SignUpPage } from '@/features/auth/pages/sign-up-page';
 import { Landing, RedirectIfSignedIn, RequireAuth, RequireRole } from './guards';
@@ -51,7 +53,8 @@ export const routes: RouteObject[] = [
                     ],
                   },
                   { path: '/perfil', element: <ProfilePage /> },
-                  { path: '/comecar', element: <PlaceholderPage title="Começar" /> },
+                  { path: '/comecar', element: <StartPage /> },
+                  { path: '/convite', element: <AcceptInvitePage /> },
                 ],
               },
             ],
