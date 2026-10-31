@@ -38,6 +38,14 @@ export type SignUpInput = {
   password: string;
 };
 
+export type WeeklyIntervalInput = {
+  /** HH:MM, up to 24:00. */
+  endTime: string;
+  /** HH:MM, in steps of 5 minutes. */
+  startTime: string;
+  weekday: number;
+};
+
 export type AgendaAppointmentFragment = { id: string, startsAt: string, endsAt: string, status: AppointmentStatus, serviceName: string, priceCents: number, durationMinutes: number, reminderLeadMinutes: number | null, cancelReason: CancelReason | null, canceledAt: string | null, customer: { id: string, name: string } };
 
 export type BarberAgendaQueryVariables = Exact<{
@@ -46,11 +54,6 @@ export type BarberAgendaQueryVariables = Exact<{
 
 
 export type BarberAgendaQuery = { barberAgenda: Array<{ id: string, startsAt: string, endsAt: string, status: AppointmentStatus, serviceName: string, priceCents: number, durationMinutes: number, reminderLeadMinutes: number | null, cancelReason: CancelReason | null, canceledAt: string | null, customer: { id: string, name: string } }> };
-
-export type MyScheduleQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type MyScheduleQuery = { mySchedule: { blockedDates: Array<string>, weekly: Array<{ weekday: number, startTime: string, endTime: string }> } };
 
 export type CancelAppointmentMutationVariables = Exact<{
   id: string | number;
@@ -123,6 +126,32 @@ export type RolesQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type RolesQuery = { myBarberProfile: { id: string, name: string, avatarUrl: string | null, barbershop: { id: string, name: string, timezone: string, logoUrl: string | null } } | null, myBarbershop: { id: string, name: string, timezone: string, logoUrl: string | null } | null };
 
+export type MyScheduleQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyScheduleQuery = { mySchedule: { blockedDates: Array<string>, weekly: Array<{ weekday: number, startTime: string, endTime: string }> } };
+
+export type SetWeeklyScheduleMutationVariables = Exact<{
+  intervals: Array<WeeklyIntervalInput> | WeeklyIntervalInput;
+}>;
+
+
+export type SetWeeklyScheduleMutation = { setWeeklySchedule: { weekly: Array<{ weekday: number, startTime: string, endTime: string }>, canceledAppointments: Array<{ id: string, startsAt: string, endsAt: string, status: AppointmentStatus, serviceName: string, priceCents: number, durationMinutes: number, reminderLeadMinutes: number | null, cancelReason: CancelReason | null, canceledAt: string | null, customer: { id: string, name: string } }> } };
+
+export type BlockDateMutationVariables = Exact<{
+  date: string;
+}>;
+
+
+export type BlockDateMutation = { blockDate: Array<{ id: string, startsAt: string, endsAt: string, status: AppointmentStatus, serviceName: string, priceCents: number, durationMinutes: number, reminderLeadMinutes: number | null, cancelReason: CancelReason | null, canceledAt: string | null, customer: { id: string, name: string } }> };
+
+export type UnblockDateMutationVariables = Exact<{
+  date: string;
+}>;
+
+
+export type UnblockDateMutation = { unblockDate: boolean };
+
 export type RefreshTokenMutationVariables = Exact<{
   token: string;
 }>;
@@ -188,18 +217,6 @@ export const BarberAgendaDocument = new TypedDocumentString(`
     name
   }
 }`) as unknown as TypedDocumentString<BarberAgendaQuery, BarberAgendaQueryVariables>;
-export const MyScheduleDocument = new TypedDocumentString(`
-    query MySchedule {
-  mySchedule {
-    weekly {
-      weekday
-      startTime
-      endTime
-    }
-    blockedDates
-  }
-}
-    `) as unknown as TypedDocumentString<MyScheduleQuery, MyScheduleQueryVariables>;
 export const CancelAppointmentDocument = new TypedDocumentString(`
     mutation CancelAppointment($id: ID!) {
   cancelAppointment(id: $id) {
@@ -369,6 +386,74 @@ export const RolesDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<RolesQuery, RolesQueryVariables>;
+export const MyScheduleDocument = new TypedDocumentString(`
+    query MySchedule {
+  mySchedule {
+    weekly {
+      weekday
+      startTime
+      endTime
+    }
+    blockedDates
+  }
+}
+    `) as unknown as TypedDocumentString<MyScheduleQuery, MyScheduleQueryVariables>;
+export const SetWeeklyScheduleDocument = new TypedDocumentString(`
+    mutation SetWeeklySchedule($intervals: [WeeklyIntervalInput!]!) {
+  setWeeklySchedule(intervals: $intervals) {
+    weekly {
+      weekday
+      startTime
+      endTime
+    }
+    canceledAppointments {
+      ...AgendaAppointment
+    }
+  }
+}
+    fragment AgendaAppointment on Appointment {
+  id
+  startsAt
+  endsAt
+  status
+  serviceName
+  priceCents
+  durationMinutes
+  reminderLeadMinutes
+  cancelReason
+  canceledAt
+  customer {
+    id
+    name
+  }
+}`) as unknown as TypedDocumentString<SetWeeklyScheduleMutation, SetWeeklyScheduleMutationVariables>;
+export const BlockDateDocument = new TypedDocumentString(`
+    mutation BlockDate($date: String!) {
+  blockDate(date: $date) {
+    ...AgendaAppointment
+  }
+}
+    fragment AgendaAppointment on Appointment {
+  id
+  startsAt
+  endsAt
+  status
+  serviceName
+  priceCents
+  durationMinutes
+  reminderLeadMinutes
+  cancelReason
+  canceledAt
+  customer {
+    id
+    name
+  }
+}`) as unknown as TypedDocumentString<BlockDateMutation, BlockDateMutationVariables>;
+export const UnblockDateDocument = new TypedDocumentString(`
+    mutation UnblockDate($date: String!) {
+  unblockDate(date: $date)
+}
+    `) as unknown as TypedDocumentString<UnblockDateMutation, UnblockDateMutationVariables>;
 export const RefreshTokenDocument = new TypedDocumentString(`
     mutation RefreshToken($token: String!) {
   refreshToken(token: $token) {

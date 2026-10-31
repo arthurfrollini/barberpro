@@ -9,7 +9,8 @@ import { EmptyState, ErrorState, PageSkeleton } from '@/shared/ui/states';
 import { AppointmentSheet } from '../components/appointment-sheet';
 import { DayToolbar } from '../components/day-toolbar';
 import { Timeline } from '../components/timeline';
-import { useAgenda, useMySchedule } from '../hooks/use-agenda';
+import { useMySchedule } from '@/features/schedule/hooks/use-schedule';
+import { useAgenda } from '../hooks/use-agenda';
 import { useAgendaLive } from '../hooks/use-agenda-live';
 import { appointmentsCount, capitalize } from '../lib/labels';
 

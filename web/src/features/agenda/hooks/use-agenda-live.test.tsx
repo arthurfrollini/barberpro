@@ -64,7 +64,6 @@ describe('useAgendaLive', () => {
 
   it('does not announce a change this tab just made', async () => {
     const { queryClient, live } = setup();
-    // sonner keeps toasts from earlier tests around, so this one uses its own customer
     const clara = appointment({ customer: { id: 'c3', name: 'Clara' } });
     markChangedHere(clara.id);
     act(() => live.emit({ type: 'CANCELED', previousStartsAt: null, appointment: clara }));
