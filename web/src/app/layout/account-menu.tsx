@@ -30,7 +30,7 @@ export function AccountMenu() {
           variant="ghost"
           size="icon"
           className="rounded-full"
-          aria-label={`Conta de ${name}`}
+          aria-label={name ? `Conta de ${name}` : 'Conta'}
         >
           <Avatar className="size-8">
             <AvatarFallback className="bg-secondary text-xs">
