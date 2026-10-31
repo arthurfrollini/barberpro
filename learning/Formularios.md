@@ -12,7 +12,7 @@ const schema = z.object({
 const form = useForm({ resolver: zodResolver(schema), defaultValues: { email: '', password: '' } });
 ```
 
-- Os campos são **não controlados** (`register`): o React não re-renderiza a cada tecla. O RHF lê os valores do DOM na hora de validar.
+- Os campos são **não controlados** (`register`): o RHF guarda os valores dele, atualizados pelos eventos de mudança, sem re-renderizar o formulário a cada tecla.
 - `FormField` (`shared/ui/form-field.tsx`) liga label, campo, dica e erro por `id`, `aria-invalid` e `aria-describedby`. É por isso que os testes conseguem achar o campo com `getByLabelText('Email')`.
 - `noValidate` no `<form>`: quem valida é o zod, com mensagens em português, não o navegador.
 
@@ -41,13 +41,17 @@ Com isso o tipo do formulário tem dois lados: `useForm<z.input<typeof schema>, 
 
 O horário semanal é um formulário com 7 dias, cada um com N intervalos. Cada dia usa `useFieldArray({ name: 'days.0.intervals' })`, que dá `append`, `remove` e um `id` estável por item (usado como `key`, nunca o índice).
 
-Regras que olham mais de um campo (intervalos que se sobrepõem) ficam num `superRefine` no schema inteiro. Cada problema é preso no campo certo pelo `path`, e a mensagem diz o dia: "Os intervalos de segunda se sobrepõem".
+Regras que olham mais de um campo (intervalos que se sobrepõem) ficam num `superRefine` no schema inteiro. Cada problema é preso no campo certo pelo `path`, e a mensagem diz o dia: "Os intervalos de segunda se sobrepõem". Como a mensagem fica num campo mas depende de outro, depois da primeira tentativa de salvar qualquer mudança num intervalo revalida o dia inteiro (`trigger`), e a mensagem some assim que o problema é corrigido.
 
 ## Só o que mudou
 
 - `formState.isDirty` desabilita "Salvar" quando nada mudou.
 - Editar um serviço manda só os campos alterados (`changes(service, values)`), o que deixa claro no log e na API o que a pessoa mudou.
 - A foto do perfil tem três estados: não mexeu (não manda nada), trocou (manda o id do arquivo novo), removeu (manda `null`). O upload acontece quando a pessoa escolhe a imagem; o formulário só carrega o id.
+
+## Upload no meio do formulário
+
+A foto sobe quando a pessoa escolhe o arquivo. Enquanto sobe, o `ImageField` avisa o formulário (`onUploadingChange`) e o "Salvar" fica desabilitado: senão daria para salvar a bio antes de a foto existir, ver "Perfil salvo" e perder a foto.
 
 ## Depois de salvar
 
@@ -57,4 +61,4 @@ Regras que olham mais de um campo (intervalos que se sobrepõem) ficam num `supe
 
 - **Por que React Hook Form e não estado com `useState`?** Menos re-render, validação pronta com zod e listas dinâmicas (`useFieldArray`) sem reinventar.
 - **Por que validar no front se a API valida?** Para responder na hora, no campo certo, sem ida ao servidor. A validação do front é conforto; a da API é a regra.
-- **Como evitar que front e API discordem?** Os limites ficam num arquivo só (`limits.ts`), e os erros da API são mapeados pelo código, então uma regra nova na API ainda aparece (com a mensagem genérica) até alguém traduzir.
+- **Como evitar que front e API discordem?** Os limites de tamanho ficam em `limits.ts` e as regras de horário em `weekly-form.ts`, escritas a partir das da API. O front pode ser mais rígido de propósito (preço maior que zero, até R$ 10.000), nunca mais frouxo. E os erros da API são mapeados pelo código, então uma regra nova na API ainda aparece (com a mensagem genérica) até alguém traduzir.
