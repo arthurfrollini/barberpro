@@ -39,14 +39,17 @@ Para remarcar, a API ganhou `rescheduleSlots(appointmentId, date)`. O `available
 
 A API publica `agendaChanged` por SSE (server-sent events). No front:
 
-- `shared/api/subscriptions.ts` usa o cliente `graphql-sse` no modo "distinct connections" (o que o Yoga fala). O token é lido a cada (re)conexão, então uma conexão reaberta depois de o notebook dormir vai com token novo. Reconecta para sempre, esperando até 30 s entre tentativas.
+- `shared/api/subscriptions.ts` usa o cliente `graphql-sse` no modo "distinct connections" (o que o Yoga fala). O token é lido a cada (re)conexão, então uma conexão reaberta depois de o notebook dormir vai com token novo.
+- O `graphql-sse` só tenta de novo em falha de rede. Um stream também pode terminar sozinho: a API responde `UNAUTHENTICATED` (token velho depois de uma soneca longa) e encerra, ou a renovação do token falha porque o Wi-Fi ainda não voltou. Por isso há uma camada em volta (`createSubscriber`) que abre um stream novo sempre que um termina sem a tela ter pedido, esperando até 30 s entre tentativas e renovando o token antes quando a API recusou. Para quando a tela fecha ou o usuário sai.
 - `useAgendaLive` trata o evento como aviso de "olhe de novo": invalida a agenda e as notificações e mostra um toast. Não aplica o evento no cache na mão; o servidor continua sendo a fonte da verdade.
 - Ao reconectar, invalida uma vez, sem toast (o que aconteceu offline aparece na agenda, não numa enxurrada de avisos).
-- O próprio cancelamento do barbeiro também volta pelo stream. Para não mostrar dois toasts, a aba lembra por 10 s o que ela mesma mudou (`lib/changed-here.ts`).
+- O próprio cancelamento do barbeiro também volta pelo stream, às vezes antes da resposta da mutation. Para não mostrar dois toasts, a aba marca o agendamento antes de enviar e lembra por 10 s o que ela mesma mudou (`lib/changed-here.ts`).
 
 ## Notificações
 
 A API guarda o texto em inglês, porque é o mesmo do email. A dashboard monta a frase em português a partir do tipo e do agendamento, do ponto de vista de quem lê: o barbeiro lê sobre o cliente, o cliente sobre o barbeiro (`notifications/lib/describe.ts`).
+
+O horário da frase vem de `appointmentStartsAt`, guardado na notificação no momento do evento. O agendamento pode ter mudado depois: "Novo agendamento para 14:00" continua dizendo 14:00 mesmo que o cliente tenha remarcado para 15:30 (a remarcação tem a sua própria notificação).
 
 ## Perguntas prováveis
 

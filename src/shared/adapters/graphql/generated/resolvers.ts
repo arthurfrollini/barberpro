@@ -369,7 +369,7 @@ export type Query = {
   mySchedule: BarberSchedule;
   /** Newest first; limit up to 50. */
   notifications: Array<Notification>;
-  /** Free start times for moving an appointment to a date (YYYY-MM-DD in the shop's zone), using its own duration and ignoring its current slot. Errors: APPOINTMENT_NOT_FOUND, APPOINTMENT_CANCELED, CANCELLATION_WINDOW_CLOSED, INVALID_DATE. */
+  /** Free start times for moving an appointment to a date (YYYY-MM-DD in the shop's zone), using its own duration and ignoring its current slot. Errors: APPOINTMENT_NOT_FOUND, APPOINTMENT_CANCELED, CANCELLATION_WINDOW_CLOSED, INVALID_DATE, BARBER_NOT_FOUND. */
   rescheduleSlots: Array<Scalars['DateTime']['output']>;
   /** Matches names with typos. Errors: INVALID_SEARCH (fewer than 2 characters). */
   searchBarbershops: Array<Barbershop>;
