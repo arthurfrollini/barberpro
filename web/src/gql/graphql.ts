@@ -35,6 +35,11 @@ export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type MeQuery = { me: { id: string, name: string, email: string } };
 
+export type RolesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type RolesQuery = { myBarberProfile: { id: string, name: string, avatarUrl: string | null, barbershop: { id: string, name: string, timezone: string, logoUrl: string | null } } | null, myBarbershop: { id: string, name: string, timezone: string, logoUrl: string | null } | null };
+
 export type RefreshTokenMutationVariables = Exact<{
   token: string;
 }>;
@@ -98,6 +103,27 @@ export const MeDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<MeQuery, MeQueryVariables>;
+export const RolesDocument = new TypedDocumentString(`
+    query Roles {
+  myBarberProfile {
+    id
+    name
+    avatarUrl
+    barbershop {
+      id
+      name
+      timezone
+      logoUrl
+    }
+  }
+  myBarbershop {
+    id
+    name
+    timezone
+    logoUrl
+  }
+}
+    `) as unknown as TypedDocumentString<RolesQuery, RolesQueryVariables>;
 export const RefreshTokenDocument = new TypedDocumentString(`
     mutation RefreshToken($token: String!) {
   refreshToken(token: $token) {
