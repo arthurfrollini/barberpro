@@ -20,6 +20,12 @@ export type CancelReason =
   | 'DAY_BLOCKED'
   | 'SCHEDULE_CHANGED';
 
+export type NotificationType =
+  | 'APPOINTMENT_BOOKED'
+  | 'APPOINTMENT_CANCELED'
+  | 'APPOINTMENT_REMINDER'
+  | 'APPOINTMENT_RESCHEDULED';
+
 export type SignInInput = {
   email: string;
   password: string;
@@ -92,6 +98,25 @@ export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type MeQuery = { me: { id: string, name: string, email: string } };
+
+export type UnreadNotificationCountQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type UnreadNotificationCountQuery = { unreadNotificationCount: number };
+
+export type NotificationsQueryVariables = Exact<{
+  limit?: number | null | undefined;
+}>;
+
+
+export type NotificationsQuery = { notifications: Array<{ id: string, type: NotificationType, title: string, body: string, read: boolean, createdAt: string, appointment: { id: string, startsAt: string, serviceName: string, cancelReason: CancelReason | null, customer: { id: string, name: string }, barber: { name: string } } | null }> };
+
+export type MarkNotificationReadMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type MarkNotificationReadMutation = { markNotificationRead: boolean };
 
 export type RolesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -287,6 +312,41 @@ export const MeDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<MeQuery, MeQueryVariables>;
+export const UnreadNotificationCountDocument = new TypedDocumentString(`
+    query UnreadNotificationCount {
+  unreadNotificationCount
+}
+    `) as unknown as TypedDocumentString<UnreadNotificationCountQuery, UnreadNotificationCountQueryVariables>;
+export const NotificationsDocument = new TypedDocumentString(`
+    query Notifications($limit: Int) {
+  notifications(limit: $limit) {
+    id
+    type
+    title
+    body
+    read
+    createdAt
+    appointment {
+      id
+      startsAt
+      serviceName
+      cancelReason
+      customer {
+        id
+        name
+      }
+      barber {
+        name
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<NotificationsQuery, NotificationsQueryVariables>;
+export const MarkNotificationReadDocument = new TypedDocumentString(`
+    mutation MarkNotificationRead($id: ID!) {
+  markNotificationRead(id: $id)
+}
+    `) as unknown as TypedDocumentString<MarkNotificationReadMutation, MarkNotificationReadMutationVariables>;
 export const RolesDocument = new TypedDocumentString(`
     query Roles {
   myBarberProfile {

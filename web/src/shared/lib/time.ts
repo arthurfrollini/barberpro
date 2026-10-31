@@ -83,3 +83,16 @@ export function isIsoDate(value: string | null | undefined): value is string {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   return addDays(value, 0) === value;
 }
+
+const relative = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' });
+
+/** "agora", "há 5 minutos", "há 2 horas", "ontem", "há 3 dias", then the date. */
+export function formatRelative(iso: string, now: Date = new Date()): string {
+  const seconds = Math.round((now.getTime() - Date.parse(iso)) / 1000);
+  if (seconds < 60) return 'agora';
+  if (seconds < 3600) return relative.format(-Math.floor(seconds / 60), 'minute');
+  if (seconds < 86_400) return relative.format(-Math.floor(seconds / 3600), 'hour');
+  const days = Math.floor(seconds / 86_400);
+  if (days < 7) return relative.format(-days, 'day');
+  return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(new Date(iso));
+}

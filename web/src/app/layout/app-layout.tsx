@@ -1,6 +1,7 @@
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
 import { Link, Outlet } from 'react-router';
+import { NotificationBell } from '@/features/notifications/components/notification-bell';
 import type { Roles } from '@/features/roles/api/roles';
 import { currentShop, useRoles } from '@/features/roles/hooks/use-roles';
 import { Button } from '@/shared/ui/button';
@@ -59,6 +60,7 @@ export function AppLayout() {
           {roles.data && <MobileMenu roles={roles.data} />}
           <img src="/wordmark.svg" alt="" className="h-8 md:hidden" />
           <div className="flex-1" />
+          <NotificationBell />
           <AccountMenu />
         </header>
         <main className="mx-auto w-full max-w-5xl px-4 py-8 md:px-8">
