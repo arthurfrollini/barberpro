@@ -165,7 +165,8 @@ cd web
 npm install
 npm run dev        # http://localhost:5180, proxying the API on :4000
 npm run check      # lint, typecheck, format, unit and component tests
-npm run test:e2e   # Playwright; needs Postgres, Redis and Mailpit from docker compose
+npm run test:e2e   # Playwright; needs Postgres, Redis and Mailpit from docker compose,
+                   # npm install in the repo root and npx playwright install chromium
 npm run codegen    # after changing an operation or the API's schema
 ```
 

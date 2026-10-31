@@ -47,7 +47,9 @@ Detalhes no [ADR 6](../docs/adr/0006-session-in-local-storage.md). O essencial:
 - A sessão fica no `localStorage`, compartilhada entre abas.
 - Antes de cada chamada, `session.accessToken()` devolve o token, renovando se faltam menos de 30 segundos.
 - O refresh token é de uso único e a API trata reuso como roubo. Duas abas renovando juntas derrubariam a sessão. Por isso o refresh roda sob um **Web Lock** e relê o storage dentro dele: a segunda aba encontra o token novo e não renova de novo.
-- Se a API responder `UNAUTHENTICATED` mesmo assim (token revogado), o cliente força um refresh e tenta uma vez; se falhar de novo, limpa a sessão e os guards mandam para `/entrar`.
+- Se a API responder `UNAUTHENTICATED` mesmo assim (token expirado no meio do caminho, relógio do computador adiantado ou segredo trocado no servidor; um JWT não é revogado), o cliente força um refresh e tenta uma vez; se falhar de novo, limpa a sessão e os guards mandam para `/entrar`.
+- Quando a sessão acaba, por qualquer motivo e em qualquer aba, o cache do TanStack Query é apagado. Num computador do balcão, a próxima pessoa não vê nada do usuário anterior.
+- Se outra aba sair enquanto esta renovava o token, o token novo é descartado: a sessão não volta sozinha.
 - Sair de propósito não guarda "voltar para"; sessão expirada guarda (`/entrar?voltar=/servicos`).
 
 ## Rotas e papéis
@@ -56,7 +58,7 @@ Papel vem dos dados, como na API: `myBarberProfile` e `myBarbershop` numa query 
 
 - `/` não tem tela: manda o barbeiro para `/agenda`, o dono para `/barbearia` e os outros para `/comecar`.
 - `RequireAuth` protege tudo que precisa de login. `RequireRole` protege páginas de barbeiro e de dono e redireciona quem não tem o papel.
-- `RedirectIfSignedIn` tira quem já está logado das telas de login.
+- `RedirectIfSignedIn` tira quem já está logado das telas de login e é ele que leva para o `?voltar` depois do login (o formulário só cria a sessão; assim não há duas navegações disputando).
 
 ## Formulários
 

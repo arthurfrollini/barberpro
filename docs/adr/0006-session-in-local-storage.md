@@ -4,7 +4,7 @@ Date: 2026-10-31. Status: accepted.
 
 ## Context
 
-The API returns the access token (15 minutes) and the refresh token (30 days, single use, reuse revokes the session) in the GraphQL response body. The dashboard has to keep them across reloads and tabs.
+The API returns the access token (15 minutes) and the refresh token (30 days, single use; reusing one revokes every session of that user) in the GraphQL response body. The dashboard has to keep them across reloads and tabs.
 
 ## Decision
 
@@ -20,4 +20,5 @@ The dashboard stores the session (access token, its expiry, refresh token) in `l
 
 - An XSS bug in the dashboard could read the tokens. React's escaping, no `dangerouslySetInnerHTML` and no third-party scripts keep that surface small.
 - Signing out in one tab signs out the others (they listen to `storage` events).
+- Web Locks exist only in secure contexts (https or localhost). Opened over plain http from another device, the dashboard refreshes without the lock, and two tabs refreshing at the same moment would trip the API's reuse detection. Acceptable in development; a deploy is https.
 - Moving to a cookie later changes `web/src/shared/api/session.ts` and the API's auth adapter, nothing else.

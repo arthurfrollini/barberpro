@@ -41,5 +41,10 @@ Job `web`: codegen sem diff, lint, typecheck, prettier, testes, build. Job `web-
 cd web
 npm test            # unit + componentes
 npm run test:e2e    # Playwright (precisa de docker compose up -d postgres redis mailpit)
+```
+
+Na primeira vez: `npm install` na raiz (a API) e `npx playwright install chromium` em `web/`. O e2e usa o mesmo banco `barberpro_test` que os testes de integração da API, que apagam as tabelas: não rode os dois ao mesmo tempo.
+
+```bash
 npm run check       # lint, typecheck, prettier e testes
 ```
