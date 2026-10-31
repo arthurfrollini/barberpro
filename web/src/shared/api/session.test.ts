@@ -132,4 +132,14 @@ describe('session store', () => {
     stop();
     expect(store.signedOutOnPurpose()).toBe(true);
   });
+
+  it('does not bring back a session that was signed out while its refresh was running', async () => {
+    const { store, refresh } = setup({ stored: session('a', 0) });
+    refresh.mockImplementationOnce(async () => {
+      localStorage.removeItem(SESSION_KEY); // another tab signs out meanwhile
+      return session('late', 900);
+    });
+    expect(await store.accessToken()).toBeNull();
+    expect(store.get()).toBeNull();
+  });
 });

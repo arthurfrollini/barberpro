@@ -92,10 +92,16 @@ export function createSessionStore(options: {
         if (fresh(latest) && (replaced || !force)) return latest.accessToken;
         try {
           const next = await refresh(latest.refreshToken);
+          // another tab may have signed out (or in as someone else) while this one waited:
+          // the new tokens belong to a session that no longer exists here
+          if (read()?.refreshToken !== latest.refreshToken) return read()?.accessToken ?? null;
           store.set(next);
           return next.accessToken;
         } catch (error) {
-          // offline is not signed out: keep the session for the next try
+          // offline is not signed out: keep the session for the next try. Any other failure
+          // (a rejected token, or a masked server error after the rotation may already have
+          // committed) ends the session: retrying an old refresh token would look like reuse
+          // and revoke every session of the user.
           if (isApiError(error, 'NETWORK_ERROR')) throw error;
           store.clear();
           return null;
