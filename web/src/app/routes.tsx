@@ -2,6 +2,7 @@ import type { RouteObject } from 'react-router';
 import { AgendaPage } from '@/features/agenda/pages/agenda-page';
 import { ProfilePage } from '@/features/profile/pages/profile-page';
 import { ShopPage } from '@/features/shop/pages/shop-page';
+import { TeamPage } from '@/features/team/pages/team-page';
 import { SchedulePage } from '@/features/schedule/pages/schedule-page';
 import { ServicesPage } from '@/features/services/pages/services-page';
 import { AcceptInvitePage } from '@/features/invites/pages/accept-invite-page';
@@ -11,7 +12,6 @@ import { SignUpPage } from '@/features/auth/pages/sign-up-page';
 import { Landing, RedirectIfSignedIn, RequireAuth, RequireRole } from './guards';
 import { AppLayout } from './layout/app-layout';
 import { NotFound } from './not-found-page';
-import { PlaceholderPage } from './placeholder-page';
 import { RouteError } from './route-error';
 
 export const routes: RouteObject[] = [
@@ -49,7 +49,7 @@ export const routes: RouteObject[] = [
                     element: <RequireRole role="owner" />,
                     children: [
                       { path: '/barbearia', element: <ShopPage /> },
-                      { path: '/equipe', element: <PlaceholderPage title="Equipe" /> },
+                      { path: '/equipe', element: <TeamPage /> },
                     ],
                   },
                   { path: '/perfil', element: <ProfilePage /> },

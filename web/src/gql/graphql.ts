@@ -283,6 +283,27 @@ export type BecomeBarberMutationVariables = Exact<{ [key: string]: never; }>;
 
 export type BecomeBarberMutation = { becomeBarber: { id: string } };
 
+export type InviteBarberMutationVariables = Exact<{
+  email: string;
+}>;
+
+
+export type InviteBarberMutation = { inviteBarber: { id: string, email: string, status: InviteStatus, expiresAt: string, createdAt: string } };
+
+export type RevokeInviteMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type RevokeInviteMutation = { revokeInvite: { id: string, status: InviteStatus } };
+
+export type RemoveBarberMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type RemoveBarberMutation = { removeBarber: { id: string } };
+
 export type RefreshTokenMutationVariables = Exact<{
   token: string;
 }>;
@@ -766,6 +787,32 @@ export const BecomeBarberDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<BecomeBarberMutation, BecomeBarberMutationVariables>;
+export const InviteBarberDocument = new TypedDocumentString(`
+    mutation InviteBarber($email: String!) {
+  inviteBarber(email: $email) {
+    id
+    email
+    status
+    expiresAt
+    createdAt
+  }
+}
+    `) as unknown as TypedDocumentString<InviteBarberMutation, InviteBarberMutationVariables>;
+export const RevokeInviteDocument = new TypedDocumentString(`
+    mutation RevokeInvite($id: ID!) {
+  revokeInvite(id: $id) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<RevokeInviteMutation, RevokeInviteMutationVariables>;
+export const RemoveBarberDocument = new TypedDocumentString(`
+    mutation RemoveBarber($id: ID!) {
+  removeBarber(id: $id) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<RemoveBarberMutation, RemoveBarberMutationVariables>;
 export const RefreshTokenDocument = new TypedDocumentString(`
     mutation RefreshToken($token: String!) {
   refreshToken(token: $token) {

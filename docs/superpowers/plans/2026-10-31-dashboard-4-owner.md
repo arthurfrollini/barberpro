@@ -55,7 +55,7 @@
 
 **Files:** `web/src/features/team/{api/team.ts,hooks/use-team.ts,components/barbers-list.tsx,components/invites-list.tsx,components/invite-form.tsx,pages/team-page.tsx}`; routes (`/equipe`).
 
-- Behaviour: barbers with photo and name ("Você" for the owner's own profile), "Remover" for the others with a confirmation ("Remover José da equipe? Agendamentos dele a 2 horas ou mais são cancelados e os clientes avisados."). An email field and "Enviar convite"; the invites list with status badges and dates ("expira em 7 de novembro"), "Revogar" for pending ones.
+- Behaviour: barbers with photo and name ("Você" for the owner's own profile), "Remover" for the others with a confirmation ("Remover José da equipe? Os agendamentos de José a 2 horas ou mais são cancelados e os clientes avisados."). An email field and "Enviar convite"; the invites list with status badges and dates ("expira em 7 de novembro"), "Revogar" for pending ones.
 - [ ] Tests: inviting sends the email and adds a pending row; `INVITE_ALREADY_SENT` on the field; revoking turns the row into revogado; removing asks and the barber disappears. Commit `feat(web): team and invites`.
 
 ### Task 5: End to end

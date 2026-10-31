@@ -45,6 +45,9 @@ type Documents = {
     "\n  mutation CreateBarbershop($input: CreateBarbershopInput!) {\n    createBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n": typeof types.CreateBarbershopDocument,
     "\n  mutation UpdateBarbershop($input: UpdateBarbershopInput!) {\n    updateBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n": typeof types.UpdateBarbershopDocument,
     "\n  mutation BecomeBarber {\n    becomeBarber {\n      id\n    }\n  }\n": typeof types.BecomeBarberDocument,
+    "\n  mutation InviteBarber($email: String!) {\n    inviteBarber(email: $email) {\n      id\n      email\n      status\n      expiresAt\n      createdAt\n    }\n  }\n": typeof types.InviteBarberDocument,
+    "\n  mutation RevokeInvite($id: ID!) {\n    revokeInvite(id: $id) {\n      id\n      status\n    }\n  }\n": typeof types.RevokeInviteDocument,
+    "\n  mutation RemoveBarber($id: ID!) {\n    removeBarber(id: $id) {\n      id\n    }\n  }\n": typeof types.RemoveBarberDocument,
     "\n  mutation RefreshToken($token: String!) {\n    refreshToken(token: $token) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n    }\n  }\n": typeof types.RefreshTokenDocument,
 };
 const documents: Documents = {
@@ -78,6 +81,9 @@ const documents: Documents = {
     "\n  mutation CreateBarbershop($input: CreateBarbershopInput!) {\n    createBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n": types.CreateBarbershopDocument,
     "\n  mutation UpdateBarbershop($input: UpdateBarbershopInput!) {\n    updateBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n": types.UpdateBarbershopDocument,
     "\n  mutation BecomeBarber {\n    becomeBarber {\n      id\n    }\n  }\n": types.BecomeBarberDocument,
+    "\n  mutation InviteBarber($email: String!) {\n    inviteBarber(email: $email) {\n      id\n      email\n      status\n      expiresAt\n      createdAt\n    }\n  }\n": types.InviteBarberDocument,
+    "\n  mutation RevokeInvite($id: ID!) {\n    revokeInvite(id: $id) {\n      id\n      status\n    }\n  }\n": types.RevokeInviteDocument,
+    "\n  mutation RemoveBarber($id: ID!) {\n    removeBarber(id: $id) {\n      id\n    }\n  }\n": types.RemoveBarberDocument,
     "\n  mutation RefreshToken($token: String!) {\n    refreshToken(token: $token) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n    }\n  }\n": types.RefreshTokenDocument,
 };
 
@@ -201,6 +207,18 @@ export function graphql(source: "\n  mutation UpdateBarbershop($input: UpdateBar
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation BecomeBarber {\n    becomeBarber {\n      id\n    }\n  }\n"): typeof import('./graphql').BecomeBarberDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation InviteBarber($email: String!) {\n    inviteBarber(email: $email) {\n      id\n      email\n      status\n      expiresAt\n      createdAt\n    }\n  }\n"): typeof import('./graphql').InviteBarberDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation RevokeInvite($id: ID!) {\n    revokeInvite(id: $id) {\n      id\n      status\n    }\n  }\n"): typeof import('./graphql').RevokeInviteDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation RemoveBarber($id: ID!) {\n    removeBarber(id: $id) {\n      id\n    }\n  }\n"): typeof import('./graphql').RemoveBarberDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
