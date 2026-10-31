@@ -7,41 +7,48 @@ import { Landing, RedirectIfSignedIn, RequireAuth, RequireRole } from './guards'
 import { AppLayout } from './layout/app-layout';
 import { NotFound } from './not-found-page';
 import { PlaceholderPage } from './placeholder-page';
+import { RouteError } from './route-error';
 
 export const routes: RouteObject[] = [
   {
-    element: <RedirectIfSignedIn />,
+    // one boundary for every screen: a render error shows a Portuguese page, not a blank one
+    errorElement: <RouteError />,
     children: [
-      { path: '/entrar', element: <SignInPage /> },
-      { path: '/criar-conta', element: <SignUpPage /> },
-    ],
-  },
-  {
-    element: <RequireAuth />,
-    children: [
-      { path: '/', element: <Landing /> },
       {
-        element: <AppLayout />,
+        element: <RedirectIfSignedIn />,
         children: [
-          {
-            element: <RequireRole role="barber" />,
-            children: [
-              { path: '/agenda', element: <AgendaPage /> },
-              { path: '/horarios', element: <SchedulePage /> },
-              { path: '/servicos', element: <PlaceholderPage title="Serviços" /> },
-            ],
-          },
-          {
-            element: <RequireRole role="owner" />,
-            children: [{ path: '/equipe', element: <PlaceholderPage title="Equipe" /> }],
-          },
-          // an owner edits the shop here; anyone else creates one from "Começar"
-          { path: '/barbearia', element: <PlaceholderPage title="Barbearia" /> },
-          { path: '/perfil', element: <PlaceholderPage title="Perfil" /> },
-          { path: '/comecar', element: <PlaceholderPage title="Começar" /> },
+          { path: '/entrar', element: <SignInPage /> },
+          { path: '/criar-conta', element: <SignUpPage /> },
         ],
       },
+      {
+        element: <RequireAuth />,
+        children: [
+          { path: '/', element: <Landing /> },
+          {
+            element: <AppLayout />,
+            children: [
+              {
+                element: <RequireRole role="barber" />,
+                children: [
+                  { path: '/agenda', element: <AgendaPage /> },
+                  { path: '/horarios', element: <SchedulePage /> },
+                  { path: '/servicos', element: <PlaceholderPage title="Serviços" /> },
+                ],
+              },
+              {
+                element: <RequireRole role="owner" />,
+                children: [{ path: '/equipe', element: <PlaceholderPage title="Equipe" /> }],
+              },
+              // an owner edits the shop here; anyone else creates one from "Começar"
+              { path: '/barbearia', element: <PlaceholderPage title="Barbearia" /> },
+              { path: '/perfil', element: <PlaceholderPage title="Perfil" /> },
+              { path: '/comecar', element: <PlaceholderPage title="Começar" /> },
+            ],
+          },
+        ],
+      },
+      { path: '*', element: <NotFound /> },
     ],
   },
-  { path: '*', element: <NotFound /> },
 ];
