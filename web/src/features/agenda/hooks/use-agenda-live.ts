@@ -15,7 +15,8 @@ function describe(change: AgendaChange, timeZone: string): string {
     case 'CANCELED':
       return `Agendamento cancelado: ${customer.name}, ${when}`;
     case 'RESCHEDULED':
-      return `${customer.name} remarcou para ${when}`;
+      // the event does not say who moved it: the customer, or the barber in another tab
+      return `Agendamento remarcado: ${customer.name}, ${when}`;
   }
 }
 
@@ -31,6 +32,8 @@ export function useAgendaLive(timeZone: string, watch: AgendaWatcher = watchAgen
     const refresh = () => {
       void queryClient.invalidateQueries({ queryKey: agendaKeys.all });
       void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      // a slot offered for a move may just have been taken
+      void queryClient.invalidateQueries({ queryKey: ['reschedule-slots'] });
     };
     return watch({
       next: (change) => {

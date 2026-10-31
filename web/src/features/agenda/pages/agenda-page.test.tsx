@@ -140,6 +140,16 @@ describe('agenda page', () => {
     ).toBeInTheDocument();
   });
 
+  it('gives focus back to the appointment when the sheet closes', async () => {
+    mockApi({ '2026-11-02': [appointment({ customer: { id: 'c1', name: 'Ana' } })] });
+    const { user } = renderRoutes(routes, { path: '/agenda' });
+    const block = within(await list()).getByRole('button', { name: '14:00 Ana, Corte' });
+    await user.click(block);
+    await screen.findByRole('dialog', { name: 'Ana' });
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(block).toHaveFocus());
+  });
+
   it('blocks changes within 2 hours of the start', async () => {
     const soon = appointment({
       startsAt: '2026-11-02T13:30:00.000Z',

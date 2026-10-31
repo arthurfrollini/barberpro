@@ -61,4 +61,11 @@ describe('layoutColumns', () => {
     expect(columns.get('b')).toEqual({ column: 1, columns: 2 });
     expect(columns.get('c')).toEqual({ column: 0, columns: 2 });
   });
+
+  it('treats a block as at least 15 minutes tall, as drawn', () => {
+    // a 5-minute service at 10:00 and one at 10:05 would overlap on screen
+    const columns = layoutColumns([item('a', h(10), h(10, 5)), item('b', h(10, 5), h(10, 10))]);
+    expect(columns.get('a')).toEqual({ column: 0, columns: 2 });
+    expect(columns.get('b')).toEqual({ column: 1, columns: 2 });
+  });
 });

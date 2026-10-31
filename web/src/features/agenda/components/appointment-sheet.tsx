@@ -30,15 +30,24 @@ export function AppointmentSheet({
   timeZone,
   now,
   onClose,
+  returnFocus,
 }: {
   appointment: AgendaAppointment | undefined;
   timeZone: string;
   now: Date;
   onClose: () => void;
+  returnFocus?: () => void;
 }) {
   return (
     <Sheet open={!!appointment} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+      <SheetContent
+        className="w-full overflow-y-auto sm:max-w-md"
+        onCloseAutoFocus={(event) => {
+          if (!returnFocus) return;
+          event.preventDefault();
+          returnFocus();
+        }}
+      >
         {appointment && (
           <Details appointment={appointment} timeZone={timeZone} now={now} onClose={onClose} />
         )}
@@ -59,7 +68,7 @@ function Details({
   onClose: () => void;
 }) {
   const [moving, setMoving] = useState(false);
-  const cancel = useCancelAppointment();
+  const cancel = useCancelAppointment(timeZone);
   const start = formatTime(a.startsAt, timeZone);
   const range = `${start} às ${formatTime(a.endsAt, timeZone)}`;
   const booked = a.status === 'BOOKED';

@@ -26,7 +26,7 @@ export function ReschedulePicker({
   const [date, setDate] = useState(() => localDateOf(appointment.startsAt, timeZone));
   const [chosen, setChosen] = useState<string | null>(null);
   const slots = useRescheduleSlots(appointment.id, isIsoDate(date) ? date : null);
-  const move = useRescheduleAppointment();
+  const move = useRescheduleAppointment(timeZone);
   const offered = (slots.data ?? []).filter((s) => s !== appointment.startsAt);
 
   const confirm = () => {

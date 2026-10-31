@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { currentShop, useRoles } from '@/features/roles/hooks/use-roles';
 import { useNow } from '@/shared/hooks/use-now';
@@ -24,6 +24,12 @@ export function AgendaPage() {
   const requested = search.get('dia');
   const date = isIsoDate(requested) ? requested : today;
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // the sheet has no trigger of its own; focus goes back to the block that opened it
+  const opener = useRef<HTMLElement | null>(null);
+  const select = (id: string) => {
+    opener.current = document.activeElement as HTMLElement | null;
+    setSelectedId(id);
+  };
 
   const agenda = useAgenda(date);
   const schedule = useMySchedule();
@@ -93,7 +99,7 @@ export function AgendaPage() {
           hours={blocked ? [] : hours}
           timeZone={timeZone}
           nowMinute={date === today ? minutesOfDay(now.toISOString(), timeZone) : null}
-          onSelect={setSelectedId}
+          onSelect={select}
         />
       )}
 
@@ -102,6 +108,7 @@ export function AgendaPage() {
         timeZone={timeZone}
         now={now}
         onClose={() => setSelectedId(null)}
+        returnFocus={() => opener.current?.focus()}
       />
     </>
   );

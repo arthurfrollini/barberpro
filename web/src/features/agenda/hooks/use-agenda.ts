@@ -7,7 +7,8 @@ import {
   rescheduleAppointment,
   type AgendaAppointment,
 } from '../api/agenda';
-import { markChangedHere } from '../lib/changed-here';
+import { localDateOf } from '@/shared/lib/time';
+import { forgetChangedHere, markChangedHere } from '../lib/changed-here';
 
 export const agendaKeys = {
   all: ['agenda'] as const,
@@ -34,32 +35,52 @@ export function useRescheduleSlots(id: string, date: string | null) {
 }
 
 /**
- * The changed appointment replaces its old copy in every cached day at once, so the screen
- * reacts before the refetch; then every day refetches, since a move can leave one day and
- * land on another. Notifications change too (the customer was told).
+ * The changed appointment replaces its old copy at once, so the screen reacts before the
+ * refetch: in its own day, and out of any other cached day (a move can leave one day for
+ * another). Then every day refetches, and the notifications too (the customer was told).
  */
-function applyChange(queryClient: QueryClient, changed: AgendaAppointment) {
-  markChangedHere(changed.id);
-  queryClient.setQueriesData<AgendaAppointment[]>({ queryKey: agendaKeys.all }, (day) =>
-    day?.map((a) => (a.id === changed.id ? changed : a)),
-  );
+function applyChange(queryClient: QueryClient, changed: AgendaAppointment, timeZone: string) {
+  const day = localDateOf(changed.startsAt, timeZone);
+  for (const [key, list] of queryClient.getQueriesData<AgendaAppointment[]>({
+    queryKey: agendaKeys.all,
+  })) {
+    if (!list) continue;
+    const others = list.filter((a) => a.id !== changed.id);
+    const here = key[1] === day && list.some((a) => a.id === changed.id);
+    queryClient.setQueryData(
+      key,
+      here ? list.map((a) => (a.id === changed.id ? changed : a)) : others,
+    );
+  }
   void queryClient.invalidateQueries({ queryKey: agendaKeys.all });
   void queryClient.invalidateQueries({ queryKey: ['notifications'] });
 }
 
-export function useCancelAppointment() {
+/** A refused change means the screen was out of date (canceled elsewhere, 2 hours passed). */
+function refreshAfterFailure(queryClient: QueryClient, id: string) {
+  forgetChangedHere(id);
+  void queryClient.invalidateQueries({ queryKey: agendaKeys.all });
+  void queryClient.invalidateQueries({ queryKey: ['reschedule-slots'] });
+}
+
+export function useCancelAppointment(timeZone: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: cancelAppointment,
-    onSuccess: (changed) => applyChange(queryClient, changed),
+    // marked before the request: the live echo can arrive before the response
+    onMutate: (id) => markChangedHere(id),
+    onSuccess: (changed) => applyChange(queryClient, changed, timeZone),
+    onError: (_error, id) => refreshAfterFailure(queryClient, id),
   });
 }
 
-export function useRescheduleAppointment() {
+export function useRescheduleAppointment(timeZone: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, startsAt }: { id: string; startsAt: string }) =>
       rescheduleAppointment(id, startsAt),
-    onSuccess: (changed) => applyChange(queryClient, changed),
+    onMutate: ({ id }) => markChangedHere(id),
+    onSuccess: (changed) => applyChange(queryClient, changed, timeZone),
+    onError: (_error, { id }) => refreshAfterFailure(queryClient, id),
   });
 }

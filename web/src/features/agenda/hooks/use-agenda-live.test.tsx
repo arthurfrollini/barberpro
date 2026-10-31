@@ -56,7 +56,10 @@ describe('useAgendaLive', () => {
     expect(
       await screen.findByText('Agendamento cancelado: Ana, seg 2/11 às 14:00'),
     ).toBeInTheDocument();
-    expect(await screen.findByText('Ana remarcou para seg 2/11 às 15:30')).toBeInTheDocument();
+    // the event does not say who moved it, so the toast does not guess
+    expect(
+      await screen.findByText('Agendamento remarcado: Ana, seg 2/11 às 15:30'),
+    ).toBeInTheDocument();
   });
 
   it('does not announce a change this tab just made', async () => {

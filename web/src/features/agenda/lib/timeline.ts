@@ -2,6 +2,9 @@
 
 export type TimelineItem = { id: string; start: number; end: number };
 
+/** The shortest block drawn, so a 5-minute service still has room for its name. */
+export const MIN_BLOCK_MINUTES = 15;
+
 const DEFAULT = { start: 8 * 60, end: 20 * 60 };
 
 const toMinutes = (clock: string) => {
@@ -35,7 +38,9 @@ export function timelineBounds(
 export function layoutColumns(
   items: TimelineItem[],
 ): Map<string, { column: number; columns: number }> {
-  const sorted = [...items].sort((a, b) => a.start - b.start || a.end - b.end);
+  // blocks are drawn at least MIN_BLOCK_MINUTES tall, so they take that much room
+  const drawn = items.map((i) => ({ ...i, end: Math.max(i.end, i.start + MIN_BLOCK_MINUTES) }));
+  const sorted = drawn.sort((a, b) => a.start - b.start || a.end - b.end);
   const result = new Map<string, { column: number; columns: number }>();
   let group: { id: string; column: number }[] = [];
   let columnEnds: number[] = [];

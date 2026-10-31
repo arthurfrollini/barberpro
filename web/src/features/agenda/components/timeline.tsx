@@ -2,7 +2,7 @@ import { formatBRL } from '@/shared/lib/money';
 import { formatTime, minutesOfDay } from '@/shared/lib/time';
 import { cn } from '@/shared/lib/utils';
 import type { AgendaAppointment } from '../api/agenda';
-import { layoutColumns, timelineBounds } from '../lib/timeline';
+import { MIN_BLOCK_MINUTES, layoutColumns, timelineBounds } from '../lib/timeline';
 
 const PX_PER_MINUTE = 1.4; // 84 px an hour: a 15-minute booking still fits a line of text
 
@@ -80,7 +80,7 @@ export function Timeline({ appointments, hours, timeZone, nowMinute, onSelect }:
             const { column, columns: count } = columns.get(a.id)!;
             const canceled = a.status === 'CANCELED';
             const time = formatTime(a.startsAt, timeZone);
-            const height = Math.max(item.end - item.start, 15) * PX_PER_MINUTE - 3;
+            const height = Math.max(item.end - item.start, MIN_BLOCK_MINUTES) * PX_PER_MINUTE - 3;
             // short blocks keep everything on one line
             const tall = height > 44;
             const detail = canceled ? 'Cancelado' : `${a.serviceName}, ${formatBRL(a.priceCents)}`;

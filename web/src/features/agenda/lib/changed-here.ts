@@ -16,3 +16,7 @@ export function wasChangedHere(id: string, now = Date.now()): boolean {
   }
   return true;
 }
+
+export function forgetChangedHere(id: string) {
+  changed.delete(id);
+}
