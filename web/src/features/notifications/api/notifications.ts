@@ -16,6 +16,7 @@ const NotificationsQuery = graphql(`
       body
       read
       createdAt
+      appointmentStartsAt
       appointment {
         id
         startsAt

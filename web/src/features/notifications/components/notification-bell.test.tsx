@@ -15,6 +15,7 @@ const notification = (overrides: Record<string, unknown>) => ({
   body: 'Ana agendou Corte para seg, 2 de nov às 14:00.',
   read: false,
   createdAt: '2026-11-02T11:55:00.000Z',
+  appointmentStartsAt: '2026-11-03T17:00:00.000Z',
   appointment: {
     id: 'a1',
     startsAt: '2026-11-03T17:00:00.000Z',
@@ -97,6 +98,16 @@ describe('notification bell', () => {
     expect(marked).toEqual(['n1']);
     expect(await screen.findByText('Agenda aberta')).toBeInTheDocument();
     expect(router.state.location.search).toBe('?dia=2026-11-03');
+  });
+
+  it('drops the count as soon as a notification is opened', async () => {
+    const { user } = setup(2, [notification({ appointment: null, appointmentStartsAt: null })]);
+    await user.click(await screen.findByRole('button', { name: 'Notificações, 2 não lidas' }));
+    server.use(api.mutation('MarkNotificationRead', () => new Promise(() => {})));
+    await user.click(await screen.findByRole('button', { name: /Novo agendamento/ }));
+    expect(
+      await screen.findByRole('button', { name: 'Notificações, 1 não lida' }),
+    ).toBeInTheDocument();
   });
 
   it('says when there is nothing yet', async () => {

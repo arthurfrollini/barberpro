@@ -13,7 +13,8 @@ export function describeNotification(
 ): { title: string; body: string } {
   const a = n.appointment;
   if (!a) return { title: n.title, body: n.body };
-  const when = formatShortDateTime(a.startsAt, timeZone);
+  // the time as the event described it; the appointment may have moved since
+  const when = formatShortDateTime(n.appointmentStartsAt ?? a.startsAt, timeZone);
   const asCustomer = a.customer.id === myUserId;
   const other = asCustomer ? a.barber.name : a.customer.name;
 

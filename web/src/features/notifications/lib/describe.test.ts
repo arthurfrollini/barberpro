@@ -12,6 +12,7 @@ const base = (overrides: Partial<Notification> = {}): Notification => ({
   body: 'Ana booked Corte on Mon, Nov 2 at 14:00.',
   read: false,
   createdAt: '2026-11-02T12:00:00.000Z',
+  appointmentStartsAt: '2026-11-02T17:00:00.000Z',
   appointment: {
     id: 'a1',
     startsAt: '2026-11-02T17:00:00.000Z',
@@ -70,6 +71,15 @@ describe('describeNotification', () => {
       title: 'Lembrete',
       body: 'Corte com José seg 2/11 às 14:00.',
     });
+  });
+
+  it('says the time the event was about, not where the appointment is now', () => {
+    const moved = base({
+      appointment: { ...base().appointment!, startsAt: '2026-11-02T18:30:00.000Z' },
+    });
+    expect(describeNotification(moved, ME, SP).body).toBe(
+      'Ana agendou Corte para seg 2/11 às 14:00.',
+    );
   });
 
   it("falls back to the API's text without an appointment", () => {
