@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { formatShortDateTime } from '@/shared/lib/time';
 import { watchAgenda, type AgendaChange, type AgendaWatcher } from '../api/live';
+import { wasChangedHere } from '../lib/changed-here';
 import { agendaKeys } from './use-agenda';
 
 function describe(change: AgendaChange, timeZone: string): string {
@@ -34,7 +35,7 @@ export function useAgendaLive(timeZone: string, watch: AgendaWatcher = watchAgen
     return watch({
       next: (change) => {
         refresh();
-        toast(describe(change, timeZone));
+        if (!wasChangedHere(change.appointment.id)) toast(describe(change, timeZone));
       },
       reconnected: refresh,
     });

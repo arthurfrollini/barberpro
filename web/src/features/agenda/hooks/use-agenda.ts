@@ -7,6 +7,7 @@ import {
   rescheduleAppointment,
   type AgendaAppointment,
 } from '../api/agenda';
+import { markChangedHere } from '../lib/changed-here';
 
 export const agendaKeys = {
   all: ['agenda'] as const,
@@ -38,6 +39,7 @@ export function useRescheduleSlots(id: string, date: string | null) {
  * land on another. Notifications change too (the customer was told).
  */
 function applyChange(queryClient: QueryClient, changed: AgendaAppointment) {
+  markChangedHere(changed.id);
   queryClient.setQueriesData<AgendaAppointment[]>({ queryKey: agendaKeys.all }, (day) =>
     day?.map((a) => (a.id === changed.id ? changed : a)),
   );

@@ -4,6 +4,7 @@ import { Providers } from '@/app/providers';
 import { createQueryClient } from '@/shared/api/query-client';
 import { appointment } from '@/test/agenda-fixtures';
 import type { AgendaChange, AgendaWatcher } from '../api/live';
+import { markChangedHere } from '../lib/changed-here';
 import { useAgendaLive } from './use-agenda-live';
 
 function fakeWatch() {
@@ -56,6 +57,18 @@ describe('useAgendaLive', () => {
       await screen.findByText('Agendamento cancelado: Ana, seg 2/11 às 14:00'),
     ).toBeInTheDocument();
     expect(await screen.findByText('Ana remarcou para seg 2/11 às 15:30')).toBeInTheDocument();
+  });
+
+  it('does not announce a change this tab just made', async () => {
+    const { queryClient, live } = setup();
+    // sonner keeps toasts from earlier tests around, so this one uses its own customer
+    const clara = appointment({ customer: { id: 'c3', name: 'Clara' } });
+    markChangedHere(clara.id);
+    act(() => live.emit({ type: 'CANCELED', previousStartsAt: null, appointment: clara }));
+    expect(queryClient.getQueryState(['agenda', '2026-11-02'])?.isInvalidated).toBe(true);
+    // give a toast the chance to render, then check there is none
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByText(/Clara/)).not.toBeInTheDocument();
   });
 
   it('refetches quietly after reconnecting, and stops when unmounted', () => {
