@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router';
+import { Navigate, Outlet, useLocation, useSearchParams } from 'react-router';
+import { returnPath } from '@/features/auth/components/return-path';
 import { useIsSignedIn } from '@/features/auth/hooks/use-auth';
 import { landingPath, useRoles } from '@/features/roles/hooks/use-roles';
 import { session } from '@/shared/api';
@@ -17,8 +18,10 @@ export function RequireAuth() {
   return <Outlet />;
 }
 
+/** The sign-in pages: once signed in, go back to the page that asked for it (or home). */
 export function RedirectIfSignedIn() {
-  return useIsSignedIn() ? <Navigate to="/" replace /> : <Outlet />;
+  const [search] = useSearchParams();
+  return useIsSignedIn() ? <Navigate to={returnPath(search)} replace /> : <Outlet />;
 }
 
 function WithRoles({

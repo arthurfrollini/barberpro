@@ -1,6 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { useNavigate, useSearchParams } from 'react-router';
 import { z } from 'zod';
 import { messageFor } from '@/shared/lib/error-messages';
 import { Button } from '@/shared/ui/button';
@@ -8,7 +7,6 @@ import { FormError, FormField } from '@/shared/ui/form-field';
 import { Input } from '@/shared/ui/input';
 import { isApiError } from '@/shared/api';
 import { useSignIn } from '../hooks/use-auth';
-import { returnPath } from './return-path';
 
 const schema = z.object({
   email: z.string().trim().min(1, 'Informe seu email.').pipe(z.email('Email inválido.')),
@@ -16,8 +14,6 @@ const schema = z.object({
 });
 
 export function SignInForm() {
-  const navigate = useNavigate();
-  const [search] = useSearchParams();
   const signIn = useSignIn();
   const form = useForm({
     resolver: zodResolver(schema),
@@ -27,8 +23,8 @@ export function SignInForm() {
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
+      // signed in: RedirectIfSignedIn takes the user where they were going
       await signIn.mutateAsync(values);
-      navigate(returnPath(search), { replace: true });
     } catch (error) {
       form.setError('root', { message: messageFor(isApiError(error) ? error.code : undefined) });
     }

@@ -1,6 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { useNavigate, useSearchParams } from 'react-router';
 import { z } from 'zod';
 import { isApiError } from '@/shared/api';
 import { messageFor } from '@/shared/lib/error-messages';
@@ -9,7 +8,6 @@ import { Button } from '@/shared/ui/button';
 import { FormError, FormField } from '@/shared/ui/form-field';
 import { Input } from '@/shared/ui/input';
 import { useSignUp } from '../hooks/use-auth';
-import { returnPath } from './return-path';
 
 const schema = z.object({
   name: z
@@ -32,8 +30,6 @@ const FIELD_ERRORS = {
 } as const;
 
 export function SignUpForm() {
-  const navigate = useNavigate();
-  const [search] = useSearchParams();
   const signUp = useSignUp();
   const form = useForm({
     resolver: zodResolver(schema),
@@ -43,8 +39,8 @@ export function SignUpForm() {
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
+      // signed in: RedirectIfSignedIn takes the user where they were going
       await signUp.mutateAsync(values);
-      navigate(returnPath(search), { replace: true });
     } catch (error) {
       const code = isApiError(error) ? error.code : undefined;
       const field =

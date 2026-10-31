@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { RedirectIfSignedIn } from '@/app/guards';
 import { session } from '@/shared/api';
 import { api, gqlData, gqlError } from '@/test/graphql';
 import { renderRoutes } from '@/test/render';
@@ -7,7 +8,11 @@ import { server } from '@/test/server';
 import { SignUpPage } from '../pages/sign-up-page';
 
 const routes = [
-  { path: '/criar-conta', element: <SignUpPage /> },
+  // the app's guard: it is what navigates once the session exists
+  {
+    element: <RedirectIfSignedIn />,
+    children: [{ path: '/criar-conta', element: <SignUpPage /> }],
+  },
   { path: '/', element: <p>Início</p> },
 ];
 

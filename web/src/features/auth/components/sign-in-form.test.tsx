@@ -1,5 +1,7 @@
 import { screen } from '@testing-library/react';
+import { HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
+import { RedirectIfSignedIn } from '@/app/guards';
 import { session } from '@/shared/api';
 import { api, gqlData, gqlError } from '@/test/graphql';
 import { renderRoutes } from '@/test/render';
@@ -7,7 +9,8 @@ import { server } from '@/test/server';
 import { SignInPage } from '../pages/sign-in-page';
 
 const routes = [
-  { path: '/entrar', element: <SignInPage /> },
+  // the app's guard: it is what navigates once the session exists
+  { element: <RedirectIfSignedIn />, children: [{ path: '/entrar', element: <SignInPage /> }] },
   { path: '/', element: <p>Início</p> },
   { path: '/agenda', element: <p>Agenda</p> },
 ];
@@ -51,6 +54,16 @@ describe('sign in', () => {
     await fill(user, 'ana@example.com', 'wrong-pass');
     expect(await screen.findByText('Email ou senha incorretos.')).toBeInTheDocument();
     expect(session.get()).toBeNull();
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeEnabled();
+  });
+
+  it('says when the server cannot be reached, and lets the user try again', async () => {
+    server.use(api.mutation('SignIn', () => HttpResponse.error()));
+    const { user } = renderRoutes(routes, { path: '/entrar' });
+    await fill(user, 'ana@example.com', 'correct horse');
+    expect(
+      await screen.findByText('Não foi possível falar com o servidor. Verifique sua conexão.'),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Entrar' })).toBeEnabled();
   });
 
