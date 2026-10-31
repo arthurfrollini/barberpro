@@ -57,7 +57,7 @@ const isUnauthenticated = (result: GraphQLResponse<unknown>) =>
  */
 export function createApiClient(options: {
   session: SessionStore;
-  onSessionExpired: () => void;
+  onSessionExpired?: () => void;
   baseUrl?: string;
   fetch?: typeof fetch;
 }) {
@@ -68,7 +68,7 @@ export function createApiClient(options: {
   };
   const expire = () => {
     session.clear();
-    onSessionExpired();
+    onSessionExpired?.();
   };
 
   return {

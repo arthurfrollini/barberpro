@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { landingPath } from '@/features/roles/hooks/use-roles';
-import { session } from '@/shared/api';
+import { SESSION_KEY } from '@/shared/api/session';
 import { ME, roles } from '@/test/fixtures';
 import { api, gqlData } from '@/test/graphql';
 import { renderRoutes, signIn } from '@/test/render';
@@ -66,12 +66,20 @@ describe('route guards', () => {
     expect(router.state.location.pathname).toBe('/agenda');
   });
 
-  it('follows a sign-out from another tab', async () => {
+  it("follows a sign-out from another tab and forgets that user's data", async () => {
     signIn();
     mockApi({ barber: true });
-    renderRoutes(routes, { path: '/agenda' });
+    const { router, queryClient } = renderRoutes(routes, { path: '/agenda' });
     expect(await screen.findByRole('heading', { name: 'Agenda' })).toBeInTheDocument();
-    session.clear();
+    expect(queryClient.getQueryData(['roles'])).toBeDefined();
+
+    // what the browser delivers when another tab removes the session
+    localStorage.removeItem(SESSION_KEY);
+    window.dispatchEvent(new StorageEvent('storage', { key: SESSION_KEY }));
+
     expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
+    expect(router.state.location.search).toBe('');
+    expect(queryClient.getQueryData(['roles'])).toBeUndefined();
+    expect(queryClient.getQueryData(['me'])).toBeUndefined();
   });
 });

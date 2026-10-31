@@ -5,13 +5,6 @@ import { createSessionStore } from './session';
 export { ApiError, isApiError } from './errors';
 export type { Session } from './session';
 
-let sessionExpired = () => {};
-
-/** The app registers what to do when the API stops accepting the session (clear caches). */
-export function onSessionExpired(handler: () => void) {
-  sessionExpired = handler;
-}
-
 export const session = createSessionStore({
   storage: window.localStorage,
   refresh: async (token) =>
@@ -25,4 +18,5 @@ export const session = createSessionStore({
     ).refreshToken,
 });
 
-export const api = createApiClient({ session, onSessionExpired: () => sessionExpired() });
+// when the session ends, the app's providers clear the cache and the guards go to sign in
+export const api = createApiClient({ session });
