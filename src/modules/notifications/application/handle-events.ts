@@ -11,10 +11,20 @@ async function notify(
   type: NotificationType,
   title: string,
   body: string,
-  appointmentId: string,
+  appointment: Appointment,
 ) {
   await deps.notifications.insert([
-    Notification.create({ userId: to.userId, type, title, body, appointmentId }, deps.clock.now()),
+    Notification.create(
+      {
+        userId: to.userId,
+        type,
+        title,
+        body,
+        appointmentId: appointment.id,
+        appointmentStartsAt: appointment.startsAt,
+      },
+      deps.clock.now(),
+    ),
   ]);
   await deps.mailQueue.enqueue({ to: to.email, subject: title, text: body });
 }
@@ -62,7 +72,7 @@ async function notifyOtherParty(deps: NotifyDeps, event: SchedulingEvent) {
         'appointment_booked',
         'New booking',
         `${customer.name} booked ${a.serviceName} on ${when(a.startsAt, tz)}.`,
-        a.id,
+        a,
       );
     case 'canceled': {
       if (byCustomer) {
@@ -72,7 +82,7 @@ async function notifyOtherParty(deps: NotifyDeps, event: SchedulingEvent) {
           'appointment_canceled',
           'Appointment canceled',
           `${customer.name} canceled ${a.serviceName} on ${when(a.startsAt, tz)}.`,
-          a.id,
+          a,
         );
       }
       const why = cancelReasonText(a.cancelReason);
@@ -82,7 +92,7 @@ async function notifyOtherParty(deps: NotifyDeps, event: SchedulingEvent) {
         'appointment_canceled',
         'Appointment canceled',
         `Your ${a.serviceName} with ${barberUser.name} on ${when(a.startsAt, tz)} was canceled${why ? `: ${why}` : ''}.`,
-        a.id,
+        a,
       );
     }
     case 'rescheduled': {
@@ -94,7 +104,7 @@ async function notifyOtherParty(deps: NotifyDeps, event: SchedulingEvent) {
           'appointment_rescheduled',
           'Appointment moved',
           `${customer.name} moved ${a.serviceName} ${moved}.`,
-          a.id,
+          a,
         );
       }
       return notify(
@@ -103,7 +113,7 @@ async function notifyOtherParty(deps: NotifyDeps, event: SchedulingEvent) {
         'appointment_rescheduled',
         'Appointment moved',
         `Your ${a.serviceName} with ${barberUser.name} moved ${moved}.`,
-        a.id,
+        a,
       );
     }
   }

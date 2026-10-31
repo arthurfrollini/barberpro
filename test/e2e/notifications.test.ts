@@ -99,6 +99,39 @@ describe('notifications and the live agenda', () => {
     ]);
   });
 
+  it('keeps the time each notification was about after the appointment moves', async () => {
+    const joao = await barber('Joao');
+    const ana = await signUp('Ana');
+    const id = (await book(ana, joao, '2026-11-02T17:00:00Z')).data!.bookAppointment.id;
+    await gql(
+      t.app,
+      'mutation ($id: ID!, $at: DateTime!) { rescheduleAppointment(id: $id, startsAt: $at) { id } }',
+      { id, at: '2026-11-02T18:00:00Z' },
+      ana,
+    );
+
+    const list = (
+      await gql(
+        t.app,
+        '{ notifications { type appointmentStartsAt appointment { startsAt } } }',
+        {},
+        joao.token,
+      )
+    ).data!.notifications;
+    expect(list).toEqual([
+      {
+        type: 'APPOINTMENT_RESCHEDULED',
+        appointmentStartsAt: '2026-11-02T18:00:00.000Z',
+        appointment: { startsAt: '2026-11-02T18:00:00.000Z' },
+      },
+      {
+        type: 'APPOINTMENT_BOOKED',
+        appointmentStartsAt: '2026-11-02T17:00:00.000Z',
+        appointment: { startsAt: '2026-11-02T18:00:00.000Z' },
+      },
+    ]);
+  });
+
   it('marks a notification read for its owner only', async () => {
     const joao = await barber('Joao');
     const ana = await signUp('Ana');

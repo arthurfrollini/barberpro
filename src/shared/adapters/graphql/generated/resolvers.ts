@@ -329,6 +329,8 @@ export type NearbyBarbershop = {
 export type Notification = {
   __typename?: 'Notification';
   appointment?: Maybe<Appointment>;
+  /** When the appointment started as this notification describes it. A later reschedule changes the appointment, not this. */
+  appointmentStartsAt?: Maybe<Scalars['DateTime']['output']>;
   body: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
@@ -773,6 +775,7 @@ export type NearbyBarbershopResolvers<ContextType = GraphQLContext, ParentType e
 
 export type NotificationResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Notification'] = ResolversParentTypes['Notification']> = {
   appointment?: Resolver<Maybe<ResolversTypes['Appointment']>, ParentType, ContextType>;
+  appointmentStartsAt?: Resolver<Maybe<ResolversTypes['DateTime']>, ParentType, ContextType>;
   body?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;

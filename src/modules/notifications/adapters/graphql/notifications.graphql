@@ -12,6 +12,8 @@ type Notification {
   title: String!
   body: String!
   appointment: Appointment
+  "When the appointment started as this notification describes it. A later reschedule changes the appointment, not this."
+  appointmentStartsAt: DateTime
   read: Boolean!
   createdAt: DateTime!
 }

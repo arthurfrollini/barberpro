@@ -20,7 +20,14 @@ describe('notification repository', () => {
 
   const note = (userId: string, title: string, when: string) =>
     Notification.create(
-      { userId, type: 'appointment_booked', title, body: 'Ana, Mon 14:00', appointmentId: null },
+      {
+        userId,
+        type: 'appointment_booked',
+        title,
+        body: 'Ana, Mon 14:00',
+        appointmentId: null,
+        appointmentStartsAt: null,
+      },
       at(when),
     );
 

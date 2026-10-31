@@ -7,6 +7,7 @@ import { shopsRecords } from '../../../modules/shops/adapters/persistence/record
 import { FileRecord } from '../files/file.record.js';
 import { Identity1793373465720 } from './migrations/1793373465720-identity.js';
 import { Notifications1793375989918 } from './migrations/1793375989918-notifications.js';
+import { NotificationStartsAt1793460000000 } from './migrations/1793460000000-notification-starts-at.js';
 import { Scheduling1793375502792 } from './migrations/1793375502792-scheduling.js';
 import { Shops1793374278141 } from './migrations/1793374278141-shops.js';
 
@@ -24,6 +25,7 @@ const migrations = [
   Shops1793374278141,
   Scheduling1793375502792,
   Notifications1793375989918,
+  NotificationStartsAt1793460000000,
 ];
 
 export function createDataSource(url: string): DataSource {

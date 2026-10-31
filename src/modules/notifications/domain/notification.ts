@@ -13,6 +13,8 @@ export type NotificationProps = {
   title: string;
   body: string;
   appointmentId: string | null;
+  /** When the appointment started as this notification describes it; a later move keeps it. */
+  appointmentStartsAt: Date | null;
   readAt: Date | null;
   createdAt: Date;
 };
@@ -22,7 +24,10 @@ export class Notification {
   private constructor(private props: NotificationProps) {}
 
   static create(
-    input: Pick<NotificationProps, 'userId' | 'type' | 'title' | 'body' | 'appointmentId'>,
+    input: Pick<
+      NotificationProps,
+      'userId' | 'type' | 'title' | 'body' | 'appointmentId' | 'appointmentStartsAt'
+    >,
     now: Date,
   ): Notification {
     return new Notification({ id: randomUUID(), ...input, readAt: null, createdAt: now });
@@ -49,6 +54,9 @@ export class Notification {
   }
   get appointmentId() {
     return this.props.appointmentId;
+  }
+  get appointmentStartsAt() {
+    return this.props.appointmentStartsAt;
   }
   get readAt() {
     return this.props.readAt;
