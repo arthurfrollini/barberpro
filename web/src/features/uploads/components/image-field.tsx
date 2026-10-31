@@ -17,11 +17,14 @@ export function ImageField({
   label,
   url,
   onChange,
+  onUploadingChange,
   shape = 'circle',
 }: {
   label: string;
   url: string | null;
   onChange: (value: ImageValue) => void;
+  /** Lets the form hold its submit until the image it will reference exists. */
+  onUploadingChange?: (uploading: boolean) => void;
   shape?: 'circle' | 'square';
 }) {
   const inputId = useId();
@@ -35,6 +38,7 @@ export function ImageField({
     setError(problem);
     if (problem) return;
     setUploading(true);
+    onUploadingChange?.(true);
     try {
       const uploaded = await uploadImage(file);
       onChange({ fileId: uploaded.id, url: uploaded.url });
@@ -42,6 +46,7 @@ export function ImageField({
       setError(messageFor(isApiError(e) ? e.code : undefined));
     } finally {
       setUploading(false);
+      onUploadingChange?.(false);
       if (input.current) input.current.value = '';
     }
   };
@@ -67,6 +72,9 @@ export function ImageField({
           type="file"
           accept={IMAGE_TYPES.join(',')}
           aria-label={label}
+          // reached through the button; hidden from the tab order, and off while uploading
+          tabIndex={-1}
+          disabled={uploading}
           className="sr-only"
           onChange={(event) => void pick(event.target.files?.[0])}
         />

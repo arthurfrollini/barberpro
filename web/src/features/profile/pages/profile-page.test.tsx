@@ -1,11 +1,16 @@
-import { screen, within } from '@testing-library/react';
-import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { screen, waitFor, within } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { routes } from '@/app/routes';
 import { BARBER, ME, roles } from '@/test/fixtures';
 import { api, gqlData } from '@/test/graphql';
 import { renderRoutes, signIn } from '@/test/render';
 import { server } from '@/test/server';
+
+const upload = vi.hoisted(() =>
+  vi.fn(async (_file: File) => ({ id: 'f9', url: 'http://api/files/f9' })),
+);
+// the upload itself is covered by image-field.test.tsx
+vi.mock('@/features/uploads/api/upload', () => ({ uploadImage: upload }));
 
 function setup({ barber = true, avatarUrl = null as string | null } = {}) {
   signIn();
@@ -34,9 +39,6 @@ function setup({ barber = true, avatarUrl = null as string | null } = {}) {
       };
       return gqlData({ updateBarberProfile: profile });
     }),
-    http.post('*/uploads', () =>
-      HttpResponse.json({ id: 'f9', url: 'http://api/files/f9' }, { status: 201 }),
-    ),
   );
   return { ...renderRoutes(routes, { path: '/perfil' }), calls };
 }
@@ -84,17 +86,36 @@ describe('profile', () => {
       within(section).getByLabelText('Foto'),
       new File([new Uint8Array([1])], 'me.png', { type: 'image/png' }),
     );
-    await within(section).findByRole('img', { name: 'Foto' });
+    await waitFor(() =>
+      expect(within(section).getByRole('img', { name: 'Foto' })).toHaveAttribute(
+        'src',
+        'http://api/files/f9',
+      ),
+    );
     await user.click(within(section).getByRole('button', { name: 'Salvar perfil' }));
-    await screen.findByText('Perfil salvo');
+    await waitFor(() => expect(calls).toHaveLength(1));
 
     await user.click(within(section).getByRole('button', { name: 'Remover' }));
     await user.click(within(section).getByRole('button', { name: 'Salvar perfil' }));
 
-    await screen.findAllByText('Perfil salvo');
+    await waitFor(() => expect(calls).toHaveLength(2));
     expect(calls.map((c) => c.variables)).toEqual([
       { input: { avatarFileId: 'f9' } },
       { input: { avatarFileId: null } },
     ]);
+  });
+
+  it('waits for a photo that is still uploading before saving', async () => {
+    const { user } = setup();
+    // an upload that has not finished (MSW cannot hold a multipart request open under Vitest)
+    upload.mockImplementationOnce(() => new Promise(() => {}));
+    const section = await screen.findByRole('region', { name: 'Perfil de barbeiro' });
+    await user.type(within(section).getByLabelText('Bio'), ' Mais.');
+    await user.upload(
+      within(section).getByLabelText('Foto'),
+      new File([new Uint8Array([1])], 'me.png', { type: 'image/png' }),
+    );
+    expect(await within(section).findByRole('button', { name: 'Enviando…' })).toBeDisabled();
+    expect(within(section).getByRole('button', { name: 'Salvar perfil' })).toBeDisabled();
   });
 });

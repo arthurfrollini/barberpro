@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -26,6 +27,7 @@ export function BarberProfileForm({ barber }: { barber: NonNullable<Roles['barbe
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: defaults });
   const { errors, isDirty, dirtyFields } = form.formState;
   const bio = useWatch({ control: form.control, name: 'bio' });
+  const [uploading, setUploading] = useState(false);
 
   const onSubmit = form.handleSubmit(async (values) => {
     const input = {
@@ -52,6 +54,7 @@ export function BarberProfileForm({ barber }: { barber: NonNullable<Roles['barbe
             label="Foto"
             url={field.value.url}
             onChange={(next) => field.onChange(next)}
+            onUploadingChange={setUploading}
           />
         )}
       />
@@ -66,7 +69,7 @@ export function BarberProfileForm({ barber }: { barber: NonNullable<Roles['barbe
         {bio.length}/{LIMITS.bio}
       </p>
       <div>
-        <Button type="submit" disabled={!isDirty || update.isPending}>
+        <Button type="submit" disabled={!isDirty || uploading || update.isPending}>
           Salvar perfil
         </Button>
       </div>

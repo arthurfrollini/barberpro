@@ -7,7 +7,11 @@ export function useUpdateName() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateName,
-    onSuccess: (me) => queryClient.setQueryData(meKey, me),
+    onSuccess: (me) => {
+      queryClient.setQueryData(meKey, me);
+      // the barber profile shows the same name
+      void queryClient.invalidateQueries({ queryKey: rolesKey });
+    },
   });
 }
 
