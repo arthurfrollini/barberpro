@@ -1,5 +1,6 @@
 import type { RouteObject } from 'react-router';
 import { AgendaPage } from '@/features/agenda/pages/agenda-page';
+import { ProfilePage } from '@/features/profile/pages/profile-page';
 import { SchedulePage } from '@/features/schedule/pages/schedule-page';
 import { ServicesPage } from '@/features/services/pages/services-page';
 import { SignInPage } from '@/features/auth/pages/sign-in-page';
@@ -43,7 +44,7 @@ export const routes: RouteObject[] = [
               },
               // an owner edits the shop here; anyone else creates one from "Começar"
               { path: '/barbearia', element: <PlaceholderPage title="Barbearia" /> },
-              { path: '/perfil', element: <PlaceholderPage title="Perfil" /> },
+              { path: '/perfil', element: <ProfilePage /> },
               { path: '/comecar', element: <PlaceholderPage title="Começar" /> },
             ],
           },

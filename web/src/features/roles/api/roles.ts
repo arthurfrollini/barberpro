@@ -6,6 +6,7 @@ const RolesQuery = graphql(`
     myBarberProfile {
       id
       name
+      bio
       avatarUrl
       barbershop {
         id

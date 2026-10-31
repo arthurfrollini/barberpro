@@ -46,6 +46,16 @@ export type SignUpInput = {
   password: string;
 };
 
+export type UpdateBarberProfileInput = {
+  /** Id returned by POST /uploads; null removes the photo. */
+  avatarFileId?: string | number | null | undefined;
+  bio?: string | null | undefined;
+};
+
+export type UpdateProfileInput = {
+  name: string;
+};
+
 export type UpdateServiceInput = {
   description?: string | null | undefined;
   durationMinutes?: number | null | undefined;
@@ -136,10 +146,24 @@ export type MarkNotificationReadMutationVariables = Exact<{
 
 export type MarkNotificationReadMutation = { markNotificationRead: boolean };
 
+export type UpdateProfileMutationVariables = Exact<{
+  input: UpdateProfileInput;
+}>;
+
+
+export type UpdateProfileMutation = { updateProfile: { id: string, name: string, email: string } };
+
+export type UpdateBarberProfileMutationVariables = Exact<{
+  input: UpdateBarberProfileInput;
+}>;
+
+
+export type UpdateBarberProfileMutation = { updateBarberProfile: { id: string, bio: string, avatarUrl: string | null } };
+
 export type RolesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type RolesQuery = { myBarberProfile: { id: string, name: string, avatarUrl: string | null, barbershop: { id: string, name: string, timezone: string, logoUrl: string | null } } | null, myBarbershop: { id: string, name: string, timezone: string, logoUrl: string | null } | null };
+export type RolesQuery = { myBarberProfile: { id: string, name: string, bio: string, avatarUrl: string | null, barbershop: { id: string, name: string, timezone: string, logoUrl: string | null } } | null, myBarbershop: { id: string, name: string, timezone: string, logoUrl: string | null } | null };
 
 export type MyScheduleQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -419,11 +443,30 @@ export const MarkNotificationReadDocument = new TypedDocumentString(`
   markNotificationRead(id: $id)
 }
     `) as unknown as TypedDocumentString<MarkNotificationReadMutation, MarkNotificationReadMutationVariables>;
+export const UpdateProfileDocument = new TypedDocumentString(`
+    mutation UpdateProfile($input: UpdateProfileInput!) {
+  updateProfile(input: $input) {
+    id
+    name
+    email
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateProfileMutation, UpdateProfileMutationVariables>;
+export const UpdateBarberProfileDocument = new TypedDocumentString(`
+    mutation UpdateBarberProfile($input: UpdateBarberProfileInput!) {
+  updateBarberProfile(input: $input) {
+    id
+    bio
+    avatarUrl
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateBarberProfileMutation, UpdateBarberProfileMutationVariables>;
 export const RolesDocument = new TypedDocumentString(`
     query Roles {
   myBarberProfile {
     id
     name
+    bio
     avatarUrl
     barbershop {
       id

@@ -27,7 +27,9 @@ type Documents = {
     "\n  query UnreadNotificationCount {\n    unreadNotificationCount\n  }\n": typeof types.UnreadNotificationCountDocument,
     "\n  query Notifications($limit: Int) {\n    notifications(limit: $limit) {\n      id\n      type\n      title\n      body\n      read\n      createdAt\n      appointmentStartsAt\n      appointment {\n        id\n        startsAt\n        serviceName\n        cancelReason\n        customer {\n          id\n          name\n        }\n        barber {\n          name\n        }\n      }\n    }\n  }\n": typeof types.NotificationsDocument,
     "\n  mutation MarkNotificationRead($id: ID!) {\n    markNotificationRead(id: $id)\n  }\n": typeof types.MarkNotificationReadDocument,
-    "\n  query Roles {\n    myBarberProfile {\n      id\n      name\n      avatarUrl\n      barbershop {\n        id\n        name\n        timezone\n        logoUrl\n      }\n    }\n    myBarbershop {\n      id\n      name\n      timezone\n      logoUrl\n    }\n  }\n": typeof types.RolesDocument,
+    "\n  mutation UpdateProfile($input: UpdateProfileInput!) {\n    updateProfile(input: $input) {\n      id\n      name\n      email\n    }\n  }\n": typeof types.UpdateProfileDocument,
+    "\n  mutation UpdateBarberProfile($input: UpdateBarberProfileInput!) {\n    updateBarberProfile(input: $input) {\n      id\n      bio\n      avatarUrl\n    }\n  }\n": typeof types.UpdateBarberProfileDocument,
+    "\n  query Roles {\n    myBarberProfile {\n      id\n      name\n      bio\n      avatarUrl\n      barbershop {\n        id\n        name\n        timezone\n        logoUrl\n      }\n    }\n    myBarbershop {\n      id\n      name\n      timezone\n      logoUrl\n    }\n  }\n": typeof types.RolesDocument,
     "\n  query MySchedule {\n    mySchedule {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      blockedDates\n    }\n  }\n": typeof types.MyScheduleDocument,
     "\n  mutation SetWeeklySchedule($intervals: [WeeklyIntervalInput!]!) {\n    setWeeklySchedule(intervals: $intervals) {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      canceledAppointments {\n        ...AgendaAppointment\n      }\n    }\n  }\n": typeof types.SetWeeklyScheduleDocument,
     "\n  mutation BlockDate($date: String!) {\n    blockDate(date: $date) {\n      ...AgendaAppointment\n    }\n  }\n": typeof types.BlockDateDocument,
@@ -52,7 +54,9 @@ const documents: Documents = {
     "\n  query UnreadNotificationCount {\n    unreadNotificationCount\n  }\n": types.UnreadNotificationCountDocument,
     "\n  query Notifications($limit: Int) {\n    notifications(limit: $limit) {\n      id\n      type\n      title\n      body\n      read\n      createdAt\n      appointmentStartsAt\n      appointment {\n        id\n        startsAt\n        serviceName\n        cancelReason\n        customer {\n          id\n          name\n        }\n        barber {\n          name\n        }\n      }\n    }\n  }\n": types.NotificationsDocument,
     "\n  mutation MarkNotificationRead($id: ID!) {\n    markNotificationRead(id: $id)\n  }\n": types.MarkNotificationReadDocument,
-    "\n  query Roles {\n    myBarberProfile {\n      id\n      name\n      avatarUrl\n      barbershop {\n        id\n        name\n        timezone\n        logoUrl\n      }\n    }\n    myBarbershop {\n      id\n      name\n      timezone\n      logoUrl\n    }\n  }\n": types.RolesDocument,
+    "\n  mutation UpdateProfile($input: UpdateProfileInput!) {\n    updateProfile(input: $input) {\n      id\n      name\n      email\n    }\n  }\n": types.UpdateProfileDocument,
+    "\n  mutation UpdateBarberProfile($input: UpdateBarberProfileInput!) {\n    updateBarberProfile(input: $input) {\n      id\n      bio\n      avatarUrl\n    }\n  }\n": types.UpdateBarberProfileDocument,
+    "\n  query Roles {\n    myBarberProfile {\n      id\n      name\n      bio\n      avatarUrl\n      barbershop {\n        id\n        name\n        timezone\n        logoUrl\n      }\n    }\n    myBarbershop {\n      id\n      name\n      timezone\n      logoUrl\n    }\n  }\n": types.RolesDocument,
     "\n  query MySchedule {\n    mySchedule {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      blockedDates\n    }\n  }\n": types.MyScheduleDocument,
     "\n  mutation SetWeeklySchedule($intervals: [WeeklyIntervalInput!]!) {\n    setWeeklySchedule(intervals: $intervals) {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      canceledAppointments {\n        ...AgendaAppointment\n      }\n    }\n  }\n": types.SetWeeklyScheduleDocument,
     "\n  mutation BlockDate($date: String!) {\n    blockDate(date: $date) {\n      ...AgendaAppointment\n    }\n  }\n": types.BlockDateDocument,
@@ -116,7 +120,15 @@ export function graphql(source: "\n  mutation MarkNotificationRead($id: ID!) {\n
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query Roles {\n    myBarberProfile {\n      id\n      name\n      avatarUrl\n      barbershop {\n        id\n        name\n        timezone\n        logoUrl\n      }\n    }\n    myBarbershop {\n      id\n      name\n      timezone\n      logoUrl\n    }\n  }\n"): typeof import('./graphql').RolesDocument;
+export function graphql(source: "\n  mutation UpdateProfile($input: UpdateProfileInput!) {\n    updateProfile(input: $input) {\n      id\n      name\n      email\n    }\n  }\n"): typeof import('./graphql').UpdateProfileDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation UpdateBarberProfile($input: UpdateBarberProfileInput!) {\n    updateBarberProfile(input: $input) {\n      id\n      bio\n      avatarUrl\n    }\n  }\n"): typeof import('./graphql').UpdateBarberProfileDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query Roles {\n    myBarberProfile {\n      id\n      name\n      bio\n      avatarUrl\n      barbershop {\n        id\n        name\n        timezone\n        logoUrl\n      }\n    }\n    myBarbershop {\n      id\n      name\n      timezone\n      logoUrl\n    }\n  }\n"): typeof import('./graphql').RolesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
