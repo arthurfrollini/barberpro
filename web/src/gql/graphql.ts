@@ -4,6 +4,17 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 /** Internal type. DO NOT USE DIRECTLY. */
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 import type { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
+export type AppointmentStatus =
+  | 'BOOKED'
+  | 'CANCELED';
+
+export type CancelReason =
+  | 'BARBER'
+  | 'BARBER_REMOVED'
+  | 'CUSTOMER'
+  | 'DAY_BLOCKED'
+  | 'SCHEDULE_CHANGED';
+
 export type SignInInput = {
   email: string;
   password: string;
@@ -15,6 +26,43 @@ export type SignUpInput = {
   /** 8 to 128 characters. */
   password: string;
 };
+
+export type AgendaAppointmentFragment = { id: string, startsAt: string, endsAt: string, status: AppointmentStatus, serviceName: string, priceCents: number, durationMinutes: number, reminderLeadMinutes: number | null, cancelReason: CancelReason | null, canceledAt: string | null, customer: { id: string, name: string } };
+
+export type BarberAgendaQueryVariables = Exact<{
+  date: string;
+}>;
+
+
+export type BarberAgendaQuery = { barberAgenda: Array<{ id: string, startsAt: string, endsAt: string, status: AppointmentStatus, serviceName: string, priceCents: number, durationMinutes: number, reminderLeadMinutes: number | null, cancelReason: CancelReason | null, canceledAt: string | null, customer: { id: string, name: string } }> };
+
+export type MyScheduleQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyScheduleQuery = { mySchedule: { blockedDates: Array<string>, weekly: Array<{ weekday: number, startTime: string, endTime: string }> } };
+
+export type CancelAppointmentMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type CancelAppointmentMutation = { cancelAppointment: { id: string, startsAt: string, endsAt: string, status: AppointmentStatus, serviceName: string, priceCents: number, durationMinutes: number, reminderLeadMinutes: number | null, cancelReason: CancelReason | null, canceledAt: string | null, customer: { id: string, name: string } } };
+
+export type RescheduleAppointmentMutationVariables = Exact<{
+  id: string | number;
+  startsAt: string;
+}>;
+
+
+export type RescheduleAppointmentMutation = { rescheduleAppointment: { id: string, startsAt: string, endsAt: string, status: AppointmentStatus, serviceName: string, priceCents: number, durationMinutes: number, reminderLeadMinutes: number | null, cancelReason: CancelReason | null, canceledAt: string | null, customer: { id: string, name: string } } };
+
+export type RescheduleSlotsQueryVariables = Exact<{
+  id: string | number;
+  date: string;
+}>;
+
+
+export type RescheduleSlotsQuery = { rescheduleSlots: Array<string> };
 
 export type SignInMutationVariables = Exact<{
   input: SignInInput;
@@ -65,7 +113,107 @@ export class TypedDocumentString<TResult, TVariables>
     return this.value;
   }
 }
-
+export const AgendaAppointmentFragmentDoc = new TypedDocumentString(`
+    fragment AgendaAppointment on Appointment {
+  id
+  startsAt
+  endsAt
+  status
+  serviceName
+  priceCents
+  durationMinutes
+  reminderLeadMinutes
+  cancelReason
+  canceledAt
+  customer {
+    id
+    name
+  }
+}
+    `, {"fragmentName":"AgendaAppointment"}) as unknown as TypedDocumentString<AgendaAppointmentFragment, unknown>;
+export const BarberAgendaDocument = new TypedDocumentString(`
+    query BarberAgenda($date: String!) {
+  barberAgenda(date: $date) {
+    ...AgendaAppointment
+  }
+}
+    fragment AgendaAppointment on Appointment {
+  id
+  startsAt
+  endsAt
+  status
+  serviceName
+  priceCents
+  durationMinutes
+  reminderLeadMinutes
+  cancelReason
+  canceledAt
+  customer {
+    id
+    name
+  }
+}`) as unknown as TypedDocumentString<BarberAgendaQuery, BarberAgendaQueryVariables>;
+export const MyScheduleDocument = new TypedDocumentString(`
+    query MySchedule {
+  mySchedule {
+    weekly {
+      weekday
+      startTime
+      endTime
+    }
+    blockedDates
+  }
+}
+    `) as unknown as TypedDocumentString<MyScheduleQuery, MyScheduleQueryVariables>;
+export const CancelAppointmentDocument = new TypedDocumentString(`
+    mutation CancelAppointment($id: ID!) {
+  cancelAppointment(id: $id) {
+    ...AgendaAppointment
+  }
+}
+    fragment AgendaAppointment on Appointment {
+  id
+  startsAt
+  endsAt
+  status
+  serviceName
+  priceCents
+  durationMinutes
+  reminderLeadMinutes
+  cancelReason
+  canceledAt
+  customer {
+    id
+    name
+  }
+}`) as unknown as TypedDocumentString<CancelAppointmentMutation, CancelAppointmentMutationVariables>;
+export const RescheduleAppointmentDocument = new TypedDocumentString(`
+    mutation RescheduleAppointment($id: ID!, $startsAt: DateTime!) {
+  rescheduleAppointment(id: $id, startsAt: $startsAt) {
+    ...AgendaAppointment
+  }
+}
+    fragment AgendaAppointment on Appointment {
+  id
+  startsAt
+  endsAt
+  status
+  serviceName
+  priceCents
+  durationMinutes
+  reminderLeadMinutes
+  cancelReason
+  canceledAt
+  customer {
+    id
+    name
+  }
+}`) as unknown as TypedDocumentString<RescheduleAppointmentMutation, RescheduleAppointmentMutationVariables>;
+export const RescheduleSlotsDocument = new TypedDocumentString(`
+    query RescheduleSlots($id: ID!, $date: String!) {
+  rescheduleSlots(appointmentId: $id, date: $date)
+}
+    `) as unknown as TypedDocumentString<RescheduleSlotsQuery, RescheduleSlotsQueryVariables>;
 export const SignInDocument = new TypedDocumentString(`
     mutation SignIn($input: SignInInput!) {
   signIn(input: $input) {
