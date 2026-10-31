@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router';
 import { AgendaPage } from '@/features/agenda/pages/agenda-page';
 import { ProfilePage } from '@/features/profile/pages/profile-page';
+import { ShopPage } from '@/features/shop/pages/shop-page';
 import { SchedulePage } from '@/features/schedule/pages/schedule-page';
 import { ServicesPage } from '@/features/services/pages/services-page';
 import { SignInPage } from '@/features/auth/pages/sign-in-page';
@@ -44,10 +45,11 @@ export const routes: RouteObject[] = [
                   },
                   {
                     element: <RequireRole role="owner" />,
-                    children: [{ path: '/equipe', element: <PlaceholderPage title="Equipe" /> }],
+                    children: [
+                      { path: '/barbearia', element: <ShopPage /> },
+                      { path: '/equipe', element: <PlaceholderPage title="Equipe" /> },
+                    ],
                   },
-                  // an owner edits the shop here; anyone else creates one from "Começar"
-                  { path: '/barbearia', element: <PlaceholderPage title="Barbearia" /> },
                   { path: '/perfil', element: <ProfilePage /> },
                   { path: '/comecar', element: <PlaceholderPage title="Começar" /> },
                 ],

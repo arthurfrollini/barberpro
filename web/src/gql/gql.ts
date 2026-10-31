@@ -39,6 +39,11 @@ type Documents = {
     "\n  mutation CreateService($input: CreateServiceInput!) {\n    createService(input: $input) {\n      ...ServiceFields\n    }\n  }\n": typeof types.CreateServiceDocument,
     "\n  mutation UpdateService($id: ID!, $input: UpdateServiceInput!) {\n    updateService(id: $id, input: $input) {\n      ...ServiceFields\n    }\n  }\n": typeof types.UpdateServiceDocument,
     "\n  mutation ArchiveService($id: ID!) {\n    archiveService(id: $id) {\n      ...ServiceFields\n    }\n  }\n": typeof types.ArchiveServiceDocument,
+    "\n  fragment ShopFields on Barbershop {\n    id\n    name\n    description\n    foundedYear\n    logoUrl\n    address\n    latitude\n    longitude\n    timezone\n  }\n": typeof types.ShopFieldsFragmentDoc,
+    "\n  query MyShop {\n    myBarbershop {\n      ...ShopFields\n      barbers {\n        id\n        name\n        avatarUrl\n      }\n      invites {\n        id\n        email\n        status\n        expiresAt\n        createdAt\n      }\n    }\n  }\n": typeof types.MyShopDocument,
+    "\n  mutation CreateBarbershop($input: CreateBarbershopInput!) {\n    createBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n": typeof types.CreateBarbershopDocument,
+    "\n  mutation UpdateBarbershop($input: UpdateBarbershopInput!) {\n    updateBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n": typeof types.UpdateBarbershopDocument,
+    "\n  mutation BecomeBarber {\n    becomeBarber {\n      id\n    }\n  }\n": typeof types.BecomeBarberDocument,
     "\n  mutation RefreshToken($token: String!) {\n    refreshToken(token: $token) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n    }\n  }\n": typeof types.RefreshTokenDocument,
 };
 const documents: Documents = {
@@ -66,6 +71,11 @@ const documents: Documents = {
     "\n  mutation CreateService($input: CreateServiceInput!) {\n    createService(input: $input) {\n      ...ServiceFields\n    }\n  }\n": types.CreateServiceDocument,
     "\n  mutation UpdateService($id: ID!, $input: UpdateServiceInput!) {\n    updateService(id: $id, input: $input) {\n      ...ServiceFields\n    }\n  }\n": types.UpdateServiceDocument,
     "\n  mutation ArchiveService($id: ID!) {\n    archiveService(id: $id) {\n      ...ServiceFields\n    }\n  }\n": types.ArchiveServiceDocument,
+    "\n  fragment ShopFields on Barbershop {\n    id\n    name\n    description\n    foundedYear\n    logoUrl\n    address\n    latitude\n    longitude\n    timezone\n  }\n": types.ShopFieldsFragmentDoc,
+    "\n  query MyShop {\n    myBarbershop {\n      ...ShopFields\n      barbers {\n        id\n        name\n        avatarUrl\n      }\n      invites {\n        id\n        email\n        status\n        expiresAt\n        createdAt\n      }\n    }\n  }\n": types.MyShopDocument,
+    "\n  mutation CreateBarbershop($input: CreateBarbershopInput!) {\n    createBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n": types.CreateBarbershopDocument,
+    "\n  mutation UpdateBarbershop($input: UpdateBarbershopInput!) {\n    updateBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n": types.UpdateBarbershopDocument,
+    "\n  mutation BecomeBarber {\n    becomeBarber {\n      id\n    }\n  }\n": types.BecomeBarberDocument,
     "\n  mutation RefreshToken($token: String!) {\n    refreshToken(token: $token) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n    }\n  }\n": types.RefreshTokenDocument,
 };
 
@@ -165,6 +175,26 @@ export function graphql(source: "\n  mutation UpdateService($id: ID!, $input: Up
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation ArchiveService($id: ID!) {\n    archiveService(id: $id) {\n      ...ServiceFields\n    }\n  }\n"): typeof import('./graphql').ArchiveServiceDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment ShopFields on Barbershop {\n    id\n    name\n    description\n    foundedYear\n    logoUrl\n    address\n    latitude\n    longitude\n    timezone\n  }\n"): typeof import('./graphql').ShopFieldsFragmentDoc;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query MyShop {\n    myBarbershop {\n      ...ShopFields\n      barbers {\n        id\n        name\n        avatarUrl\n      }\n      invites {\n        id\n        email\n        status\n        expiresAt\n        createdAt\n      }\n    }\n  }\n"): typeof import('./graphql').MyShopDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation CreateBarbershop($input: CreateBarbershopInput!) {\n    createBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n"): typeof import('./graphql').CreateBarbershopDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation UpdateBarbershop($input: UpdateBarbershopInput!) {\n    updateBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n"): typeof import('./graphql').UpdateBarbershopDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation BecomeBarber {\n    becomeBarber {\n      id\n    }\n  }\n"): typeof import('./graphql').BecomeBarberDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
