@@ -1,6 +1,8 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { isApiError } from '@/shared/api';
+import { messageFor } from '@/shared/lib/error-messages';
 import { formatBRL } from '@/shared/lib/money';
 import {
   AlertDialog,
@@ -63,12 +65,17 @@ export function ServicesPage() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setEditing(service)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-label={`Editar ${service.name}`}
+                  onClick={() => setEditing(service)}
+                >
                   Editar
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" aria-label={`Arquivar ${service.name}`}>
                       Arquivar
                     </Button>
                   </AlertDialogTrigger>
@@ -86,6 +93,8 @@ export function ServicesPage() {
                         onClick={() =>
                           archive.mutate(service.id, {
                             onSuccess: () => toast.success('Serviço arquivado'),
+                            onError: (error) =>
+                              toast.error(messageFor(isApiError(error) ? error.code : undefined)),
                           })
                         }
                       >

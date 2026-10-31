@@ -5,6 +5,9 @@ import type { Service } from '../api/services';
 
 const { min, max, step } = LIMITS.duration;
 
+/** Far above any haircut, and far below GraphQL's Int limit. */
+const MAX_PRICE_CENTS = 1_000_000;
+
 export const serviceSchema = z.object({
   name: z
     .string()
@@ -19,6 +22,10 @@ export const serviceSchema = z.object({
     const cents = parseBRL(value);
     if (cents === null || cents <= 0) {
       ctx.addIssue({ code: 'custom', message: 'Use um valor como 45 ou 45,50.' });
+      return z.NEVER;
+    }
+    if (cents > MAX_PRICE_CENTS) {
+      ctx.addIssue({ code: 'custom', message: 'O preço vai até R$ 10.000,00.' });
       return z.NEVER;
     }
     return cents;

@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { routes } from '@/app/routes';
 import { ME, roles } from '@/test/fixtures';
-import { api, gqlData } from '@/test/graphql';
+import { api, gqlData, gqlError } from '@/test/graphql';
 import { renderRoutes, signIn } from '@/test/render';
 import { server } from '@/test/server';
 
@@ -108,7 +108,7 @@ describe('services', () => {
   it('sends only what changed when editing', async () => {
     const { user, calls } = setup([corte]);
     const item = await screen.findByRole('listitem', { name: 'Corte' });
-    await user.click(within(item).getByRole('button', { name: 'Editar' }));
+    await user.click(within(item).getByRole('button', { name: 'Editar Corte' }));
     const dialog = await screen.findByRole('dialog', { name: 'Editar serviço' });
     expect(within(dialog).getByText(/Agendamentos já feitos mantêm/)).toBeInTheDocument();
     const price = within(dialog).getByLabelText('Preço (R$)');
@@ -124,12 +124,34 @@ describe('services', () => {
   it('archives after confirming', async () => {
     const { user, calls } = setup([corte]);
     const item = await screen.findByRole('listitem', { name: 'Corte' });
-    await user.click(within(item).getByRole('button', { name: 'Arquivar' }));
+    await user.click(within(item).getByRole('button', { name: 'Arquivar Corte' }));
     const confirm = await screen.findByRole('alertdialog');
     expect(confirm).toHaveTextContent('Clientes não poderão mais agendar Corte.');
     await user.click(within(confirm).getByRole('button', { name: 'Arquivar' }));
 
     expect(await screen.findByText('Nenhum serviço ainda')).toBeInTheDocument();
     expect(calls).toEqual([{ op: 'archive', variables: { id: 's1' } }]);
+  });
+
+  it('says when archiving fails', async () => {
+    const { user } = setup([corte]);
+    server.use(api.mutation('ArchiveService', () => gqlError('NOT_SERVICE_OWNER')));
+    const item = await screen.findByRole('listitem', { name: 'Corte' });
+    await user.click(within(item).getByRole('button', { name: 'Arquivar Corte' }));
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Arquivar' }),
+    );
+    expect(await screen.findByText('Este serviço é de outro barbeiro.')).toBeInTheDocument();
+  });
+
+  it('refuses a price above R$ 10.000,00', async () => {
+    const { user, calls } = setup([]);
+    await user.click(await screen.findByRole('button', { name: 'Novo serviço' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Novo serviço' });
+    await user.type(within(dialog).getByLabelText('Nome'), 'Pacote');
+    await user.type(within(dialog).getByLabelText('Preço (R$)'), '20000');
+    await user.click(within(dialog).getByRole('button', { name: 'Criar serviço' }));
+    expect(await within(dialog).findByText('O preço vai até R$ 10.000,00.')).toBeInTheDocument();
+    expect(calls).toEqual([]);
   });
 });
