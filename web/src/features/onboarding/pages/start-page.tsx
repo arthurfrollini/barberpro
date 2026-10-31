@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router';
 import { landingPath, useRoles } from '@/features/roles/hooks/use-roles';
 import { ShopForm } from '@/features/shop/components/shop-form';
+import { Button } from '@/shared/ui/button';
 import { PageHeader } from '@/shared/ui/page-header';
 
 const choice =
@@ -30,6 +31,11 @@ export function StartPage() {
             Sua barbearia
           </h2>
           <ShopForm onCreated={() => navigate('/barbearia', { replace: true })} />
+          <div>
+            <Button variant="ghost" onClick={() => setCreating(false)}>
+              Voltar
+            </Button>
+          </div>
         </section>
       ) : (
         <div className="grid max-w-3xl gap-4 sm:grid-cols-2">

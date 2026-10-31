@@ -109,4 +109,37 @@ describe('accepting an invite', () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it('offers to switch accounts when the invite was for another email, keeping the code', async () => {
+    const { user, router } = setup('/convite?codigo=wrong-email');
+    await user.click(await screen.findByRole('button', { name: 'Aceitar convite' }));
+    await user.click(await screen.findByRole('button', { name: 'Entrar com outro email' }));
+    expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
+    expect(router.state.location.search).toBe(
+      `?voltar=${encodeURIComponent('/convite?codigo=wrong-email')}`,
+    );
+  });
+
+  it('warns an owner that accepting moves them to another shop', async () => {
+    signIn();
+    server.use(
+      api.query('Roles', () => gqlData({ myBarberProfile: null, myBarbershop: SHOP })),
+      api.query('Me', () => gqlData({ me: ME })),
+    );
+    renderRoutes(routes, { path: '/convite?codigo=x' });
+    expect(
+      await screen.findByText(
+        'Você é dono da Mega Barbearia SP. Ao aceitar, você passa a atender na barbearia do convite, não na sua.',
+      ),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('getting started, second thoughts', () => {
+  it('goes back to the two choices', async () => {
+    const { user } = setup('/comecar');
+    await user.click(await screen.findByRole('button', { name: 'Tenho uma barbearia' }));
+    await user.click(await screen.findByRole('button', { name: 'Voltar' }));
+    expect(await screen.findByRole('link', { name: 'Recebi um convite' })).toBeInTheDocument();
+  });
 });
