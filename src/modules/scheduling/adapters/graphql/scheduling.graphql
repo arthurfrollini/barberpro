@@ -78,6 +78,8 @@ type Query {
   "The signed-in barber's appointments on a local date, canceled ones included. Errors: NOT_A_BARBER."
   barberAgenda(date: String!): [Appointment!]!
   mySchedule: BarberSchedule!
+  "Free start times for moving an appointment to a date (YYYY-MM-DD in the shop's zone), using its own duration and ignoring its current slot. Errors: APPOINTMENT_NOT_FOUND, APPOINTMENT_CANCELED, CANCELLATION_WINDOW_CLOSED, INVALID_DATE."
+  rescheduleSlots(appointmentId: ID!, date: String!): [DateTime!]!
 }
 
 type Mutation {

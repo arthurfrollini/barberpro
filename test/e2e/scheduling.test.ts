@@ -195,6 +195,32 @@ describe('scheduling over GraphQL', () => {
     expect(res.errors?.[0]?.message).toMatch(/ISO 8601/);
   });
 
+  it('lists times to move an appointment to, its own slot included', async () => {
+    const joao = await barber('Joao', [['10:00', '12:00']]);
+    const ana = await signUp('Ana');
+    const booked = await book(ana, joao, '2026-11-02T10:00:00-03:00');
+    const id = booked.data!.bookAppointment.id as string;
+
+    const res = await gql(
+      t.app,
+      'query ($id: ID!, $date: String!) { rescheduleSlots(appointmentId: $id, date: $date) }',
+      { id, date: MONDAY },
+      joao.token,
+    );
+
+    expect(res.errors).toBeUndefined();
+    expect(res.data!.rescheduleSlots).toContain('2026-11-02T13:00:00.000Z');
+    expect(res.data!.rescheduleSlots).toContain('2026-11-02T13:15:00.000Z');
+    const stranger = await signUp('Bia');
+    const denied = await gql(
+      t.app,
+      'query ($id: ID!, $date: String!) { rescheduleSlots(appointmentId: $id, date: $date) }',
+      { id, date: MONDAY },
+      stranger,
+    );
+    expect(errorCode(denied)).toBe('APPOINTMENT_NOT_FOUND');
+  });
+
   it('shows the barber his own hours and days off', async () => {
     const joao = await barber('Joao', [['10:00', '12:00']]);
     await gql(t.app, 'mutation { blockDate(date: "2026-11-05") { id } }', {}, joao.token);

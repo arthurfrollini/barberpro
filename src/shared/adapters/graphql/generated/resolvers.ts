@@ -367,6 +367,8 @@ export type Query = {
   mySchedule: BarberSchedule;
   /** Newest first; limit up to 50. */
   notifications: Array<Notification>;
+  /** Free start times for moving an appointment to a date (YYYY-MM-DD in the shop's zone), using its own duration and ignoring its current slot. Errors: APPOINTMENT_NOT_FOUND, APPOINTMENT_CANCELED, CANCELLATION_WINDOW_CLOSED, INVALID_DATE. */
+  rescheduleSlots: Array<Scalars['DateTime']['output']>;
   /** Matches names with typos. Errors: INVALID_SEARCH (fewer than 2 characters). */
   searchBarbershops: Array<Barbershop>;
   unreadNotificationCount: Scalars['Int']['output'];
@@ -411,6 +413,12 @@ export type QueryMyAppointmentsArgs = {
 export type QueryNotificationsArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryRescheduleSlotsArgs = {
+  appointmentId: Scalars['ID']['input'];
+  date: Scalars['String']['input'];
 };
 
 
@@ -786,6 +794,7 @@ export type QueryResolvers<ContextType = GraphQLContext, ParentType extends Reso
   myBarbershop?: Resolver<Maybe<ResolversTypes['Barbershop']>, ParentType, ContextType>;
   mySchedule?: Resolver<ResolversTypes['BarberSchedule'], ParentType, ContextType>;
   notifications?: Resolver<Array<ResolversTypes['Notification']>, ParentType, ContextType, RequireFields<QueryNotificationsArgs, 'limit' | 'offset'>>;
+  rescheduleSlots?: Resolver<Array<ResolversTypes['DateTime']>, ParentType, ContextType, RequireFields<QueryRescheduleSlotsArgs, 'appointmentId' | 'date'>>;
   searchBarbershops?: Resolver<Array<ResolversTypes['Barbershop']>, ParentType, ContextType, RequireFields<QuerySearchBarbershopsArgs, 'limit' | 'offset' | 'query'>>;
   unreadNotificationCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };

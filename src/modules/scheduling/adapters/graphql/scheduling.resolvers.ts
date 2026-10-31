@@ -8,6 +8,7 @@ import {
   bookAppointment,
   cancelAppointment,
   rescheduleAppointment,
+  rescheduleSlots,
 } from '../../application/booking.js';
 import type { SchedulingDeps } from '../../application/ports.js';
 import {
@@ -29,6 +30,8 @@ export function schedulingGraphQL(deps: SchedulingDeps): GraphQLModule {
         myAppointments(deps, requireUser(ctx), { upcoming: upcoming ?? true }),
       barberAgenda: (_, { date }, ctx) => barberAgenda(deps, requireUser(ctx), date),
       mySchedule: (_, __, ctx) => mySchedule(deps, requireUser(ctx)),
+      rescheduleSlots: (_, { appointmentId, date }, ctx) =>
+        rescheduleSlots(deps, requireUser(ctx), { appointmentId, date }),
     },
     Mutation: {
       setWeeklySchedule: (_, { intervals }, ctx) =>

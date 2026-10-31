@@ -4,7 +4,7 @@ import { Email } from '../../identity/domain/email.js';
 import { User } from '../../identity/domain/user.js';
 import { becomeBarber } from '../../shops/application/barbers.js';
 import { createBarbershop } from '../../shops/application/barbershops.js';
-import { archiveService, createService } from '../../shops/application/services.js';
+import { archiveService, createService, updateService } from '../../shops/application/services.js';
 import { inMemorySchedulingDeps } from '../testing/in-memory.js';
 import { barberAgenda, myAppointments } from './agenda.js';
 import {
@@ -12,6 +12,7 @@ import {
   bookAppointment,
   cancelAppointment,
   rescheduleAppointment,
+  rescheduleSlots,
 } from './booking.js';
 import { blockDate, cancelFutureForBarber, setWeeklySchedule } from './schedule.js';
 
@@ -206,6 +207,62 @@ describe('scheduling use cases', () => {
         type: 'rescheduled',
         previousStartsAt: at('2026-11-02T17:00:00Z'),
       });
+    });
+  });
+
+  describe('rescheduleSlots', () => {
+    const local = (slots: Date[]) => slots.map((s) => s.toISOString().slice(11, 16));
+
+    it("offers the barber and the customer times that overlap the appointment's own slot", async () => {
+      const a = await book(ana, joao, '2026-11-02T17:00:00Z'); // 14:00 local
+      for (const actor of [ana.id, joao.user.id]) {
+        const slots = local(
+          await rescheduleSlots(deps, actor, { appointmentId: a.id, date: MONDAY }),
+        );
+        expect(slots).toContain('17:00');
+        expect(slots).toContain('17:15');
+      }
+    });
+
+    it('still avoids other appointments', async () => {
+      const a = await book(ana, joao, '2026-11-02T17:00:00Z');
+      await book(bia, joao, '2026-11-02T18:00:00Z');
+      const slots = local(
+        await rescheduleSlots(deps, ana.id, { appointmentId: a.id, date: MONDAY }),
+      );
+      expect(slots).not.toContain('17:45');
+      expect(slots).not.toContain('18:00');
+      expect(slots).toContain('18:30');
+    });
+
+    it("uses the appointment's own duration, not the service's current one", async () => {
+      const a = await book(ana, joao, '2026-11-02T17:00:00Z');
+      await updateService(deps.shopsDeps, joao.user.id, joao.serviceId, { durationMinutes: 120 });
+      const slots = local(
+        await rescheduleSlots(deps, ana.id, { appointmentId: a.id, date: MONDAY }),
+      );
+      // João works until 22:00 local (01:00Z); a 30-minute cut can still start at 21:30
+      expect(slots.at(-1)).toBe('00:30');
+    });
+
+    it('hides the appointment from anyone else', async () => {
+      const a = await book(ana, joao, '2026-11-02T17:00:00Z');
+      await expect(
+        rescheduleSlots(deps, bia.id, { appointmentId: a.id, date: MONDAY }),
+      ).rejects.toEqual(code('APPOINTMENT_NOT_FOUND'));
+    });
+
+    it('refuses canceled appointments and the last 2 hours', async () => {
+      const a = await book(ana, joao, '2026-11-02T17:00:00Z');
+      const b = await book(bia, joao, '2026-11-02T19:00:00Z');
+      await cancelAppointment(deps, ana.id, a.id);
+      await expect(
+        rescheduleSlots(deps, ana.id, { appointmentId: a.id, date: MONDAY }),
+      ).rejects.toEqual(code('APPOINTMENT_CANCELED'));
+      clock.set('2026-11-02T17:01:00Z');
+      await expect(
+        rescheduleSlots(deps, bia.id, { appointmentId: b.id, date: MONDAY }),
+      ).rejects.toEqual(code('CANCELLATION_WINDOW_CLOSED'));
     });
   });
 
