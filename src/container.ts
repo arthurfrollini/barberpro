@@ -107,6 +107,7 @@ export async function createContainer(
     mailer: options.mailer ?? mailQueue,
     secrets: nodeSecrets,
     clock,
+    inviteLink: (token) => `${config.dashboardUrl}/convite?codigo=${encodeURIComponent(token)}`,
     // rule 7: the removal and the cancellations share one transaction
     persistRemoval: async (barber, byUserId) => {
       const canceled = await dataSource.transaction(async (manager) => {

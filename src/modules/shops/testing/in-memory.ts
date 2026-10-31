@@ -159,5 +159,6 @@ export function inMemoryShopsDeps(clock: Clock) {
     mailer: new FakeMailer(),
     secrets: { random: () => `token-${++n}`, hash: (raw: string) => `h(${raw})` },
     clock,
+    inviteLink: (token: string) => `http://dash.test/convite?codigo=${encodeURIComponent(token)}`,
   } satisfies ShopsDeps;
 }
