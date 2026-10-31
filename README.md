@@ -2,9 +2,9 @@
   <img src="docs/assets/logo.svg" alt="BarberPro" width="360" />
 </p>
 
-# BarberPro API
+# BarberPro
 
-A GraphQL API for booking barbershop appointments. Customers find shops near them, pick a barber and a service, and book a time that fits. Each barber sets their own services, prices, durations and weekly hours. The shop owner invites barbers by email.
+A GraphQL API for booking barbershop appointments, and the dashboard barbers and shop owners use to run their day. Customers find shops near them, pick a barber and a service, and book a time that fits. Each barber sets their own services, prices, durations and weekly hours. The shop owner invites barbers by email.
 
 This is a rewrite of a 2021 Express project (kept under the [`v2021`](https://github.com/arthurfrollini/barberpro/tree/v2021) tag) in TypeScript, with a hexagonal architecture and the booking rules enforced by both the domain and the database.
 
@@ -16,6 +16,10 @@ This is a rewrite of a 2021 Express project (kept under the [`v2021`](https://gi
 | 2     | Barbershops (nearby, search), uploads, invites, barbers, services        | done  |
 | 3     | Weekly schedules, days off, available slots, booking, cancel, reschedule | done  |
 | 4     | Notifications: email queue, reminders, live agenda subscription          | done  |
+| Web 1 | Dashboard skeleton: sign in and up, session, role-based navigation       | done  |
+| Web 2 | Agenda: day timeline, cancel, reschedule, live updates, notifications    | next  |
+| Web 3 | Barber setup: weekly hours, days off, services, profile                  |       |
+| Web 4 | Owner: shop page, team, invites                                          |       |
 
 The design is in [`docs/superpowers/specs`](docs/superpowers/specs/2026-10-30-barberpro-api-design.md) and each phase has its plan in [`docs/superpowers/plans`](docs/superpowers/plans).
 
@@ -36,7 +40,7 @@ cp .env.example .env
 docker compose up
 ```
 
-That starts Postgres, Redis, Mailpit, the API and the worker (email and reminders), runs the migrations and reloads on file changes. GraphiQL is at http://localhost:4000/graphql and Mailpit at http://localhost:8025.
+That starts Postgres, Redis, Mailpit, the API, the worker (email and reminders) and the dashboard, runs the migrations and reloads on file changes. The dashboard is at http://localhost:5180, GraphiQL at http://localhost:4000/graphql and Mailpit at http://localhost:8025.
 
 To run the API on the host instead, start only the services:
 
@@ -145,6 +149,25 @@ subscription {
 ```
 
 Errors carry a stable code in `extensions.code` (`EMAIL_TAKEN`, `INVALID_CREDENTIALS`, `UNAUTHENTICATED`, ...). The codes each operation can return are listed in its SDL description.
+
+## Dashboard
+
+`web/` is a React single-page app for barbers and owners, in Portuguese. It reads the API's SDL files to type every operation, so a schema change that breaks it fails CI in the same PR ([ADR 5](docs/adr/0005-dashboard-in-the-same-repo.md)).
+
+- Vite, React 19, React Router, TanStack Query, React Hook Form with zod, Tailwind and shadcn/ui (Radix)
+- GraphQL Code Generator's client preset: typed string documents and a small `fetch` client, no Apollo
+- Feature folders, each with `api/` (operations and request functions), `hooks/` (TanStack Query), `components/` and `pages/`; only `shared/api` calls `fetch`
+- The session is shared by all tabs, and refreshes are serialized with a Web Lock because the API's refresh tokens are single use ([ADR 6](docs/adr/0006-session-in-local-storage.md))
+- Vitest with Testing Library and MSW for components; Playwright against the real API for end to end
+
+```bash
+cd web
+npm install
+npm run dev        # http://localhost:5180, proxying the API on :4000
+npm run check      # lint, typecheck, format, unit and component tests
+npm run test:e2e   # Playwright; needs Postgres, Redis and Mailpit from docker compose
+npm run codegen    # after changing an operation or the API's schema
+```
 
 ## Architecture
 
