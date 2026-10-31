@@ -1,6 +1,7 @@
 import { currentShop, useRoles } from '@/features/roles/hooks/use-roles';
 import { PageHeader } from '@/shared/ui/page-header';
 import { ErrorState, PageSkeleton } from '@/shared/ui/states';
+import { DaysOff } from '../components/days-off';
 import { WeeklyHoursForm } from '../components/weekly-hours-form';
 import { useMySchedule } from '../hooks/use-schedule';
 
@@ -19,12 +20,15 @@ export function SchedulePage() {
       ) : schedule.isError ? (
         <ErrorState error={schedule.error} onRetry={() => schedule.refetch()} />
       ) : (
-        <section aria-labelledby="weekly-title" className="flex flex-col gap-4">
-          <h2 id="weekly-title" className="text-xl">
-            Semana
-          </h2>
-          <WeeklyHoursForm schedule={schedule.data} timeZone={timeZone} />
-        </section>
+        <div className="flex flex-col gap-12">
+          <section aria-labelledby="weekly-title" className="flex flex-col gap-4">
+            <h2 id="weekly-title" className="text-xl">
+              Semana
+            </h2>
+            <WeeklyHoursForm schedule={schedule.data} timeZone={timeZone} />
+          </section>
+          <DaysOff schedule={schedule.data} timeZone={timeZone} />
+        </div>
       )}
     </>
   );
