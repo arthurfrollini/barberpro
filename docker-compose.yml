@@ -77,5 +77,21 @@ services:
       redis:
         condition: service_healthy
 
+  web:
+    # the dashboard; Vite forwards /graphql, /uploads and /files to the api service
+    build:
+      context: ./web
+      target: dev
+    environment:
+      API_URL: http://api:4000
+    ports:
+      - '5180:5180'
+    volumes:
+      - ./web/src:/app/src
+      - ./web/public:/app/public
+    depends_on:
+      api:
+        condition: service_started
+
 volumes:
   postgres-data:

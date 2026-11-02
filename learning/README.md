@@ -1,6 +1,6 @@
 # Learning — BarberPro
 
-Material de estudo do BarberPro API: como o sistema funciona, por que ele é assim e o que dizer numa entrevista. O código e o README ficam em inglês; aqui é tudo em português.
+Material de estudo do BarberPro (API e dashboard): como o sistema funciona, por que ele é assim e o que dizer numa entrevista. O código e o README ficam em inglês; aqui é tudo em português.
 
 ## Por onde começar
 
@@ -14,6 +14,11 @@ Material de estudo do BarberPro API: como o sistema funciona, por que ele é ass
 8. [Agenda e regras](Agenda-e-Regras.md): horários livres, fuso horário, regra das 2 horas, exclusion constraint, travas (fase 3).
 9. [Notificações, filas e tempo real](Notificacoes-Filas-e-Tempo-Real.md): eventos, BullMQ, lembretes, subscription (fase 4).
 10. [Apresentação](Apresentacao.md): roteiro de demo e perguntas prováveis com respostas.
+
+### Dashboard (web)
+
+11. [Arquitetura do front](Frontend-Arquitetura.md): features, hooks e chamadas separadas, GraphQL sem Apollo, sessão entre abas, rotas por papel.
+12. [Testes no front](Testes-no-Front.md): Vitest, Testing Library, MSW e Playwright contra a API real.
 
 ## Em uma frase
 
