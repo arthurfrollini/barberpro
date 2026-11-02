@@ -21,13 +21,20 @@ Material de estudo do BarberPro (API e dashboard): como o sistema funciona, por 
 12. [Testes no front](Testes-no-Front.md): Vitest, Testing Library, MSW e Playwright contra a API real.
 13. [Agenda no front](Agenda-no-Front.md): fuso horário, linha do tempo, cache depois de mutations, regra das 2 horas, SSE e notificações.
 14. [Formulários](Formularios.md): React Hook Form com zod, transformações, listas dinâmicas, só o que mudou.
+15. [Dono e equipe](Dono-e-Equipe.md): entrada pelos papéis, convite de ponta a ponta, localização, otimista ou confirmado.
 
 ## Em uma frase
 
 Uma API GraphQL de agendamento de barbearia: o cliente acha barbearias perto dele, escolhe barbeiro e serviço e marca um horário que cabe na agenda; cada barbeiro define seus serviços, preços, durações e horários.
 
-## Números (fase 4, outubro de 2026)
+## Números da API (outubro de 2026)
 
-- 228 testes: 157 unitários, 33 de integração, 38 end to end.
-- 4 módulos (`identity`, `shops`, `scheduling`, `notifications`), 4 ADRs, 4 migrations, 2 processos (API e worker).
-- As 4 fases da API estão feitas. Próximo passo: a dashboard do barbeiro.
+- 236 testes: 163 unitários, 33 de integração, 40 end to end.
+- 4 módulos (`identity`, `shops`, `scheduling`, `notifications`), 6 ADRs, 5 migrations, 2 processos (API e worker).
+- As 4 fases da API estão feitas.
+
+## Números da dashboard (outubro de 2026)
+
+- 4 PRs empilhados sobre a API (#5 a #8): esqueleto e sessão, agenda ao vivo, configuração do barbeiro, dono e equipe.
+- 175 testes de componente e unidade (Vitest) e 5 cenários ponta a ponta (Playwright) contra a API real.
+- Próximo passo: o app do cliente.

@@ -26,7 +26,7 @@ expect(await screen.findByText('Email ou senha incorretos.')).toBeInTheDocument(
 
 ## 3. Ponta a ponta (Playwright)
 
-O Playwright sobe a API de verdade (porta 4100, banco `barberpro_test`, migrations antes) e o Vite (porta 5181) e dirige um Chromium. Nada é mockado.
+O Playwright sobe a API de verdade (porta 4100, banco `barberpro_test`, migrations antes), o worker (espera a linha `worker started`) e o Vite (porta 5181), e dirige um Chromium. Nada é mockado: o teste do convite lê o email que o worker entregou ao Mailpit, pela API do Mailpit.
 
 - Cada teste cria seus próprios usuários com email único, então os testes rodam em paralelo e o banco não precisa ser limpo.
 - Foi o Playwright que achou um bug que os testes de componente não pegaram: ao sair, a ordem das atualizações do React mandava para `/entrar?voltar=...`. O teste de componente passava porque a ordem lá era outra.

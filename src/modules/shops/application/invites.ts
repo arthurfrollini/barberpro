@@ -47,7 +47,8 @@ export async function inviteBarber(
       subject: `You were invited to join ${shop.name}`,
       text:
         `You were invited to join ${shop.name} as a barber on BarberPro.\n\n` +
-        `Sign in with this email and accept the invite with this code: ${token}\n\n` +
+        `Accept it in the dashboard: ${deps.inviteLink(token)}\n\n` +
+        `Or sign in with this email and accept the invite with this code: ${token}\n\n` +
         `The invite expires on ${invite.expiresAt.toISOString().slice(0, 10)}.`,
       inviteId: invite.id,
     });

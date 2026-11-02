@@ -146,6 +146,13 @@ describe('shops use cases', () => {
       expect(barber.isActive).toBe(true);
     });
 
+    it('links the email to the dashboard page that accepts the code', async () => {
+      const token = await inviteJose();
+      expect(deps.mailer.sent.at(-1)!.text).toContain(
+        `Accept it in the dashboard: http://dash.test/convite?codigo=${token}`,
+      );
+    });
+
     it('is only for the shop owner', async () => {
       await expect(inviteBarber(deps, ana.id, 'jose@x.com')).rejects.toEqual(
         code('NOT_SHOP_OWNER'),

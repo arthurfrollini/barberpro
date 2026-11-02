@@ -23,6 +23,8 @@
 
 **Hexagonal** (ou "ports and adapters") quer dizer: o centro (domínio e casos de uso) não sabe que existe GraphQL, Postgres ou Redis. Ele declara **portas** (interfaces como `UserRepository`, `Clock`, `SchedulingEvents`, `MailQueue`) e o mundo de fora pluga **adaptadores** nelas.
 
+A dashboard (`web/`) é um cliente como outro qualquer: fala com a API só por esses caminhos HTTP e SSE. A organização dela está em [Arquitetura do front](Frontend-Arquitetura.md).
+
 São **dois processos** com o mesmo código: a API (`src/main.ts`) e o worker (`src/worker.ts`), que consome as filas de email e lembretes.
 
 ## Pastas

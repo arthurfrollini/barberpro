@@ -20,6 +20,18 @@ export type CancelReason =
   | 'DAY_BLOCKED'
   | 'SCHEDULE_CHANGED';
 
+export type CreateBarbershopInput = {
+  address: string;
+  description?: string | null | undefined;
+  foundedYear: number;
+  latitude: number;
+  /** Id returned by POST /uploads. */
+  logoFileId?: string | number | null | undefined;
+  longitude: number;
+  name: string;
+  timezone?: string | null | undefined;
+};
+
 export type CreateServiceInput = {
   description?: string | null | undefined;
   /** 5 to 480, in steps of 5. */
@@ -27,6 +39,12 @@ export type CreateServiceInput = {
   name: string;
   priceCents: number;
 };
+
+export type InviteStatus =
+  | 'ACCEPTED'
+  | 'EXPIRED'
+  | 'PENDING'
+  | 'REVOKED';
 
 export type NotificationType =
   | 'APPOINTMENT_BOOKED'
@@ -50,6 +68,18 @@ export type UpdateBarberProfileInput = {
   /** Id returned by POST /uploads; null removes the photo. */
   avatarFileId?: string | number | null | undefined;
   bio?: string | null | undefined;
+};
+
+export type UpdateBarbershopInput = {
+  address?: string | null | undefined;
+  description?: string | null | undefined;
+  foundedYear?: number | null | undefined;
+  latitude?: number | null | undefined;
+  /** null removes the logo. */
+  logoFileId?: string | number | null | undefined;
+  longitude?: number | null | undefined;
+  name?: string | null | undefined;
+  timezone?: string | null | undefined;
 };
 
 export type UpdateProfileInput = {
@@ -126,6 +156,13 @@ export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type MeQuery = { me: { id: string, name: string, email: string } };
+
+export type AcceptInviteMutationVariables = Exact<{
+  token: string;
+}>;
+
+
+export type AcceptInviteMutation = { acceptInvite: { id: string, barbershop: { name: string } } };
 
 export type UnreadNotificationCountQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -220,6 +257,53 @@ export type ArchiveServiceMutationVariables = Exact<{
 
 export type ArchiveServiceMutation = { archiveService: { id: string, name: string, description: string, priceCents: number, durationMinutes: number, archived: boolean } };
 
+export type ShopFieldsFragment = { id: string, name: string, description: string, foundedYear: number, logoUrl: string | null, address: string, latitude: number, longitude: number, timezone: string };
+
+export type MyShopQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyShopQuery = { myBarbershop: { id: string, name: string, description: string, foundedYear: number, logoUrl: string | null, address: string, latitude: number, longitude: number, timezone: string, barbers: Array<{ id: string, name: string, avatarUrl: string | null }>, invites: Array<{ id: string, email: string, status: InviteStatus, expiresAt: string, createdAt: string }> } | null };
+
+export type CreateBarbershopMutationVariables = Exact<{
+  input: CreateBarbershopInput;
+}>;
+
+
+export type CreateBarbershopMutation = { createBarbershop: { id: string, name: string, description: string, foundedYear: number, logoUrl: string | null, address: string, latitude: number, longitude: number, timezone: string } };
+
+export type UpdateBarbershopMutationVariables = Exact<{
+  input: UpdateBarbershopInput;
+}>;
+
+
+export type UpdateBarbershopMutation = { updateBarbershop: { id: string, name: string, description: string, foundedYear: number, logoUrl: string | null, address: string, latitude: number, longitude: number, timezone: string } };
+
+export type BecomeBarberMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type BecomeBarberMutation = { becomeBarber: { id: string } };
+
+export type InviteBarberMutationVariables = Exact<{
+  email: string;
+}>;
+
+
+export type InviteBarberMutation = { inviteBarber: { id: string, email: string, status: InviteStatus, expiresAt: string, createdAt: string } };
+
+export type RevokeInviteMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type RevokeInviteMutation = { revokeInvite: { id: string, status: InviteStatus } };
+
+export type RemoveBarberMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type RemoveBarberMutation = { removeBarber: { id: string } };
+
 export type RefreshTokenMutationVariables = Exact<{
   token: string;
 }>;
@@ -273,6 +357,19 @@ export const ServiceFieldsFragmentDoc = new TypedDocumentString(`
   archived
 }
     `, {"fragmentName":"ServiceFields"}) as unknown as TypedDocumentString<ServiceFieldsFragment, unknown>;
+export const ShopFieldsFragmentDoc = new TypedDocumentString(`
+    fragment ShopFields on Barbershop {
+  id
+  name
+  description
+  foundedYear
+  logoUrl
+  address
+  latitude
+  longitude
+  timezone
+}
+    `, {"fragmentName":"ShopFields"}) as unknown as TypedDocumentString<ShopFieldsFragment, unknown>;
 export const BarberAgendaDocument = new TypedDocumentString(`
     query BarberAgenda($date: String!) {
   barberAgenda(date: $date) {
@@ -407,6 +504,16 @@ export const MeDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<MeQuery, MeQueryVariables>;
+export const AcceptInviteDocument = new TypedDocumentString(`
+    mutation AcceptInvite($token: String!) {
+  acceptInvite(token: $token) {
+    id
+    barbershop {
+      name
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AcceptInviteMutation, AcceptInviteMutationVariables>;
 export const UnreadNotificationCountDocument = new TypedDocumentString(`
     query UnreadNotificationCount {
   unreadNotificationCount
@@ -610,6 +717,102 @@ export const ArchiveServiceDocument = new TypedDocumentString(`
   durationMinutes
   archived
 }`) as unknown as TypedDocumentString<ArchiveServiceMutation, ArchiveServiceMutationVariables>;
+export const MyShopDocument = new TypedDocumentString(`
+    query MyShop {
+  myBarbershop {
+    ...ShopFields
+    barbers {
+      id
+      name
+      avatarUrl
+    }
+    invites {
+      id
+      email
+      status
+      expiresAt
+      createdAt
+    }
+  }
+}
+    fragment ShopFields on Barbershop {
+  id
+  name
+  description
+  foundedYear
+  logoUrl
+  address
+  latitude
+  longitude
+  timezone
+}`) as unknown as TypedDocumentString<MyShopQuery, MyShopQueryVariables>;
+export const CreateBarbershopDocument = new TypedDocumentString(`
+    mutation CreateBarbershop($input: CreateBarbershopInput!) {
+  createBarbershop(input: $input) {
+    ...ShopFields
+  }
+}
+    fragment ShopFields on Barbershop {
+  id
+  name
+  description
+  foundedYear
+  logoUrl
+  address
+  latitude
+  longitude
+  timezone
+}`) as unknown as TypedDocumentString<CreateBarbershopMutation, CreateBarbershopMutationVariables>;
+export const UpdateBarbershopDocument = new TypedDocumentString(`
+    mutation UpdateBarbershop($input: UpdateBarbershopInput!) {
+  updateBarbershop(input: $input) {
+    ...ShopFields
+  }
+}
+    fragment ShopFields on Barbershop {
+  id
+  name
+  description
+  foundedYear
+  logoUrl
+  address
+  latitude
+  longitude
+  timezone
+}`) as unknown as TypedDocumentString<UpdateBarbershopMutation, UpdateBarbershopMutationVariables>;
+export const BecomeBarberDocument = new TypedDocumentString(`
+    mutation BecomeBarber {
+  becomeBarber {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<BecomeBarberMutation, BecomeBarberMutationVariables>;
+export const InviteBarberDocument = new TypedDocumentString(`
+    mutation InviteBarber($email: String!) {
+  inviteBarber(email: $email) {
+    id
+    email
+    status
+    expiresAt
+    createdAt
+  }
+}
+    `) as unknown as TypedDocumentString<InviteBarberMutation, InviteBarberMutationVariables>;
+export const RevokeInviteDocument = new TypedDocumentString(`
+    mutation RevokeInvite($id: ID!) {
+  revokeInvite(id: $id) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<RevokeInviteMutation, RevokeInviteMutationVariables>;
+export const RemoveBarberDocument = new TypedDocumentString(`
+    mutation RemoveBarber($id: ID!) {
+  removeBarber(id: $id) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<RemoveBarberMutation, RemoveBarberMutationVariables>;
 export const RefreshTokenDocument = new TypedDocumentString(`
     mutation RefreshToken($token: String!) {
   refreshToken(token: $token) {

@@ -76,6 +76,8 @@ export type ShopsDeps = {
   mailer: Mailer;
   secrets: Secrets;
   clock: Clock;
+  /** The dashboard page that accepts an invite code, for the invite email. */
+  inviteLink: (token: string) => string;
   /**
    * Saves a removed barber together with the cancellation of their appointments 2 hours or
    * more away (scheduling), in one transaction: either both happen or neither does.

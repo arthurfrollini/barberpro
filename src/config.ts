@@ -12,6 +12,7 @@ const schema = z.object({
   MAIL_FROM: z.string().default('BarberPro <no-reply@barberpro.dev>'),
   UPLOAD_DIR: z.string().default('uploads'),
   PUBLIC_URL: z.url().default('http://localhost:4000'),
+  DASHBOARD_URL: z.url().default('http://localhost:5180'),
   QUEUE_PREFIX: z.string().min(1).default('barberpro'),
 });
 
@@ -27,6 +28,8 @@ export type Config = {
   mailFrom: string;
   uploadDir: string;
   publicUrl: string;
+  /** Where the barber dashboard runs; invite emails link to it. */
+  dashboardUrl: string;
   /** Namespace of the BullMQ keys in Redis; tests use their own. */
   queuePrefix: string;
 };
@@ -53,6 +56,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     mailFrom: e.MAIL_FROM,
     uploadDir: e.UPLOAD_DIR,
     publicUrl: e.PUBLIC_URL,
+    dashboardUrl: e.DASHBOARD_URL.replace(/\/$/, ''),
     queuePrefix: e.QUEUE_PREFIX,
   };
 }

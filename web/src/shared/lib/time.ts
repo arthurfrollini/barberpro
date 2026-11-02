@@ -96,3 +96,14 @@ export function formatRelative(iso: string, now: Date = new Date()): string {
   if (days < 7) return relative.format(-days, 'day');
   return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(new Date(iso));
 }
+
+const dayMonth = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: 'UTC',
+  day: 'numeric',
+  month: 'long',
+});
+
+/** "9 de novembro" */
+export function formatDayMonth(date: string): string {
+  return dayMonth.format(utcDate(date));
+}
