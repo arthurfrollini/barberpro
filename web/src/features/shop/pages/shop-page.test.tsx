@@ -23,11 +23,11 @@ function setup({ barber = false } = {}) {
   let shop = { ...FULL_SHOP };
   const calls: { op: string; variables: unknown }[] = [];
   server.use(
-    api.query('Roles', () =>
-      gqlData({ myBarberProfile: isBarber ? BARBER : null, myBarbershop: SHOP }),
+    api.query('Workspaces', () =>
+      gqlData({ myBarberProfiles: isBarber ? [BARBER] : [], myBarbershops: [SHOP] }),
     ),
     api.query('Me', () => gqlData({ me: ME })),
-    api.query('MyShop', () => gqlData({ myBarbershop: shop })),
+    api.query('MyShop', () => gqlData({ barbershop: shop })),
     api.mutation('UpdateBarbershop', ({ variables }) => {
       calls.push({ op: 'update', variables });
       shop = { ...shop, ...(variables.input as object) };
@@ -58,7 +58,7 @@ describe('shop page', () => {
 
     expect(await screen.findByText('Barbearia salva')).toBeInTheDocument();
     expect(calls).toEqual([
-      { op: 'update', variables: { input: { name: 'Mega Barbearia Paulista' } } },
+      { op: 'update', variables: { id: 'shop-1', input: { name: 'Mega Barbearia Paulista' } } },
     ]);
   });
 
@@ -122,7 +122,7 @@ describe('shop page', () => {
     const { user } = setup();
     server.use(api.mutation('BecomeBarber', () => gqlError('ALREADY_A_BARBER')));
     await user.click(await screen.findByRole('button', { name: 'Atender também' }));
-    expect(await screen.findByText('Você já atende em uma barbearia.')).toBeInTheDocument();
+    expect(await screen.findByText('Você já atende nesta barbearia.')).toBeInTheDocument();
   });
 
   it('does not offer it to an owner who already barbers', async () => {

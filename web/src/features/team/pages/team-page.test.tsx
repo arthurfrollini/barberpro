@@ -25,11 +25,11 @@ function setup() {
   ];
   const calls: string[] = [];
   server.use(
-    api.query('Roles', () => gqlData({ myBarberProfile: BARBER, myBarbershop: SHOP })),
+    api.query('Workspaces', () => gqlData({ myBarberProfiles: [BARBER], myBarbershops: [SHOP] })),
     api.query('Me', () => gqlData({ me: ME })),
     api.query('MyShop', () =>
       gqlData({
-        myBarbershop: {
+        barbershop: {
           ...SHOP,
           description: '',
           foundedYear: 2012,

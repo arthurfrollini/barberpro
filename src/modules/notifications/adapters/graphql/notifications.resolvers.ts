@@ -6,7 +6,7 @@ import type {
 } from '../../../../shared/adapters/graphql/pubsub.js';
 import { loadSdl } from '../../../../shared/adapters/graphql/sdl.js';
 import type { GraphQLModule } from '../../../../shared/adapters/graphql/yoga.js';
-import { barberOfUser } from '../../../scheduling/application/lookups.js';
+import { ownBarber } from '../../../scheduling/application/lookups.js';
 import type { SchedulingDeps } from '../../../scheduling/application/ports.js';
 import { listNotifications, markNotificationRead } from '../../application/notifications.js';
 import type { NotifyDeps } from '../../application/ports.js';
@@ -34,8 +34,8 @@ export function notificationsGraphQL(
     Subscription: {
       agendaChanged: {
         // authorization runs once, when the stream opens; then only this barber's topic
-        subscribe: async (_, __, ctx) => {
-          const { barber } = await barberOfUser(scheduling, requireUser(ctx));
+        subscribe: async (_, { barberId }, ctx) => {
+          const { barber } = await ownBarber(scheduling, requireUser(ctx), barberId);
           return pubSub.subscribe('agendaChanged', barber.id);
         },
         resolve: (message: AgendaChangeMessage) => message,

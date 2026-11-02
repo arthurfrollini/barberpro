@@ -6,6 +6,7 @@ const AcceptInviteMutation = graphql(`
     acceptInvite(token: $token) {
       id
       barbershop {
+        id
         name
       }
     }

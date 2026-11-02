@@ -2,7 +2,7 @@ import { DomainError } from '../../../shared/domain/domain-error.js';
 import { Email } from '../../identity/domain/email.js';
 import { Barber } from '../domain/barber.js';
 import { Invite } from '../domain/invite.js';
-import { assertNotBarbering, requireOwnedShop } from './guards.js';
+import { assertNotBarberingIn, requireOwnedShop } from './guards.js';
 import type { ShopsDeps } from './ports.js';
 
 const notFound = () => new DomainError('INVITE_NOT_FOUND', 'This invite is no longer valid.');
@@ -14,15 +14,15 @@ const notFound = () => new DomainError('INVITE_NOT_FOUND', 'This invite is no lo
 export async function inviteBarber(
   deps: ShopsDeps,
   actorId: string,
+  shopId: string,
   rawEmail: string,
 ): Promise<Invite> {
-  const shop = await requireOwnedShop(deps, actorId);
+  const shop = await requireOwnedShop(deps, actorId, shopId);
   const email = Email.parse(rawEmail);
   const now = deps.clock.now();
 
   const invitee = await deps.users.findByEmail(email);
-  const barber = invitee ? await deps.barbers.findActiveByUser(invitee.id) : null;
-  if (barber?.shopId === shop.id) {
+  if (invitee && (await deps.barbers.findActiveInShop(invitee.id, shop.id))) {
     throw new DomainError('ALREADY_A_BARBER', 'This person is already a barber in your shop.');
   }
 
@@ -73,16 +73,16 @@ export async function revokeUndeliveredInvite(deps: ShopsDeps, inviteId: string)
 }
 
 export async function revokeInvite(deps: ShopsDeps, actorId: string, inviteId: string) {
-  const shop = await requireOwnedShop(deps, actorId);
   const invite = await deps.invites.findById(inviteId);
-  if (!invite || invite.shopId !== shop.id) throw notFound();
+  const shop = invite ? await deps.shops.findById(invite.shopId) : null;
+  if (!invite || shop?.ownerId !== actorId) throw notFound();
   invite.revoke(deps.clock.now());
   await deps.invites.save(invite);
   return invite;
 }
 
-export async function listInvites(deps: ShopsDeps, actorId: string) {
-  const shop = await requireOwnedShop(deps, actorId);
+export async function listInvites(deps: ShopsDeps, actorId: string, shopId: string) {
+  const shop = await requireOwnedShop(deps, actorId, shopId);
   return deps.invites.listByShop(shop.id);
 }
 
@@ -98,7 +98,7 @@ export async function acceptInvite(deps: ShopsDeps, actorId: string, token: stri
   }
   const now = deps.clock.now();
   invite.assertCanBeAccepted(now);
-  await assertNotBarbering(deps, actorId);
+  await assertNotBarberingIn(deps, actorId, invite.shopId);
 
   const barber = Barber.create({ shopId: invite.shopId, userId: actorId }, now);
   // one transaction: the conditional accept loses to a concurrent revoke, and the barber's

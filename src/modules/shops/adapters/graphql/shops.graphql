@@ -116,30 +116,30 @@ type Query {
   "Matches names with typos. Errors: INVALID_SEARCH (fewer than 2 characters)."
   searchBarbershops(query: String!, limit: Int = 20, offset: Int = 0): [Barbershop!]!
   barber(id: ID!): Barber
-  "The shop the signed-in user owns, if any."
-  myBarbershop: Barbershop
-  "The signed-in user's barber profile, if they barber somewhere."
-  myBarberProfile: Barber
+  "The shops the signed-in user owns, oldest first."
+  myBarbershops: [Barbershop!]!
+  "The signed-in user's barber profiles, one per shop they work in, oldest first. Services, hours and agenda belong to each profile."
+  myBarberProfiles: [Barber!]!
 }
 
 type Mutation {
-  "Errors: SHOP_ALREADY_OWNED, FILE_NOT_FOUND, INVALID_* for each field."
+  "An owner may have many shops. Errors: FILE_NOT_FOUND, INVALID_* for each field."
   createBarbershop(input: CreateBarbershopInput!): Barbershop!
-  "Edits the shop the signed-in user owns. Errors: NOT_SHOP_OWNER."
-  updateBarbershop(input: UpdateBarbershopInput!): Barbershop!
-  "Emails a 7-day invite. Errors: NOT_SHOP_OWNER, ALREADY_A_BARBER, INVITE_ALREADY_SENT, EMAIL_NOT_SENT."
-  inviteBarber(email: String!): Invite!
+  "Errors: NOT_SHOP_OWNER (also for an unknown id)."
+  updateBarbershop(id: ID!, input: UpdateBarbershopInput!): Barbershop!
+  "Emails a 7-day invite to this shop. Errors: NOT_SHOP_OWNER, ALREADY_A_BARBER (already in this shop), INVITE_ALREADY_SENT, EMAIL_NOT_SENT."
+  inviteBarber(shopId: ID!, email: String!): Invite!
   revokeInvite(id: ID!): Invite!
-  "token is the code from the invite email. Errors: INVITE_NOT_FOUND, INVITE_EXPIRED, INVITE_EMAIL_MISMATCH, ALREADY_A_BARBER."
+  "token is the code from the invite email. A person may barber in many shops, once in each. Errors: INVITE_NOT_FOUND, INVITE_EXPIRED, INVITE_EMAIL_MISMATCH, ALREADY_A_BARBER (already in that shop)."
   acceptInvite(token: String!): Barber!
-  "The owner joins their own shop as a barber."
-  becomeBarber: Barber!
+  "The owner joins one of their shops as a barber. Errors: NOT_SHOP_OWNER, ALREADY_A_BARBER."
+  becomeBarber(shopId: ID!): Barber!
   "Errors: NOT_SHOP_OWNER, BARBER_NOT_FOUND."
   removeBarber(id: ID!): Barber!
-  "Errors: NOT_A_BARBER."
-  updateBarberProfile(input: UpdateBarberProfileInput!): Barber!
-  "Errors: NOT_A_BARBER, INVALID_PRICE, INVALID_DURATION."
-  createService(input: CreateServiceInput!): Service!
+  "Bio and photo of one of the user's barber profiles. Errors: NOT_A_BARBER."
+  updateBarberProfile(barberId: ID!, input: UpdateBarberProfileInput!): Barber!
+  "A service for one of the user's barber profiles. Errors: NOT_A_BARBER, INVALID_PRICE, INVALID_DURATION."
+  createService(barberId: ID!, input: CreateServiceInput!): Service!
   "Errors: SERVICE_NOT_FOUND, NOT_SERVICE_OWNER."
   updateService(id: ID!, input: UpdateServiceInput!): Service!
   archiveService(id: ID!): Service!

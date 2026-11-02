@@ -1,5 +1,5 @@
 import { localDate, toUtc } from '../../../shared/domain/zoned-time.js';
-import { barberOfUser } from './lookups.js';
+import { ownBarber } from './lookups.js';
 import type { SchedulingDeps } from './ports.js';
 
 /** Upcoming: from now on, soonest first. Otherwise: the latest 100, newest first. */
@@ -12,8 +12,13 @@ export async function myAppointments(
 }
 
 /** Everything on the barber's local date, canceled ones included, in time order. */
-export async function barberAgenda(deps: SchedulingDeps, actorId: string, rawDate: string) {
-  const { barber, shop } = await barberOfUser(deps, actorId);
+export async function barberAgenda(
+  deps: SchedulingDeps,
+  actorId: string,
+  barberId: string,
+  rawDate: string,
+) {
+  const { barber, shop } = await ownBarber(deps, actorId, barberId);
   const date = localDate(rawDate);
   return deps.appointments.forBarberBetween(
     barber.id,

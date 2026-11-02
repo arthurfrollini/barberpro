@@ -8,11 +8,15 @@ import type { SchedulingDeps, SchedulingRepositories } from './ports.js';
 
 type Reads = Pick<SchedulingDeps, 'clock'> & SchedulingRepositories;
 
-/** Free start times of one barber on one local date, for a service of a given length. */
+/**
+ * Free start times of one barber profile on one local date, for a service of a given length.
+ * Busy time counts across all of the person's shops: they cannot be in two places at once.
+ */
 async function startsOn(
   deps: Reads,
   input: {
     barberId: string;
+    barberUserId: string;
     shop: Barbershop;
     date: string;
     durationMinutes: number;
@@ -23,7 +27,7 @@ async function startsOn(
   const tz = input.shop.timezone;
   const { schedule, blockedDates } = await deps.schedules.get(input.barberId);
   const busy = await deps.appointments.busyFor(
-    input.barberId,
+    input.barberUserId,
     toUtc(date, 0, tz),
     toUtc(date, 1440, tz),
     input.excludeId,
@@ -44,6 +48,7 @@ async function assertStartAvailable(
   deps: Reads,
   input: {
     barberId: string;
+    barberUserId: string;
     shop: Barbershop;
     startsAt: Date;
     durationMinutes: number;
@@ -69,10 +74,11 @@ export async function availableSlots(
   deps: SchedulingDeps,
   input: { barberId: string; serviceId: string; date: string },
 ): Promise<Date[]> {
-  const { shop } = await bookableBarber(deps, input.barberId);
+  const { barber, shop } = await bookableBarber(deps, input.barberId);
   const service = await bookableService(deps, input.barberId, input.serviceId);
   return startsOn(deps, {
     barberId: input.barberId,
+    barberUserId: barber.userId,
     shop,
     date: input.date,
     durationMinutes: service.durationMinutes,
@@ -97,6 +103,7 @@ export async function rescheduleSlots(
   const { shop } = await bookableBarber(deps, appointment.barberId);
   return startsOn(deps, {
     barberId: appointment.barberId,
+    barberUserId: appointment.barberUserId,
     shop,
     date: input.date,
     durationMinutes: appointment.durationMinutes,
@@ -132,6 +139,7 @@ export async function bookAppointment(
       { ...tx, clock: deps.clock },
       {
         barberId: barber.id,
+        barberUserId: barber.userId,
         shop,
         startsAt: input.startsAt,
         durationMinutes: service.durationMinutes,
@@ -140,6 +148,7 @@ export async function bookAppointment(
     const booked = Appointment.book(
       {
         barberId: barber.id,
+        barberUserId: barber.userId,
         customerId,
         service: {
           id: service.id,
@@ -215,6 +224,7 @@ export async function rescheduleAppointment(
       { ...tx, clock: deps.clock },
       {
         barberId: a.barberId,
+        barberUserId: a.barberUserId,
         shop,
         startsAt: newStartsAt,
         durationMinutes: a.durationMinutes,

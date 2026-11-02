@@ -25,7 +25,7 @@ describe('scheduling repositories', () => {
   afterAll(closeTestDataSource);
 
   const booking = (
-    barber: { id: string },
+    barber: { id: string; userId: string },
     service: { id: string },
     customerId: string,
     startsAt: string,
@@ -33,6 +33,7 @@ describe('scheduling repositories', () => {
     Appointment.book(
       {
         barberId: barber.id,
+        barberUserId: barber.userId,
         customerId,
         service: { id: service.id, name: 'Corte', priceCents: 6000, durationMinutes: 30 },
         startsAt: at(startsAt),
@@ -76,7 +77,7 @@ describe('scheduling repositories', () => {
     expect(found?.endsAt).toEqual(at('2026-11-02T17:30:00Z'));
 
     const busy = await repos.appointments.busyFor(
-      barber.id,
+      barber.userId,
       at('2026-11-02T00:00:00Z'),
       at('2026-11-03T00:00:00Z'),
     );
@@ -85,7 +86,7 @@ describe('scheduling repositories', () => {
     ]);
     expect(
       await repos.appointments.busyFor(
-        barber.id,
+        barber.userId,
         at('2026-11-02T00:00:00Z'),
         at('2026-11-03T00:00:00Z'),
         a.id,

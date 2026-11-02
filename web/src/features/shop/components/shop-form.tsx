@@ -26,8 +26,14 @@ import {
 const selectClass =
   'h-9 w-full rounded-md border border-input bg-input px-3 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
-/** Creates the user's shop, or edits `shop` when given. */
-export function ShopForm({ shop, onCreated }: { shop?: ShopFields; onCreated?: () => void }) {
+/** Creates a shop (`onCreated` gets its id), or edits `shop` when given. */
+export function ShopForm({
+  shop,
+  onCreated,
+}: {
+  shop?: ShopFields;
+  onCreated?: (shopId: string) => void;
+}) {
   const create = useCreateShop();
   const update = useUpdateShop();
   const schema = useMemo(() => shopSchema(), []);
@@ -70,13 +76,13 @@ export function ShopForm({ shop, onCreated }: { shop?: ShopFields; onCreated?: (
     try {
       if (shop) {
         const input = changedFields(shop, values);
-        const saved = await update.mutateAsync(input);
+        const saved = await update.mutateAsync({ id: shop.id, input });
         form.reset(shopValues(saved));
         toast.success('Barbearia salva');
       } else {
-        await create.mutateAsync(toInput(values));
+        const created = await create.mutateAsync(toInput(values));
         toast.success('Barbearia criada');
-        onCreated?.();
+        onCreated?.(created.id);
       }
     } catch (error) {
       form.setError('root', { message: messageFor(isApiError(error) ? error.code : undefined) });

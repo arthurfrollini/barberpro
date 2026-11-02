@@ -17,8 +17,8 @@ graphql(`
 `);
 
 const MyShopQuery = graphql(`
-  query MyShop {
-    myBarbershop {
+  query MyShop($id: ID!) {
+    barbershop(id: $id) {
       ...ShopFields
       barbers {
         id
@@ -45,30 +45,33 @@ const CreateShopMutation = graphql(`
 `);
 
 const UpdateShopMutation = graphql(`
-  mutation UpdateBarbershop($input: UpdateBarbershopInput!) {
-    updateBarbershop(input: $input) {
+  mutation UpdateBarbershop($id: ID!, $input: UpdateBarbershopInput!) {
+    updateBarbershop(id: $id, input: $input) {
       ...ShopFields
     }
   }
 `);
 
 const BecomeBarberMutation = graphql(`
-  mutation BecomeBarber {
-    becomeBarber {
+  mutation BecomeBarber($shopId: ID!) {
+    becomeBarber(shopId: $shopId) {
       id
     }
   }
 `);
 
-export const fetchMyShop = async () => (await api.request(MyShopQuery)).myBarbershop ?? null;
+/** A shop the user owns, with its team and invites (owner-only fields). */
+export const fetchMyShop = async (id: string) =>
+  (await api.request(MyShopQuery, { id })).barbershop ?? null;
 
 export const createShop = async (input: CreateBarbershopInput) =>
   (await api.request(CreateShopMutation, { input })).createBarbershop;
 
-export const updateShop = async (input: UpdateBarbershopInput) =>
-  (await api.request(UpdateShopMutation, { input })).updateBarbershop;
+export const updateShop = async ({ id, input }: { id: string; input: UpdateBarbershopInput }) =>
+  (await api.request(UpdateShopMutation, { id, input })).updateBarbershop;
 
-export const becomeBarber = async () => (await api.request(BecomeBarberMutation)).becomeBarber;
+export const becomeBarber = async (shopId: string) =>
+  (await api.request(BecomeBarberMutation, { shopId })).becomeBarber;
 
 export type MyShop = NonNullable<Awaited<ReturnType<typeof fetchMyShop>>>;
 export type { ShopFieldsFragment as ShopFields } from '@/gql/graphql';

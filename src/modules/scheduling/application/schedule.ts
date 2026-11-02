@@ -2,7 +2,7 @@ import { DomainError } from '../../../shared/domain/domain-error.js';
 import { localDate, toLocal, toUtc } from '../../../shared/domain/zoned-time.js';
 import { type Appointment, CHANGE_WINDOW_MINUTES } from '../domain/appointment.js';
 import { type WeeklyInterval, WeeklySchedule } from '../domain/weekly-schedule.js';
-import { barberOfUser } from './lookups.js';
+import { ownBarber } from './lookups.js';
 import type { SchedulingDeps, SchedulingRepositories } from './ports.js';
 
 /** Appointments starting this late or later may still be canceled by agenda changes. */
@@ -34,9 +34,10 @@ export async function publishCanceled(
 export async function setWeeklySchedule(
   deps: SchedulingDeps,
   actorId: string,
+  barberId: string,
   intervals: WeeklyInterval[],
 ) {
-  const { barber, shop } = await barberOfUser(deps, actorId);
+  const { barber, shop } = await ownBarber(deps, actorId, barberId);
   const schedule = WeeklySchedule.of(intervals);
   const now = deps.clock.now();
   const canceled = await deps.transaction(async (tx) => {
@@ -57,8 +58,13 @@ export async function setWeeklySchedule(
 }
 
 /** Blocks a whole local date; same two-hour rule for the appointments already on it. */
-export async function blockDate(deps: SchedulingDeps, actorId: string, rawDate: string) {
-  const { barber, shop } = await barberOfUser(deps, actorId);
+export async function blockDate(
+  deps: SchedulingDeps,
+  actorId: string,
+  barberId: string,
+  rawDate: string,
+) {
+  const { barber, shop } = await ownBarber(deps, actorId, barberId);
   const date = localDate(rawDate);
   const now = deps.clock.now();
   if (date < toLocal(now, shop.timezone).date) {
@@ -83,13 +89,18 @@ export async function blockDate(deps: SchedulingDeps, actorId: string, rawDate: 
   return canceled;
 }
 
-export async function unblockDate(deps: SchedulingDeps, actorId: string, rawDate: string) {
-  const { barber } = await barberOfUser(deps, actorId);
+export async function unblockDate(
+  deps: SchedulingDeps,
+  actorId: string,
+  barberId: string,
+  rawDate: string,
+) {
+  const { barber } = await ownBarber(deps, actorId, barberId);
   await deps.schedules.unblock(barber.id, localDate(rawDate));
 }
 
-export async function mySchedule(deps: SchedulingDeps, actorId: string) {
-  const { barber } = await barberOfUser(deps, actorId);
+export async function mySchedule(deps: SchedulingDeps, actorId: string, barberId: string) {
+  const { barber } = await ownBarber(deps, actorId, barberId);
   return deps.schedules.get(barber.id);
 }
 

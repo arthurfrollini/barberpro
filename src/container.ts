@@ -126,7 +126,6 @@ export async function createContainer(
       dataSource.transaction((manager) => work(schedulingRepositories(manager))),
     directory: {
       barber: (id) => shops.barbers.findById(id),
-      barberOfUser: (userId) => shops.barbers.findActiveByUser(userId),
       shop: (id) => shops.shops.findById(id),
       service: (id) => shops.services.findById(id),
     },

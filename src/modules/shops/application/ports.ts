@@ -13,7 +13,8 @@ export type NearbyShop = { shop: Barbershop; distanceKm: number };
 export interface BarbershopRepository {
   findById(id: string): Promise<Barbershop | null>;
   findByIds(ids: readonly string[]): Promise<Barbershop[]>;
-  findByOwner(ownerId: string): Promise<Barbershop | null>;
+  /** Oldest first. */
+  listByOwner(ownerId: string): Promise<Barbershop[]>;
   /** Nearest first, only shops within `radiusKm`. */
   findNearby(from: Location, radiusKm: number, limit: number): Promise<NearbyShop[]>;
   /** Fuzzy match on the name (typos and partial words), best match first. */
@@ -24,7 +25,9 @@ export interface BarbershopRepository {
 export interface BarberRepository {
   findById(id: string): Promise<Barber | null>;
   findByIds(ids: readonly string[]): Promise<Barber[]>;
-  findActiveByUser(userId: string): Promise<Barber | null>;
+  /** The user's active profiles, one per shop, oldest first. */
+  listActiveByUser(userId: string): Promise<Barber[]>;
+  findActiveInShop(userId: string, shopId: string): Promise<Barber | null>;
   findActiveByShops(shopIds: readonly string[]): Promise<Barber[]>;
   save(barber: Barber): Promise<void>;
 }

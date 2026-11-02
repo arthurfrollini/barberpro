@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { routes } from '@/app/routes';
 import { appointment } from '@/test/agenda-fixtures';
-import { ME, roles } from '@/test/fixtures';
+import { ME, workspaces } from '@/test/fixtures';
 import { api, gqlData } from '@/test/graphql';
 import { renderRoutes, signIn } from '@/test/render';
 import { server } from '@/test/server';
@@ -14,7 +14,7 @@ function setup(blockedDates: string[], canceled: unknown[] = []) {
   const calls: string[] = [];
   let blocked = [...blockedDates];
   server.use(
-    api.query('Roles', () => gqlData(roles({ barber: true }))),
+    api.query('Workspaces', () => gqlData(workspaces({ barber: true }))),
     api.query('Me', () => gqlData({ me: ME })),
     api.query('MySchedule', () => gqlData({ mySchedule: { weekly: [], blockedDates: blocked } })),
     api.mutation('BlockDate', ({ variables }) => {

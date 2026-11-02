@@ -1,12 +1,18 @@
 import { NavLink } from 'react-router';
-import type { Roles } from '@/features/roles/api/roles';
+import type { Workspace } from '@/features/workspaces/lib/workspaces';
 import { cn } from '@/shared/lib/utils';
 import { navItems } from './nav-items';
 
-export function MainNav({ roles, onNavigate }: { roles: Roles; onNavigate?: () => void }) {
+export function MainNav({
+  active,
+  onNavigate,
+}: {
+  active: Workspace | null;
+  onNavigate?: () => void;
+}) {
   return (
     <nav aria-label="Principal" className="flex flex-col gap-1">
-      {navItems(roles).map(({ to, label, icon: Icon }) => (
+      {navItems(active).map(({ to, label, icon: Icon }) => (
         <NavLink
           key={to}
           to={to}

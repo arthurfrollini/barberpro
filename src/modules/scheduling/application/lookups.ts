@@ -9,11 +9,19 @@ export async function bookableBarber(deps: Pick<SchedulingDeps, 'directory'>, ba
   return { barber, shop };
 }
 
-/** The signed-in user's barber profile and shop; for the barber's own agenda and hours. */
-export async function barberOfUser(deps: Pick<SchedulingDeps, 'directory'>, userId: string) {
-  const barber = await deps.directory.barberOfUser(userId);
-  const shop = barber ? await deps.directory.shop(barber.shopId) : null;
-  if (!barber || !shop) throw new DomainError('NOT_A_BARBER', 'You are not a barber in any shop.');
+/**
+ * One of the signed-in user's own active barber profiles, with its shop: a person who works
+ * in two shops has two profiles, and every agenda or hours operation names which one.
+ */
+export async function ownBarber(
+  deps: Pick<SchedulingDeps, 'directory'>,
+  userId: string,
+  barberId: string,
+) {
+  const barber = await deps.directory.barber(barberId);
+  const shop =
+    barber?.isActive && barber.userId === userId ? await deps.directory.shop(barber.shopId) : null;
+  if (!barber || !shop) throw new DomainError('NOT_A_BARBER', 'You are not this barber.');
   return { barber, shop };
 }
 

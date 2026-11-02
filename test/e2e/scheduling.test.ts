@@ -43,20 +43,28 @@ describe('scheduling over GraphQL', () => {
   /** An owner who barbers in their own shop, with one 30-minute service and weekly hours. */
   const barber = async (name: string, hours: [string, string][]) => {
     const token = await signUp(name);
-    await gql(
-      t.app,
-      `mutation { createBarbershop(input: { name: "${name} Cortes", foundedYear: 2010,
-        address: "Rua 1", latitude: -23.56, longitude: -46.65 }) { id } }`,
-      {},
-      token,
-    );
-    const barberId = (await gql(t.app, 'mutation { becomeBarber { id } }', {}, token)).data!
-      .becomeBarber.id as string;
+    const shopId = (
+      await gql(
+        t.app,
+        `mutation { createBarbershop(input: { name: "${name} Cortes", foundedYear: 2010,
+          address: "Rua 1", latitude: -23.56, longitude: -46.65 }) { id } }`,
+        {},
+        token,
+      )
+    ).data!.createBarbershop.id as string;
+    const barberId = (
+      await gql(
+        t.app,
+        'mutation ($shopId: ID!) { becomeBarber(shopId: $shopId) { id } }',
+        { shopId },
+        token,
+      )
+    ).data!.becomeBarber.id as string;
     const serviceId = (
       await gql(
         t.app,
-        'mutation { createService(input: { name: "Corte", priceCents: 6000, durationMinutes: 30 }) { id } }',
-        {},
+        'mutation ($barberId: ID!) { createService(barberId: $barberId, input: { name: "Corte", priceCents: 6000, durationMinutes: 30 }) { id } }',
+        { barberId },
         token,
       )
     ).data!.createService.id as string;
@@ -65,14 +73,14 @@ describe('scheduling over GraphQL', () => {
     );
     const set = await gql(
       t.app,
-      `mutation ($intervals: [WeeklyIntervalInput!]!) {
-        setWeeklySchedule(intervals: $intervals) { weekly { weekday startTime endTime } }
+      `mutation ($barberId: ID!, $intervals: [WeeklyIntervalInput!]!) {
+        setWeeklySchedule(barberId: $barberId, intervals: $intervals) { weekly { weekday startTime endTime } }
       }`,
-      { intervals },
+      { barberId, intervals },
       token,
     );
     expect(set.errors).toBeUndefined();
-    return { token, barberId, serviceId };
+    return { token, shopId, barberId, serviceId };
   };
 
   const BOOK = `mutation ($input: BookAppointmentInput!) {
@@ -141,8 +149,8 @@ describe('scheduling over GraphQL', () => {
 
     const agenda = await gql(
       t.app,
-      `{ barberAgenda(date: "${MONDAY}") { id customer { name } barber { name } serviceName } }`,
-      {},
+      `query ($barberId: ID!) { barberAgenda(barberId: $barberId, date: "${MONDAY}") { id customer { name } barber { name } serviceName } }`,
+      { barberId: joao.barberId },
       joao.token,
     );
     expect(agenda.data!.barberAgenda).toEqual([
@@ -156,8 +164,8 @@ describe('scheduling over GraphQL', () => {
 
     const blocked = await gql(
       t.app,
-      `mutation { blockDate(date: "${MONDAY}") { id cancelReason } }`,
-      {},
+      `mutation ($barberId: ID!) { blockDate(barberId: $barberId, date: "${MONDAY}") { id cancelReason } }`,
+      { barberId: joao.barberId },
       joao.token,
     );
     expect(blocked.data!.blockDate).toEqual([{ id: appointment.id, cancelReason: 'DAY_BLOCKED' }]);
@@ -184,6 +192,75 @@ describe('scheduling over GraphQL', () => {
     expect(mine.data!.myAppointments).toEqual([
       { id: booked.id, status: 'CANCELED', cancelReason: 'BARBER_REMOVED' },
     ]);
+  });
+
+  it('keeps a barber in two shops from being booked at both at once', async () => {
+    const joao = await barber('Joao', [['08:00', '20:00']]);
+    const shop2 = (
+      await gql(
+        t.app,
+        `mutation { createBarbershop(input: { name: "Joao Filial", foundedYear: 2020,
+          address: "Rua 2", latitude: -23.57, longitude: -46.66 }) { id } }`,
+        {},
+        joao.token,
+      )
+    ).data!.createBarbershop.id as string;
+    const profile2 = (
+      await gql(
+        t.app,
+        'mutation ($shopId: ID!) { becomeBarber(shopId: $shopId) { id } }',
+        { shopId: shop2 },
+        joao.token,
+      )
+    ).data!.becomeBarber.id as string;
+    const service2 = (
+      await gql(
+        t.app,
+        'mutation ($barberId: ID!) { createService(barberId: $barberId, input: { name: "Barba", priceCents: 4000, durationMinutes: 30 }) { id } }',
+        { barberId: profile2 },
+        joao.token,
+      )
+    ).data!.createService.id as string;
+    await gql(
+      t.app,
+      `mutation ($barberId: ID!) { setWeeklySchedule(barberId: $barberId,
+        intervals: [{ weekday: 1, startTime: "08:00", endTime: "20:00" }]) { weekly { weekday } } }`,
+      { barberId: profile2 },
+      joao.token,
+    );
+
+    const mine = await gql(
+      t.app,
+      '{ myBarbershops { id } myBarberProfiles { id barbershop { id } } }',
+      {},
+      joao.token,
+    );
+    expect(mine.data!.myBarbershops).toHaveLength(2);
+    // the test clock gives both the same creation time, so the order is not checked here
+    expect(mine.data!.myBarberProfiles.map((p: { id: string }) => p.id).sort()).toEqual(
+      [joao.barberId, profile2].sort(),
+    );
+
+    const ana = await signUp('Ana');
+    expect((await book(ana, joao, '2026-11-02T17:00:00Z')).errors).toBeUndefined();
+    const there = { barberId: profile2, serviceId: service2 };
+    const slots = await gql(
+      t.app,
+      'query ($barberId: ID!, $serviceId: ID!) { availableSlots(barberId: $barberId, serviceId: $serviceId, date: "2026-11-02") }',
+      there,
+    );
+    expect(slots.data!.availableSlots).not.toContain('2026-11-02T17:00:00.000Z');
+    expect(slots.data!.availableSlots).toContain('2026-11-02T17:30:00.000Z');
+    const bia = await signUp('Bia');
+    expect(errorCode(await book(bia, there, '2026-11-02T17:00:00Z'))).toBe('SLOT_UNAVAILABLE');
+
+    const notHis = await gql(
+      t.app,
+      'query ($barberId: ID!) { barberAgenda(barberId: $barberId, date: "2026-11-02") { id } }',
+      { barberId: profile2 },
+      ana,
+    );
+    expect(errorCode(notHis)).toBe('NOT_A_BARBER');
   });
 
   it('rejects a start time without a timezone', async () => {
@@ -223,12 +300,17 @@ describe('scheduling over GraphQL', () => {
 
   it('shows the barber his own hours and days off', async () => {
     const joao = await barber('Joao', [['10:00', '12:00']]);
-    await gql(t.app, 'mutation { blockDate(date: "2026-11-05") { id } }', {}, joao.token);
+    await gql(
+      t.app,
+      'mutation ($barberId: ID!) { blockDate(barberId: $barberId, date: "2026-11-05") { id } }',
+      { barberId: joao.barberId },
+      joao.token,
+    );
 
     const res = await gql(
       t.app,
-      '{ mySchedule { weekly { weekday startTime endTime } blockedDates } }',
-      {},
+      'query ($barberId: ID!) { mySchedule(barberId: $barberId) { weekly { weekday startTime endTime } blockedDates } }',
+      { barberId: joao.barberId },
       joao.token,
     );
 

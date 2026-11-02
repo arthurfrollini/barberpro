@@ -3,6 +3,7 @@ import { FixedClock } from '../../../shared/testing/fixed-clock.js';
 import { Email } from '../../identity/domain/email.js';
 import { User } from '../../identity/domain/user.js';
 import { becomeBarber } from '../../shops/application/barbers.js';
+import { Barber } from '../../shops/domain/barber.js';
 import { createBarbershop } from '../../shops/application/barbershops.js';
 import { archiveService, createService, updateService } from '../../shops/application/services.js';
 import { inMemorySchedulingDeps } from '../testing/in-memory.js';
@@ -42,7 +43,7 @@ describe('scheduling use cases', () => {
 
   const addBarber = async (name: string, hours: [number, number][]) => {
     const user = await addUser(name);
-    await createBarbershop(deps.shopsDeps, user.id, {
+    const shop = await createBarbershop(deps.shopsDeps, user.id, {
       name: `${name} cortes`,
       description: '',
       foundedYear: 2010,
@@ -52,8 +53,8 @@ describe('scheduling use cases', () => {
       longitude: -46.65,
       timezone: 'America/Sao_Paulo',
     });
-    const barber = await becomeBarber(deps.shopsDeps, user.id);
-    const service = await createService(deps.shopsDeps, user.id, {
+    const barber = await becomeBarber(deps.shopsDeps, user.id, shop.id);
+    const service = await createService(deps.shopsDeps, user.id, barber.id, {
       name: 'Corte',
       description: '',
       priceCents: 6000,
@@ -62,6 +63,7 @@ describe('scheduling use cases', () => {
     await setWeeklySchedule(
       deps,
       user.id,
+      barber.id,
       hours.map(([startMinute, endMinute]) => ({ weekday: 1, startMinute, endMinute })),
     );
     return { user, barberId: barber.id, serviceId: service.id };
@@ -210,6 +212,43 @@ describe('scheduling use cases', () => {
     });
   });
 
+  describe('a barber in two shops', () => {
+    it('is never offered at one shop while booked at the other', async () => {
+      const other = await addUser('outra');
+      await createBarbershop(deps.shopsDeps, other.id, {
+        name: 'Outra',
+        description: '',
+        foundedYear: 2012,
+        logoFileId: null,
+        address: 'Rua 2',
+        latitude: -23.57,
+        longitude: -46.66,
+        timezone: 'America/Sao_Paulo',
+      });
+      const shop = (await deps.shopsDeps.shops.listByOwner(other.id))[0]!;
+      const elsewhere = Barber.create({ shopId: shop.id, userId: jose.user.id }, clock.now());
+      await deps.shopsDeps.barbers.save(elsewhere);
+      const service = await createService(deps.shopsDeps, jose.user.id, elsewhere.id, {
+        name: 'Corte',
+        description: '',
+        priceCents: 5000,
+        durationMinutes: 30,
+      });
+      await setWeeklySchedule(deps, jose.user.id, elsewhere.id, [
+        { weekday: 1, startMinute: h(8), endMinute: h(20) },
+      ]);
+
+      await book(ana, jose, '2026-11-02T17:00:00Z');
+      const there = (
+        await availableSlots(deps, { barberId: elsewhere.id, serviceId: service.id, date: MONDAY })
+      ).map((s) => s.toISOString().slice(11, 16));
+
+      expect(there).not.toContain('17:00');
+      expect(there).not.toContain('16:45');
+      expect(there).toContain('17:30');
+    });
+  });
+
   describe('rescheduleSlots', () => {
     const local = (slots: Date[]) => slots.map((s) => s.toISOString().slice(11, 16));
 
@@ -273,7 +312,7 @@ describe('scheduling use cases', () => {
       const far = await book(bia, jose, '2026-11-02T14:00:00Z'); // 11:00 local
       clock.set('2026-11-02T09:10:00Z'); // 06:10 local
 
-      const canceled = await blockDate(deps, jose.user.id, MONDAY);
+      const canceled = await blockDate(deps, jose.user.id, jose.barberId, MONDAY);
 
       expect(canceled.map((a) => a.id)).toEqual([far.id]);
       expect((await deps.appointments.findById(near.id))?.status).toBe('booked');
@@ -282,7 +321,7 @@ describe('scheduling use cases', () => {
     });
 
     it('refuses to block a date that has passed', async () => {
-      await expect(blockDate(deps, jose.user.id, '2026-11-01')).rejects.toEqual(
+      await expect(blockDate(deps, jose.user.id, jose.barberId, '2026-11-01')).rejects.toEqual(
         code('INVALID_DATE'),
       );
     });
@@ -292,7 +331,7 @@ describe('scheduling use cases', () => {
       const far = await book(bia, jose, '2026-11-02T18:00:00Z'); // 15:00 local
       clock.set('2026-11-02T09:30:00Z'); // 06:30 local: 08:00 is 1h30 away
 
-      const { canceled } = await setWeeklySchedule(deps, jose.user.id, [
+      const { canceled } = await setWeeklySchedule(deps, jose.user.id, jose.barberId, [
         { weekday: 1, startMinute: h(12), endMinute: h(14) },
       ]);
 
@@ -316,13 +355,13 @@ describe('scheduling use cases', () => {
 
   describe('agendas', () => {
     it('keeps a 22:30 appointment on its local date, though it is the next day in UTC', async () => {
-      await setWeeklySchedule(deps, jose.user.id, [
+      await setWeeklySchedule(deps, jose.user.id, jose.barberId, [
         { weekday: 1, startMinute: h(20), endMinute: h(23) },
       ]);
       const late = await book(bia, jose, '2026-11-03T01:30:00Z'); // 22:30 local on Monday
 
-      const agenda = await barberAgenda(deps, jose.user.id, MONDAY);
-      const tuesday = await barberAgenda(deps, jose.user.id, '2026-11-03');
+      const agenda = await barberAgenda(deps, jose.user.id, jose.barberId, MONDAY);
+      const tuesday = await barberAgenda(deps, jose.user.id, jose.barberId, '2026-11-03');
 
       expect(agenda.map((a) => a.id)).toEqual([late.id]);
       expect(tuesday).toEqual([]);
@@ -337,8 +376,10 @@ describe('scheduling use cases', () => {
       expect(mine.map((a) => a.id)).toEqual([first.id, second.id]);
     });
 
-    it('is only for barbers', async () => {
-      await expect(barberAgenda(deps, ana.id, MONDAY)).rejects.toEqual(code('NOT_A_BARBER'));
+    it("is only for the profile's own barber", async () => {
+      await expect(barberAgenda(deps, ana.id, jose.barberId, MONDAY)).rejects.toEqual(
+        code('NOT_A_BARBER'),
+      );
     });
   });
 });

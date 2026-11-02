@@ -1,6 +1,6 @@
 import { DomainError } from '../../../shared/domain/domain-error.js';
 import { Service } from '../domain/service.js';
-import { requireActiveBarber } from './guards.js';
+import { requireOwnBarber } from './guards.js';
 import type { ShopsDeps } from './ports.js';
 
 type ServiceInput = {
@@ -10,8 +10,13 @@ type ServiceInput = {
   durationMinutes: number;
 };
 
-export async function createService(deps: ShopsDeps, actorId: string, input: ServiceInput) {
-  const barber = await requireActiveBarber(deps, actorId);
+export async function createService(
+  deps: ShopsDeps,
+  actorId: string,
+  barberId: string,
+  input: ServiceInput,
+) {
+  const barber = await requireOwnBarber(deps, actorId, barberId);
   const service = Service.create({ ...input, barberId: barber.id }, deps.clock.now());
   await deps.services.save(service);
   return service;
@@ -21,8 +26,8 @@ export async function createService(deps: ShopsDeps, actorId: string, input: Ser
 async function ownService(deps: ShopsDeps, actorId: string, serviceId: string) {
   const service = await deps.services.findById(serviceId);
   if (!service) throw new DomainError('SERVICE_NOT_FOUND', 'Service not found.');
-  const barber = await deps.barbers.findActiveByUser(actorId);
-  if (!barber || barber.id !== service.barberId) {
+  const barber = await deps.barbers.findById(service.barberId);
+  if (!barber || barber.userId !== actorId || !barber.isActive) {
     throw new DomainError(
       'NOT_SERVICE_OWNER',
       'Only the barber who offers this service can change it.',

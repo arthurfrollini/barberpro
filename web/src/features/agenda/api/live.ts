@@ -3,8 +3,8 @@ import type { AgendaChangedSubscription } from '@/gql/graphql';
 import { subscribe } from '@/shared/api/subscriptions';
 
 const AgendaChangedSubscriptionDocument = graphql(`
-  subscription AgendaChanged {
-    agendaChanged {
+  subscription AgendaChanged($barberId: ID!) {
+    agendaChanged(barberId: $barberId) {
       type
       previousStartsAt
       appointment {
@@ -16,14 +16,15 @@ const AgendaChangedSubscriptionDocument = graphql(`
 
 export type AgendaChange = AgendaChangedSubscription['agendaChanged'];
 
-export type AgendaWatcher = (handlers: {
-  next: (change: AgendaChange) => void;
-  reconnected: () => void;
-}) => () => void;
+export type AgendaWatcher = (
+  barberId: string,
+  handlers: { next: (change: AgendaChange) => void; reconnected: () => void },
+) => () => void;
 
-/** The signed-in barber's bookings, cancellations and reschedules as they happen. */
-export const watchAgenda: AgendaWatcher = ({ next, reconnected }) =>
-  subscribe(AgendaChangedSubscriptionDocument, {
-    next: (data) => next(data.agendaChanged),
-    reconnected,
-  });
+/** One barber profile's bookings, cancellations and reschedules as they happen. */
+export const watchAgenda: AgendaWatcher = (barberId, { next, reconnected }) =>
+  subscribe(
+    AgendaChangedSubscriptionDocument,
+    { barberId },
+    { next: (data) => next(data.agendaChanged), reconnected },
+  );

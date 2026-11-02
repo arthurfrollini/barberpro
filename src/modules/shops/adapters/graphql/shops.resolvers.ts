@@ -55,8 +55,8 @@ export function shopsGraphQL(deps: ShopsDeps, publicUrl: string): GraphQLModule 
         const barber = await deps.barbers.findById(id);
         return barber?.isActive ? barber : null;
       },
-      myBarbershop: (_, __, ctx) => deps.shops.findByOwner(requireUser(ctx)),
-      myBarberProfile: (_, __, ctx) => deps.barbers.findActiveByUser(requireUser(ctx)),
+      myBarbershops: (_, __, ctx) => deps.shops.listByOwner(requireUser(ctx)),
+      myBarberProfiles: (_, __, ctx) => deps.barbers.listActiveByUser(requireUser(ctx)),
     },
     Mutation: {
       createBarbershop: (_, { input }, ctx) =>
@@ -66,17 +66,21 @@ export function shopsGraphQL(deps: ShopsDeps, publicUrl: string): GraphQLModule 
           logoFileId: input.logoFileId ?? null,
           timezone: input.timezone ?? 'America/Sao_Paulo',
         }),
-      updateBarbershop: (_, { input }, ctx) =>
-        updateBarbershop(deps, requireUser(ctx), patchOf(input, ['logoFileId'])),
-      inviteBarber: (_, { email }, ctx) => inviteBarber(deps, requireUser(ctx), email),
+      updateBarbershop: (_, { id, input }, ctx) =>
+        updateBarbershop(deps, requireUser(ctx), id, patchOf(input, ['logoFileId'])),
+      inviteBarber: (_, { shopId, email }, ctx) =>
+        inviteBarber(deps, requireUser(ctx), shopId, email),
       revokeInvite: (_, { id }, ctx) => revokeInvite(deps, requireUser(ctx), id),
       acceptInvite: (_, { token }, ctx) => acceptInvite(deps, requireUser(ctx), token),
-      becomeBarber: (_, __, ctx) => becomeBarber(deps, requireUser(ctx)),
+      becomeBarber: (_, { shopId }, ctx) => becomeBarber(deps, requireUser(ctx), shopId),
       removeBarber: (_, { id }, ctx) => removeBarber(deps, requireUser(ctx), id),
-      updateBarberProfile: (_, { input }, ctx) =>
-        updateBarberProfile(deps, requireUser(ctx), patchOf(input, ['avatarFileId'])),
-      createService: (_, { input }, ctx) =>
-        createService(deps, requireUser(ctx), { ...input, description: input.description ?? '' }),
+      updateBarberProfile: (_, { barberId, input }, ctx) =>
+        updateBarberProfile(deps, requireUser(ctx), barberId, patchOf(input, ['avatarFileId'])),
+      createService: (_, { barberId, input }, ctx) =>
+        createService(deps, requireUser(ctx), barberId, {
+          ...input,
+          description: input.description ?? '',
+        }),
       updateService: (_, { id, input }, ctx) =>
         updateService(deps, requireUser(ctx), id, patchOf(input)),
       archiveService: (_, { id }, ctx) => archiveService(deps, requireUser(ctx), id),
@@ -91,7 +95,7 @@ export function shopsGraphQL(deps: ShopsDeps, publicUrl: string): GraphQLModule 
         if (shop.ownerId !== ctx.currentUserId) {
           throw new DomainError('NOT_SHOP_OWNER', 'Only the shop owner can see its invites.');
         }
-        return listInvites(deps, shop.ownerId);
+        return listInvites(deps, shop.ownerId, shop.id);
       },
     },
     NearbyBarbershop: {

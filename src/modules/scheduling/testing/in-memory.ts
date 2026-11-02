@@ -40,6 +40,7 @@ const copy = (a: Appointment) =>
   Appointment.restore({
     id: a.id,
     barberId: a.barberId,
+    barberUserId: a.barberUserId,
     customerId: a.customerId,
     serviceId: a.serviceId,
     serviceName: a.serviceName,
@@ -56,7 +57,7 @@ const copy = (a: Appointment) =>
     updatedAt: a.updatedAt,
   } satisfies AppointmentProps);
 
-/** Stores copies and imitates the two exclusion constraints of the real table. */
+/** Stores copies and imitates the exclusion constraints of the real table. */
 export class InMemoryAppointmentRepository implements AppointmentRepository {
   readonly rows = new Map<string, Appointment>();
 
@@ -68,7 +69,7 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
         other.status === 'booked' &&
         other.startsAt < a.endsAt &&
         a.startsAt < other.endsAt;
-      if (overlaps && other.barberId === a.barberId) {
+      if (overlaps && (other.barberId === a.barberId || other.barberUserId === a.barberUserId)) {
         throw new DomainError('SLOT_UNAVAILABLE', 'This time is no longer available.');
       }
       if (overlaps && other.customerId === a.customerId) {
@@ -101,10 +102,10 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
       .sort((x, y) => x.startsAt.getTime() - y.startsAt.getTime())
       .map(copy);
   }
-  async busyFor(barberId: string, from: Date, to: Date, excludeId?: string) {
+  async busyFor(barberUserId: string, from: Date, to: Date, excludeId?: string) {
     return this.sorted(
       (a) =>
-        a.barberId === barberId &&
+        a.barberUserId === barberUserId &&
         a.status === 'booked' &&
         a.id !== excludeId &&
         a.startsAt < to &&
@@ -140,7 +141,6 @@ export function inMemorySchedulingDeps(clock: Clock) {
   };
   const directory: ShopDirectory = {
     barber: (id) => shopsDeps.barbers.findById(id),
-    barberOfUser: (userId) => shopsDeps.barbers.findActiveByUser(userId),
     shop: (id) => shopsDeps.shops.findById(id),
     service: (id) => shopsDeps.services.findById(id),
   };

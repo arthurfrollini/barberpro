@@ -23,8 +23,12 @@ const { barberId, serviceId } = await setUpBarber(api, jose, {
     ['13:00', '19:00'],
   ],
 });
-const beard = await addService(api, jose, { name: 'Barba', priceCents: 3500, durationMinutes: 20 });
-const combo = await addService(api, jose, {
+const beard = await addService(api, jose, barberId, {
+  name: 'Barba',
+  priceCents: 3500,
+  durationMinutes: 20,
+});
+const combo = await addService(api, jose, barberId, {
   name: 'Corte e barba',
   priceCents: 8000,
   durationMinutes: 60,

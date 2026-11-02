@@ -4,7 +4,9 @@
 
 # BarberPro
 
-A GraphQL API for booking barbershop appointments, and the dashboard barbers and shop owners use to run their day. Customers find shops near them, pick a barber and a service, and book a time that fits. Each barber sets their own services, prices, durations and weekly hours. The shop owner invites barbers by email.
+A GraphQL API for booking barbershop appointments, and the dashboard barbers and shop owners use to run their day. Customers find shops near them, pick a barber and a service, and book a time that fits. Each barber sets their own services, prices, durations and weekly hours. Owners invite barbers by email.
+
+A person can own several shops and work in several, with a separate profile (services, prices, hours) in each, and is never booked in two places at once.
 
 This is a rewrite of a 2021 Express project (kept under the [`v2021`](https://github.com/arthurfrollini/barberpro/tree/v2021) tag) in TypeScript, with a hexagonal architecture and the booking rules enforced by both the domain and the database.
 
@@ -20,8 +22,9 @@ This is a rewrite of a 2021 Express project (kept under the [`v2021`](https://gi
 | Web 2 | Agenda: day timeline, cancel, reschedule, live updates, notifications    | done  |
 | Web 3 | Barber setup: weekly hours, days off, services, profile                  | done  |
 | Web 4 | Owner: getting started, shop page, team, invites                         | done  |
+| V2    | Many shops per owner and per barber, shop switcher in the dashboard      | done  |
 
-The design is in [`docs/superpowers/specs`](docs/superpowers/specs/2026-10-30-barberpro-api-design.md) and each phase has its plan in [`docs/superpowers/plans`](docs/superpowers/plans).
+The designs are in [`docs/superpowers/specs`](docs/superpowers/specs) (API, dashboard, V2) and each phase has its plan in [`docs/superpowers/plans`](docs/superpowers/plans). Study notes in Portuguese, including a walk through [every piece of the stack](learnings/Stack.md), are in [`learnings/`](learnings/README.md).
 
 ## Stack
 
@@ -102,7 +105,37 @@ Anyone can browse, without a token:
 }
 ```
 
-An owner creates the shop and invites barbers by email; the invite email links to the dashboard (`DASHBOARD_URL/convite?codigo=...`) and also carries the code for `acceptInvite`. Logos and avatars go to `POST /uploads` (multipart, JPEG/PNG/WebP up to 2 MB), which returns the id to pass as `logoFileId` or `avatarFileId`.
+Owners and barbers act on a shop or a barber profile by id: `myBarbershops` lists the shops the user owns and `myBarberProfiles` the profiles they work as, one per shop.
+
+```graphql
+mutation {
+  createBarbershop(
+    input: {
+      name: "Mega Barbearia"
+      foundedYear: 2012
+      address: "Av. Paulista, 1000"
+      latitude: -23.5614
+      longitude: -46.6559
+    }
+  ) {
+    id
+  }
+}
+
+mutation {
+  becomeBarber(shopId: "…") {
+    id
+  }
+}
+
+mutation {
+  createService(barberId: "…", input: { name: "Corte", priceCents: 5000, durationMinutes: 30 }) {
+    id
+  }
+}
+```
+
+Owners invite barbers by email (`inviteBarber(shopId, email)`); the email links to the dashboard (`DASHBOARD_URL/convite?codigo=...`) and also carries the code for `acceptInvite`. A barber can accept invites from several shops. Logos and avatars go to `POST /uploads` (multipart, JPEG/PNG/WebP up to 2 MB), which returns the id to pass as `logoFileId` or `avatarFileId`.
 
 Booking takes one of the times `availableSlots` returns (every 15 minutes, in UTC):
 
@@ -128,13 +161,13 @@ mutation {
 }
 ```
 
-Customers and barbers can cancel or reschedule up to 2 hours before. Barbers set weekly hours (`setWeeklySchedule`, `HH:MM` in the shop's time zone) and block days (`blockDate`). Both cancel the booked appointments 2 or more hours away that no longer fit, and return them.
+Customers and barbers can cancel or reschedule up to 2 hours before. Barbers set weekly hours (`setWeeklySchedule(barberId, ...)`, `HH:MM` in the shop's time zone) and block days (`blockDate(barberId, date)`), per shop. Both cancel the booked appointments 2 or more hours away that no longer fit, and return them. A barber who works in two shops is never offered, or booked, at both at the same time: availability counts their bookings everywhere, and an exclusion constraint in Postgres refuses the overlap under concurrency ([ADR 7](docs/adr/0007-many-shops-per-person.md)).
 
 Each booking, cancellation and reschedule notifies the other party (`notifications`, plus the same text by email through the worker) and schedules the customer's reminder. Barbers can watch their agenda live:
 
 ```graphql
 subscription {
-  agendaChanged {
+  agendaChanged(barberId: "…") {
     type
     previousStartsAt
     appointment {
@@ -160,6 +193,7 @@ What it does:
 - **Horários, Serviços, Perfil:** weekly hours with breaks, days off, services with price and length, photo and bio.
 - **Barbearia, Equipe:** the shop page with logo and location, invites by email (the link opens the dashboard with the code filled in), and removing barbers.
 - **Começar:** a new user creates their shop or accepts an invite.
+- **Shop switcher** (bottom left): every shop the user owns or works in, with their role there; every screen acts on the active one. New shops and invites are one click away.
 - A notification bell, and every screen in Portuguese.
 
 - Vite, React 19, React Router, TanStack Query, React Hook Form with zod, Tailwind and shadcn/ui (Radix)

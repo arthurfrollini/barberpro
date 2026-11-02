@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { meKey } from '@/features/auth/hooks/use-auth';
-import { rolesKey } from '@/features/roles/hooks/use-roles';
+import { workspacesKey } from '@/features/workspaces/hooks/use-workspaces';
 import { updateBarberProfile, updateName } from '../api/profile';
 
 export function useUpdateName() {
@@ -9,17 +9,18 @@ export function useUpdateName() {
     mutationFn: updateName,
     onSuccess: (me) => {
       queryClient.setQueryData(meKey, me);
-      // the barber profile shows the same name
-      void queryClient.invalidateQueries({ queryKey: rolesKey });
+      // every barber profile shows the same name
+      void queryClient.invalidateQueries({ queryKey: workspacesKey });
     },
   });
 }
 
-/** The barber profile lives in the roles query (sidebar, agenda), so that one refetches. */
-export function useUpdateBarberProfile() {
+/** Bio and photo are per shop; the profiles live in the workspaces query, which refetches. */
+export function useUpdateBarberProfile(barberId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: updateBarberProfile,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: rolesKey }),
+    mutationFn: (input: Parameters<typeof updateBarberProfile>[0]['input']) =>
+      updateBarberProfile({ barberId, input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: workspacesKey }),
   });
 }

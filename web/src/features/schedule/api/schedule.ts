@@ -3,8 +3,8 @@ import type { WeeklyIntervalInput } from '@/gql/graphql';
 import { api } from '@/shared/api';
 
 const MyScheduleQuery = graphql(`
-  query MySchedule {
-    mySchedule {
+  query MySchedule($barberId: ID!) {
+    mySchedule(barberId: $barberId) {
       weekly {
         weekday
         startTime
@@ -16,8 +16,8 @@ const MyScheduleQuery = graphql(`
 `);
 
 const SetWeeklyMutation = graphql(`
-  mutation SetWeeklySchedule($intervals: [WeeklyIntervalInput!]!) {
-    setWeeklySchedule(intervals: $intervals) {
+  mutation SetWeeklySchedule($barberId: ID!, $intervals: [WeeklyIntervalInput!]!) {
+    setWeeklySchedule(barberId: $barberId, intervals: $intervals) {
       weekly {
         weekday
         startTime
@@ -31,29 +31,30 @@ const SetWeeklyMutation = graphql(`
 `);
 
 const BlockDateMutation = graphql(`
-  mutation BlockDate($date: String!) {
-    blockDate(date: $date) {
+  mutation BlockDate($barberId: ID!, $date: String!) {
+    blockDate(barberId: $barberId, date: $date) {
       ...AgendaAppointment
     }
   }
 `);
 
 const UnblockDateMutation = graphql(`
-  mutation UnblockDate($date: String!) {
-    unblockDate(date: $date)
+  mutation UnblockDate($barberId: ID!, $date: String!) {
+    unblockDate(barberId: $barberId, date: $date)
   }
 `);
 
-export const fetchMySchedule = async () => (await api.request(MyScheduleQuery)).mySchedule;
+export const fetchMySchedule = async (barberId: string) =>
+  (await api.request(MyScheduleQuery, { barberId })).mySchedule;
 
-export const setWeeklySchedule = async (intervals: WeeklyIntervalInput[]) =>
-  (await api.request(SetWeeklyMutation, { intervals })).setWeeklySchedule;
+export const setWeeklySchedule = async (barberId: string, intervals: WeeklyIntervalInput[]) =>
+  (await api.request(SetWeeklyMutation, { barberId, intervals })).setWeeklySchedule;
 
-export const blockDate = async (date: string) =>
-  (await api.request(BlockDateMutation, { date })).blockDate;
+export const blockDate = async (barberId: string, date: string) =>
+  (await api.request(BlockDateMutation, { barberId, date })).blockDate;
 
-export const unblockDate = async (date: string) => {
-  await api.request(UnblockDateMutation, { date });
+export const unblockDate = async (barberId: string, date: string) => {
+  await api.request(UnblockDateMutation, { barberId, date });
 };
 
 export type MySchedule = Awaited<ReturnType<typeof fetchMySchedule>>;

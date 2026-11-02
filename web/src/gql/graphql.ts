@@ -104,6 +104,7 @@ export type WeeklyIntervalInput = {
 export type AgendaAppointmentFragment = { id: string, startsAt: string, endsAt: string, status: AppointmentStatus, serviceName: string, priceCents: number, durationMinutes: number, reminderLeadMinutes: number | null, cancelReason: CancelReason | null, canceledAt: string | null, customer: { id: string, name: string } };
 
 export type BarberAgendaQueryVariables = Exact<{
+  barberId: string | number;
   date: string;
 }>;
 
@@ -133,7 +134,9 @@ export type RescheduleSlotsQueryVariables = Exact<{
 
 export type RescheduleSlotsQuery = { rescheduleSlots: Array<string> };
 
-export type AgendaChangedSubscriptionVariables = Exact<{ [key: string]: never; }>;
+export type AgendaChangedSubscriptionVariables = Exact<{
+  barberId: string | number;
+}>;
 
 
 export type AgendaChangedSubscription = { agendaChanged: { type: AgendaChangeType, previousStartsAt: string | null, appointment: { id: string, startsAt: string, endsAt: string, status: AppointmentStatus, serviceName: string, priceCents: number, durationMinutes: number, reminderLeadMinutes: number | null, cancelReason: CancelReason | null, canceledAt: string | null, customer: { id: string, name: string } } } };
@@ -162,7 +165,7 @@ export type AcceptInviteMutationVariables = Exact<{
 }>;
 
 
-export type AcceptInviteMutation = { acceptInvite: { id: string, barbershop: { name: string } } };
+export type AcceptInviteMutation = { acceptInvite: { id: string, barbershop: { id: string, name: string } } };
 
 export type UnreadNotificationCountQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -174,7 +177,7 @@ export type NotificationsQueryVariables = Exact<{
 }>;
 
 
-export type NotificationsQuery = { notifications: Array<{ id: string, type: NotificationType, title: string, body: string, read: boolean, createdAt: string, appointmentStartsAt: string | null, appointment: { id: string, startsAt: string, serviceName: string, cancelReason: CancelReason | null, customer: { id: string, name: string }, barber: { name: string } } | null }> };
+export type NotificationsQuery = { notifications: Array<{ id: string, type: NotificationType, title: string, body: string, read: boolean, createdAt: string, appointmentStartsAt: string | null, appointment: { id: string, startsAt: string, serviceName: string, cancelReason: CancelReason | null, customer: { id: string, name: string }, barber: { id: string, name: string, barbershop: { id: string, name: string, timezone: string } } } | null }> };
 
 export type MarkNotificationReadMutationVariables = Exact<{
   id: string | number;
@@ -191,23 +194,22 @@ export type UpdateProfileMutationVariables = Exact<{
 export type UpdateProfileMutation = { updateProfile: { id: string, name: string, email: string } };
 
 export type UpdateBarberProfileMutationVariables = Exact<{
+  barberId: string | number;
   input: UpdateBarberProfileInput;
 }>;
 
 
 export type UpdateBarberProfileMutation = { updateBarberProfile: { id: string, bio: string, avatarUrl: string | null } };
 
-export type RolesQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type RolesQuery = { myBarberProfile: { id: string, name: string, bio: string, avatarUrl: string | null, barbershop: { id: string, name: string, timezone: string, logoUrl: string | null } } | null, myBarbershop: { id: string, name: string, timezone: string, logoUrl: string | null } | null };
-
-export type MyScheduleQueryVariables = Exact<{ [key: string]: never; }>;
+export type MyScheduleQueryVariables = Exact<{
+  barberId: string | number;
+}>;
 
 
 export type MyScheduleQuery = { mySchedule: { blockedDates: Array<string>, weekly: Array<{ weekday: number, startTime: string, endTime: string }> } };
 
 export type SetWeeklyScheduleMutationVariables = Exact<{
+  barberId: string | number;
   intervals: Array<WeeklyIntervalInput> | WeeklyIntervalInput;
 }>;
 
@@ -215,6 +217,7 @@ export type SetWeeklyScheduleMutationVariables = Exact<{
 export type SetWeeklyScheduleMutation = { setWeeklySchedule: { weekly: Array<{ weekday: number, startTime: string, endTime: string }>, canceledAppointments: Array<{ id: string, startsAt: string, endsAt: string, status: AppointmentStatus, serviceName: string, priceCents: number, durationMinutes: number, reminderLeadMinutes: number | null, cancelReason: CancelReason | null, canceledAt: string | null, customer: { id: string, name: string } }> } };
 
 export type BlockDateMutationVariables = Exact<{
+  barberId: string | number;
   date: string;
 }>;
 
@@ -222,6 +225,7 @@ export type BlockDateMutationVariables = Exact<{
 export type BlockDateMutation = { blockDate: Array<{ id: string, startsAt: string, endsAt: string, status: AppointmentStatus, serviceName: string, priceCents: number, durationMinutes: number, reminderLeadMinutes: number | null, cancelReason: CancelReason | null, canceledAt: string | null, customer: { id: string, name: string } }> };
 
 export type UnblockDateMutationVariables = Exact<{
+  barberId: string | number;
   date: string;
 }>;
 
@@ -230,12 +234,15 @@ export type UnblockDateMutation = { unblockDate: boolean };
 
 export type ServiceFieldsFragment = { id: string, name: string, description: string, priceCents: number, durationMinutes: number, archived: boolean };
 
-export type MyServicesQueryVariables = Exact<{ [key: string]: never; }>;
+export type MyServicesQueryVariables = Exact<{
+  barberId: string | number;
+}>;
 
 
-export type MyServicesQuery = { myBarberProfile: { id: string, services: Array<{ id: string, name: string, description: string, priceCents: number, durationMinutes: number, archived: boolean }> } | null };
+export type MyServicesQuery = { barber: { id: string, services: Array<{ id: string, name: string, description: string, priceCents: number, durationMinutes: number, archived: boolean }> } | null };
 
 export type CreateServiceMutationVariables = Exact<{
+  barberId: string | number;
   input: CreateServiceInput;
 }>;
 
@@ -259,10 +266,12 @@ export type ArchiveServiceMutation = { archiveService: { id: string, name: strin
 
 export type ShopFieldsFragment = { id: string, name: string, description: string, foundedYear: number, logoUrl: string | null, address: string, latitude: number, longitude: number, timezone: string };
 
-export type MyShopQueryVariables = Exact<{ [key: string]: never; }>;
+export type MyShopQueryVariables = Exact<{
+  id: string | number;
+}>;
 
 
-export type MyShopQuery = { myBarbershop: { id: string, name: string, description: string, foundedYear: number, logoUrl: string | null, address: string, latitude: number, longitude: number, timezone: string, barbers: Array<{ id: string, name: string, avatarUrl: string | null }>, invites: Array<{ id: string, email: string, status: InviteStatus, expiresAt: string, createdAt: string }> } | null };
+export type MyShopQuery = { barbershop: { id: string, name: string, description: string, foundedYear: number, logoUrl: string | null, address: string, latitude: number, longitude: number, timezone: string, barbers: Array<{ id: string, name: string, avatarUrl: string | null }>, invites: Array<{ id: string, email: string, status: InviteStatus, expiresAt: string, createdAt: string }> } | null };
 
 export type CreateBarbershopMutationVariables = Exact<{
   input: CreateBarbershopInput;
@@ -272,18 +281,22 @@ export type CreateBarbershopMutationVariables = Exact<{
 export type CreateBarbershopMutation = { createBarbershop: { id: string, name: string, description: string, foundedYear: number, logoUrl: string | null, address: string, latitude: number, longitude: number, timezone: string } };
 
 export type UpdateBarbershopMutationVariables = Exact<{
+  id: string | number;
   input: UpdateBarbershopInput;
 }>;
 
 
 export type UpdateBarbershopMutation = { updateBarbershop: { id: string, name: string, description: string, foundedYear: number, logoUrl: string | null, address: string, latitude: number, longitude: number, timezone: string } };
 
-export type BecomeBarberMutationVariables = Exact<{ [key: string]: never; }>;
+export type BecomeBarberMutationVariables = Exact<{
+  shopId: string | number;
+}>;
 
 
 export type BecomeBarberMutation = { becomeBarber: { id: string } };
 
 export type InviteBarberMutationVariables = Exact<{
+  shopId: string | number;
   email: string;
 }>;
 
@@ -303,6 +316,11 @@ export type RemoveBarberMutationVariables = Exact<{
 
 
 export type RemoveBarberMutation = { removeBarber: { id: string } };
+
+export type WorkspacesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WorkspacesQuery = { myBarbershops: Array<{ id: string, name: string, timezone: string, logoUrl: string | null }>, myBarberProfiles: Array<{ id: string, name: string, bio: string, avatarUrl: string | null, barbershop: { id: string, name: string, timezone: string, logoUrl: string | null } }> };
 
 export type RefreshTokenMutationVariables = Exact<{
   token: string;
@@ -371,8 +389,8 @@ export const ShopFieldsFragmentDoc = new TypedDocumentString(`
 }
     `, {"fragmentName":"ShopFields"}) as unknown as TypedDocumentString<ShopFieldsFragment, unknown>;
 export const BarberAgendaDocument = new TypedDocumentString(`
-    query BarberAgenda($date: String!) {
-  barberAgenda(date: $date) {
+    query BarberAgenda($barberId: ID!, $date: String!) {
+  barberAgenda(barberId: $barberId, date: $date) {
     ...AgendaAppointment
   }
 }
@@ -442,8 +460,8 @@ export const RescheduleSlotsDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<RescheduleSlotsQuery, RescheduleSlotsQueryVariables>;
 export const AgendaChangedDocument = new TypedDocumentString(`
-    subscription AgendaChanged {
-  agendaChanged {
+    subscription AgendaChanged($barberId: ID!) {
+  agendaChanged(barberId: $barberId) {
     type
     previousStartsAt
     appointment {
@@ -509,6 +527,7 @@ export const AcceptInviteDocument = new TypedDocumentString(`
   acceptInvite(token: $token) {
     id
     barbershop {
+      id
       name
     }
   }
@@ -539,7 +558,13 @@ export const NotificationsDocument = new TypedDocumentString(`
         name
       }
       barber {
+        id
         name
+        barbershop {
+          id
+          name
+          timezone
+        }
       }
     }
   }
@@ -560,39 +585,17 @@ export const UpdateProfileDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<UpdateProfileMutation, UpdateProfileMutationVariables>;
 export const UpdateBarberProfileDocument = new TypedDocumentString(`
-    mutation UpdateBarberProfile($input: UpdateBarberProfileInput!) {
-  updateBarberProfile(input: $input) {
+    mutation UpdateBarberProfile($barberId: ID!, $input: UpdateBarberProfileInput!) {
+  updateBarberProfile(barberId: $barberId, input: $input) {
     id
     bio
     avatarUrl
   }
 }
     `) as unknown as TypedDocumentString<UpdateBarberProfileMutation, UpdateBarberProfileMutationVariables>;
-export const RolesDocument = new TypedDocumentString(`
-    query Roles {
-  myBarberProfile {
-    id
-    name
-    bio
-    avatarUrl
-    barbershop {
-      id
-      name
-      timezone
-      logoUrl
-    }
-  }
-  myBarbershop {
-    id
-    name
-    timezone
-    logoUrl
-  }
-}
-    `) as unknown as TypedDocumentString<RolesQuery, RolesQueryVariables>;
 export const MyScheduleDocument = new TypedDocumentString(`
-    query MySchedule {
-  mySchedule {
+    query MySchedule($barberId: ID!) {
+  mySchedule(barberId: $barberId) {
     weekly {
       weekday
       startTime
@@ -603,8 +606,8 @@ export const MyScheduleDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<MyScheduleQuery, MyScheduleQueryVariables>;
 export const SetWeeklyScheduleDocument = new TypedDocumentString(`
-    mutation SetWeeklySchedule($intervals: [WeeklyIntervalInput!]!) {
-  setWeeklySchedule(intervals: $intervals) {
+    mutation SetWeeklySchedule($barberId: ID!, $intervals: [WeeklyIntervalInput!]!) {
+  setWeeklySchedule(barberId: $barberId, intervals: $intervals) {
     weekly {
       weekday
       startTime
@@ -632,8 +635,8 @@ export const SetWeeklyScheduleDocument = new TypedDocumentString(`
   }
 }`) as unknown as TypedDocumentString<SetWeeklyScheduleMutation, SetWeeklyScheduleMutationVariables>;
 export const BlockDateDocument = new TypedDocumentString(`
-    mutation BlockDate($date: String!) {
-  blockDate(date: $date) {
+    mutation BlockDate($barberId: ID!, $date: String!) {
+  blockDate(barberId: $barberId, date: $date) {
     ...AgendaAppointment
   }
 }
@@ -654,13 +657,13 @@ export const BlockDateDocument = new TypedDocumentString(`
   }
 }`) as unknown as TypedDocumentString<BlockDateMutation, BlockDateMutationVariables>;
 export const UnblockDateDocument = new TypedDocumentString(`
-    mutation UnblockDate($date: String!) {
-  unblockDate(date: $date)
+    mutation UnblockDate($barberId: ID!, $date: String!) {
+  unblockDate(barberId: $barberId, date: $date)
 }
     `) as unknown as TypedDocumentString<UnblockDateMutation, UnblockDateMutationVariables>;
 export const MyServicesDocument = new TypedDocumentString(`
-    query MyServices {
-  myBarberProfile {
+    query MyServices($barberId: ID!) {
+  barber(id: $barberId) {
     id
     services {
       ...ServiceFields
@@ -676,8 +679,8 @@ export const MyServicesDocument = new TypedDocumentString(`
   archived
 }`) as unknown as TypedDocumentString<MyServicesQuery, MyServicesQueryVariables>;
 export const CreateServiceDocument = new TypedDocumentString(`
-    mutation CreateService($input: CreateServiceInput!) {
-  createService(input: $input) {
+    mutation CreateService($barberId: ID!, $input: CreateServiceInput!) {
+  createService(barberId: $barberId, input: $input) {
     ...ServiceFields
   }
 }
@@ -718,8 +721,8 @@ export const ArchiveServiceDocument = new TypedDocumentString(`
   archived
 }`) as unknown as TypedDocumentString<ArchiveServiceMutation, ArchiveServiceMutationVariables>;
 export const MyShopDocument = new TypedDocumentString(`
-    query MyShop {
-  myBarbershop {
+    query MyShop($id: ID!) {
+  barbershop(id: $id) {
     ...ShopFields
     barbers {
       id
@@ -764,8 +767,8 @@ export const CreateBarbershopDocument = new TypedDocumentString(`
   timezone
 }`) as unknown as TypedDocumentString<CreateBarbershopMutation, CreateBarbershopMutationVariables>;
 export const UpdateBarbershopDocument = new TypedDocumentString(`
-    mutation UpdateBarbershop($input: UpdateBarbershopInput!) {
-  updateBarbershop(input: $input) {
+    mutation UpdateBarbershop($id: ID!, $input: UpdateBarbershopInput!) {
+  updateBarbershop(id: $id, input: $input) {
     ...ShopFields
   }
 }
@@ -781,15 +784,15 @@ export const UpdateBarbershopDocument = new TypedDocumentString(`
   timezone
 }`) as unknown as TypedDocumentString<UpdateBarbershopMutation, UpdateBarbershopMutationVariables>;
 export const BecomeBarberDocument = new TypedDocumentString(`
-    mutation BecomeBarber {
-  becomeBarber {
+    mutation BecomeBarber($shopId: ID!) {
+  becomeBarber(shopId: $shopId) {
     id
   }
 }
     `) as unknown as TypedDocumentString<BecomeBarberMutation, BecomeBarberMutationVariables>;
 export const InviteBarberDocument = new TypedDocumentString(`
-    mutation InviteBarber($email: String!) {
-  inviteBarber(email: $email) {
+    mutation InviteBarber($shopId: ID!, $email: String!) {
+  inviteBarber(shopId: $shopId, email: $email) {
     id
     email
     status
@@ -813,6 +816,28 @@ export const RemoveBarberDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<RemoveBarberMutation, RemoveBarberMutationVariables>;
+export const WorkspacesDocument = new TypedDocumentString(`
+    query Workspaces {
+  myBarbershops {
+    id
+    name
+    timezone
+    logoUrl
+  }
+  myBarberProfiles {
+    id
+    name
+    bio
+    avatarUrl
+    barbershop {
+      id
+      name
+      timezone
+      logoUrl
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<WorkspacesQuery, WorkspacesQueryVariables>;
 export const RefreshTokenDocument = new TypedDocumentString(`
     mutation RefreshToken($token: String!) {
   refreshToken(token: $token) {

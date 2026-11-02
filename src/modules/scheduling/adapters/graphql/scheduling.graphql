@@ -75,20 +75,22 @@ type Query {
   availableSlots(barberId: ID!, serviceId: ID!, date: String!): [DateTime!]!
   "The signed-in customer's appointments: upcoming soonest first, or the latest 100."
   myAppointments(upcoming: Boolean = true): [Appointment!]!
-  "The signed-in barber's appointments on a local date, canceled ones included. Errors: NOT_A_BARBER."
-  barberAgenda(date: String!): [Appointment!]!
-  mySchedule: BarberSchedule!
+  "Appointments of one of the user's barber profiles on a local date, canceled ones included. Errors: NOT_A_BARBER."
+  barberAgenda(barberId: ID!, date: String!): [Appointment!]!
+  "Weekly hours and days off of one of the user's barber profiles. Errors: NOT_A_BARBER."
+  mySchedule(barberId: ID!): BarberSchedule!
   "Free start times for moving an appointment to a date (YYYY-MM-DD in the shop's zone), using its own duration and ignoring its current slot. Errors: APPOINTMENT_NOT_FOUND, APPOINTMENT_CANCELED, CANCELLATION_WINDOW_CLOSED, INVALID_DATE, BARBER_NOT_FOUND."
   rescheduleSlots(appointmentId: ID!, date: String!): [DateTime!]!
 }
 
 type Mutation {
   "Replaces the weekly hours. Errors: NOT_A_BARBER, INVALID_SCHEDULE."
-  setWeeklySchedule(intervals: [WeeklyIntervalInput!]!): ScheduleUpdate!
-  "Blocks a whole day and returns the appointments it canceled (those 2 hours or more away)."
-  blockDate(date: String!): [Appointment!]!
-  unblockDate(date: String!): Boolean!
-  "Errors: SLOT_UNAVAILABLE, SLOT_IN_PAST, BEYOND_BOOKING_HORIZON, CUSTOMER_BUSY, BARBER_CANNOT_BOOK_SELF, INVALID_REMINDER_LEAD, BARBER_NOT_FOUND, SERVICE_NOT_FOUND."
+  setWeeklySchedule(barberId: ID!, intervals: [WeeklyIntervalInput!]!): ScheduleUpdate!
+  "Blocks a whole day for one barber profile (other shops are not affected) and returns the appointments it canceled (those 2 hours or more away). Errors: NOT_A_BARBER, INVALID_DATE."
+  blockDate(barberId: ID!, date: String!): [Appointment!]!
+  "Errors: NOT_A_BARBER."
+  unblockDate(barberId: ID!, date: String!): Boolean!
+  "SLOT_UNAVAILABLE also when the barber is booked at another of their shops. Errors: SLOT_UNAVAILABLE, SLOT_IN_PAST, BEYOND_BOOKING_HORIZON, CUSTOMER_BUSY, BARBER_CANNOT_BOOK_SELF, INVALID_REMINDER_LEAD, BARBER_NOT_FOUND, SERVICE_NOT_FOUND."
   bookAppointment(input: BookAppointmentInput!): Appointment!
   "Customer or barber, up to 2 hours before. Errors: CANCELLATION_WINDOW_CLOSED, APPOINTMENT_NOT_FOUND."
   cancelAppointment(id: ID!): Appointment!

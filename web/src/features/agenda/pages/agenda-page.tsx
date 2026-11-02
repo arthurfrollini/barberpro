@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { currentShop, useRoles } from '@/features/roles/hooks/use-roles';
+import { useCurrentBarber } from '@/features/workspaces/hooks/use-workspaces';
 import { useNow } from '@/shared/hooks/use-now';
 import { formatBRL } from '@/shared/lib/money';
 import { formatLongDate, isIsoDate, minutesOfDay, todayIn, weekdayOf } from '@/shared/lib/time';
@@ -15,10 +15,9 @@ import { useAgendaLive } from '../hooks/use-agenda-live';
 import { appointmentsCount, capitalize } from '../lib/labels';
 
 export function AgendaPage() {
-  const roles = useRoles();
-  // RequireRole('barber') guarantees a shop here
-  const timeZone = currentShop(roles.data!)!.timezone;
-  useAgendaLive(timeZone);
+  const { barber, shop } = useCurrentBarber();
+  const timeZone = shop.timezone;
+  useAgendaLive(barber.id, timeZone);
   const now = useNow();
   const today = todayIn(timeZone, now);
   const [search, setSearch] = useSearchParams();
@@ -32,8 +31,8 @@ export function AgendaPage() {
     setSelectedId(id);
   };
 
-  const agenda = useAgenda(date);
-  const schedule = useMySchedule();
+  const agenda = useAgenda(barber.id, date);
+  const schedule = useMySchedule(barber.id);
 
   const goTo = (day: string) => setSearch(day === today ? {} : { dia: day }, { replace: false });
 

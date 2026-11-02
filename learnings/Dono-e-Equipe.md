@@ -4,13 +4,13 @@ A última parte da dashboard: como alguém entra (cria a barbearia ou aceita um 
 
 ## Entrada guiada pelos papéis
 
-Não existe campo "tipo de usuário". O que a pessoa é sai dos dados (`myBarbershop`, `myBarberProfile`), igual à API:
+Não existe campo "tipo de usuário". O que a pessoa é sai dos dados (`myBarbershops`, `myBarberProfiles`), igual à API. Desde a V2 isso vale **por barbearia**: a barbearia ativa no seletor decide a tela (veja [Várias barbearias](Multiplas-Barbearias.md)):
 
 - sem barbearia e sem perfil de barbeiro → **Começar**: "Tenho uma barbearia" (abre o formulário) ou "Recebi um convite";
 - dono que não atende → **Barbearia**, com o cartão "Você também atende?" (`becomeBarber`);
 - barbeiro → **Agenda**.
 
-Depois de criar a barbearia, entrar na equipe ou aceitar um convite, o papel muda. O hook espera a query de papéis recarregar (`await invalidateQueries(['roles'])`) **antes** de navegar. Se navegasse antes, o guard da página de barbeiro ainda veria os papéis antigos e mandaria a pessoa de volta.
+Depois de criar a barbearia, entrar na equipe ou aceitar um convite, o papel muda. O hook espera a query de workspaces recarregar (`await invalidateQueries(['workspaces'])`) e escolhe a barbearia nova como ativa **antes** de navegar. Se navegasse antes, o guard da página de barbeiro ainda veria os papéis antigos e mandaria a pessoa de volta.
 
 ## Convite de ponta a ponta
 

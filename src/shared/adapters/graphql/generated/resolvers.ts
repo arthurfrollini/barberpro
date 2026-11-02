@@ -170,22 +170,22 @@ export type InviteStatus =
 
 export type Mutation = {
   __typename?: 'Mutation';
-  /** token is the code from the invite email. Errors: INVITE_NOT_FOUND, INVITE_EXPIRED, INVITE_EMAIL_MISMATCH, ALREADY_A_BARBER. */
+  /** token is the code from the invite email. A person may barber in many shops, once in each. Errors: INVITE_NOT_FOUND, INVITE_EXPIRED, INVITE_EMAIL_MISMATCH, ALREADY_A_BARBER (already in that shop). */
   acceptInvite: Barber;
   archiveService: Service;
-  /** The owner joins their own shop as a barber. */
+  /** The owner joins one of their shops as a barber. Errors: NOT_SHOP_OWNER, ALREADY_A_BARBER. */
   becomeBarber: Barber;
-  /** Blocks a whole day and returns the appointments it canceled (those 2 hours or more away). */
+  /** Blocks a whole day for one barber profile (other shops are not affected) and returns the appointments it canceled (those 2 hours or more away). Errors: NOT_A_BARBER, INVALID_DATE. */
   blockDate: Array<Appointment>;
-  /** Errors: SLOT_UNAVAILABLE, SLOT_IN_PAST, BEYOND_BOOKING_HORIZON, CUSTOMER_BUSY, BARBER_CANNOT_BOOK_SELF, INVALID_REMINDER_LEAD, BARBER_NOT_FOUND, SERVICE_NOT_FOUND. */
+  /** SLOT_UNAVAILABLE also when the barber is booked at another of their shops. Errors: SLOT_UNAVAILABLE, SLOT_IN_PAST, BEYOND_BOOKING_HORIZON, CUSTOMER_BUSY, BARBER_CANNOT_BOOK_SELF, INVALID_REMINDER_LEAD, BARBER_NOT_FOUND, SERVICE_NOT_FOUND. */
   bookAppointment: Appointment;
   /** Customer or barber, up to 2 hours before. Errors: CANCELLATION_WINDOW_CLOSED, APPOINTMENT_NOT_FOUND. */
   cancelAppointment: Appointment;
-  /** Errors: SHOP_ALREADY_OWNED, FILE_NOT_FOUND, INVALID_* for each field. */
+  /** An owner may have many shops. Errors: FILE_NOT_FOUND, INVALID_* for each field. */
   createBarbershop: Barbershop;
-  /** Errors: NOT_A_BARBER, INVALID_PRICE, INVALID_DURATION. */
+  /** A service for one of the user's barber profiles. Errors: NOT_A_BARBER, INVALID_PRICE, INVALID_DURATION. */
   createService: Service;
-  /** Emails a 7-day invite. Errors: NOT_SHOP_OWNER, ALREADY_A_BARBER, INVITE_ALREADY_SENT, EMAIL_NOT_SENT. */
+  /** Emails a 7-day invite to this shop. Errors: NOT_SHOP_OWNER, ALREADY_A_BARBER (already in this shop), INVITE_ALREADY_SENT, EMAIL_NOT_SENT. */
   inviteBarber: Invite;
   /** Errors: NOTIFICATION_NOT_FOUND. */
   markNotificationRead: Scalars['Boolean']['output'];
@@ -202,10 +202,11 @@ export type Mutation = {
   signIn: AuthPayload;
   /** Errors: INVALID_EMAIL, WEAK_PASSWORD, INVALID_NAME, EMAIL_TAKEN. */
   signUp: AuthPayload;
-  unblockDate: Scalars['Boolean']['output'];
   /** Errors: NOT_A_BARBER. */
+  unblockDate: Scalars['Boolean']['output'];
+  /** Bio and photo of one of the user's barber profiles. Errors: NOT_A_BARBER. */
   updateBarberProfile: Barber;
-  /** Edits the shop the signed-in user owns. Errors: NOT_SHOP_OWNER. */
+  /** Errors: NOT_SHOP_OWNER (also for an unknown id). */
   updateBarbershop: Barbershop;
   updateProfile: User;
   /** Errors: SERVICE_NOT_FOUND, NOT_SERVICE_OWNER. */
@@ -223,7 +224,13 @@ export type MutationArchiveServiceArgs = {
 };
 
 
+export type MutationBecomeBarberArgs = {
+  shopId: Scalars['ID']['input'];
+};
+
+
 export type MutationBlockDateArgs = {
+  barberId: Scalars['ID']['input'];
   date: Scalars['String']['input'];
 };
 
@@ -244,12 +251,14 @@ export type MutationCreateBarbershopArgs = {
 
 
 export type MutationCreateServiceArgs = {
+  barberId: Scalars['ID']['input'];
   input: CreateServiceInput;
 };
 
 
 export type MutationInviteBarberArgs = {
   email: Scalars['String']['input'];
+  shopId: Scalars['ID']['input'];
 };
 
 
@@ -280,6 +289,7 @@ export type MutationRevokeInviteArgs = {
 
 
 export type MutationSetWeeklyScheduleArgs = {
+  barberId: Scalars['ID']['input'];
   intervals: Array<WeeklyIntervalInput>;
 };
 
@@ -295,16 +305,19 @@ export type MutationSignUpArgs = {
 
 
 export type MutationUnblockDateArgs = {
+  barberId: Scalars['ID']['input'];
   date: Scalars['String']['input'];
 };
 
 
 export type MutationUpdateBarberProfileArgs = {
+  barberId: Scalars['ID']['input'];
   input: UpdateBarberProfileInput;
 };
 
 
 export type MutationUpdateBarbershopArgs = {
+  id: Scalars['ID']['input'];
   input: UpdateBarbershopInput;
 };
 
@@ -350,7 +363,7 @@ export type Query = {
   /** Free start times on a date (YYYY-MM-DD in the shop's zone), every 15 minutes. Public. */
   availableSlots: Array<Scalars['DateTime']['output']>;
   barber?: Maybe<Barber>;
-  /** The signed-in barber's appointments on a local date, canceled ones included. Errors: NOT_A_BARBER. */
+  /** Appointments of one of the user's barber profiles on a local date, canceled ones included. Errors: NOT_A_BARBER. */
   barberAgenda: Array<Appointment>;
   /** null when no shop has this id. */
   barbershop?: Maybe<Barbershop>;
@@ -362,10 +375,11 @@ export type Query = {
   me: User;
   /** The signed-in customer's appointments: upcoming soonest first, or the latest 100. */
   myAppointments: Array<Appointment>;
-  /** The signed-in user's barber profile, if they barber somewhere. */
-  myBarberProfile?: Maybe<Barber>;
-  /** The shop the signed-in user owns, if any. */
-  myBarbershop?: Maybe<Barbershop>;
+  /** The signed-in user's barber profiles, one per shop they work in, oldest first. Services, hours and agenda belong to each profile. */
+  myBarberProfiles: Array<Barber>;
+  /** The shops the signed-in user owns, oldest first. */
+  myBarbershops: Array<Barbershop>;
+  /** Weekly hours and days off of one of the user's barber profiles. Errors: NOT_A_BARBER. */
   mySchedule: BarberSchedule;
   /** Newest first; limit up to 50. */
   notifications: Array<Notification>;
@@ -390,6 +404,7 @@ export type QueryBarberArgs = {
 
 
 export type QueryBarberAgendaArgs = {
+  barberId: Scalars['ID']['input'];
   date: Scalars['String']['input'];
 };
 
@@ -409,6 +424,11 @@ export type QueryBarbershopsNearbyArgs = {
 
 export type QueryMyAppointmentsArgs = {
   upcoming?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+export type QueryMyScheduleArgs = {
+  barberId: Scalars['ID']['input'];
 };
 
 
@@ -462,8 +482,13 @@ export type SignUpInput = {
 
 export type Subscription = {
   __typename?: 'Subscription';
-  /** The signed-in barber's agenda as it changes: bookings, cancellations, reschedules. Errors: UNAUTHENTICATED, NOT_A_BARBER. */
+  /** One of the signed-in user's barber profiles, as its agenda changes: bookings, cancellations, reschedules. Errors: UNAUTHENTICATED, NOT_A_BARBER. */
   agendaChanged: AgendaChange;
+};
+
+
+export type SubscriptionAgendaChangedArgs = {
+  barberId: Scalars['ID']['input'];
 };
 
 export type UpdateBarberProfileInput = {
@@ -746,24 +771,24 @@ export type InviteResolvers<ContextType = GraphQLContext, ParentType extends Res
 export type MutationResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
   acceptInvite?: Resolver<ResolversTypes['Barber'], ParentType, ContextType, RequireFields<MutationAcceptInviteArgs, 'token'>>;
   archiveService?: Resolver<ResolversTypes['Service'], ParentType, ContextType, RequireFields<MutationArchiveServiceArgs, 'id'>>;
-  becomeBarber?: Resolver<ResolversTypes['Barber'], ParentType, ContextType>;
-  blockDate?: Resolver<Array<ResolversTypes['Appointment']>, ParentType, ContextType, RequireFields<MutationBlockDateArgs, 'date'>>;
+  becomeBarber?: Resolver<ResolversTypes['Barber'], ParentType, ContextType, RequireFields<MutationBecomeBarberArgs, 'shopId'>>;
+  blockDate?: Resolver<Array<ResolversTypes['Appointment']>, ParentType, ContextType, RequireFields<MutationBlockDateArgs, 'barberId' | 'date'>>;
   bookAppointment?: Resolver<ResolversTypes['Appointment'], ParentType, ContextType, RequireFields<MutationBookAppointmentArgs, 'input'>>;
   cancelAppointment?: Resolver<ResolversTypes['Appointment'], ParentType, ContextType, RequireFields<MutationCancelAppointmentArgs, 'id'>>;
   createBarbershop?: Resolver<ResolversTypes['Barbershop'], ParentType, ContextType, RequireFields<MutationCreateBarbershopArgs, 'input'>>;
-  createService?: Resolver<ResolversTypes['Service'], ParentType, ContextType, RequireFields<MutationCreateServiceArgs, 'input'>>;
-  inviteBarber?: Resolver<ResolversTypes['Invite'], ParentType, ContextType, RequireFields<MutationInviteBarberArgs, 'email'>>;
+  createService?: Resolver<ResolversTypes['Service'], ParentType, ContextType, RequireFields<MutationCreateServiceArgs, 'barberId' | 'input'>>;
+  inviteBarber?: Resolver<ResolversTypes['Invite'], ParentType, ContextType, RequireFields<MutationInviteBarberArgs, 'email' | 'shopId'>>;
   markNotificationRead?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationMarkNotificationReadArgs, 'id'>>;
   refreshToken?: Resolver<ResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<MutationRefreshTokenArgs, 'token'>>;
   removeBarber?: Resolver<ResolversTypes['Barber'], ParentType, ContextType, RequireFields<MutationRemoveBarberArgs, 'id'>>;
   rescheduleAppointment?: Resolver<ResolversTypes['Appointment'], ParentType, ContextType, RequireFields<MutationRescheduleAppointmentArgs, 'id' | 'startsAt'>>;
   revokeInvite?: Resolver<ResolversTypes['Invite'], ParentType, ContextType, RequireFields<MutationRevokeInviteArgs, 'id'>>;
-  setWeeklySchedule?: Resolver<ResolversTypes['ScheduleUpdate'], ParentType, ContextType, RequireFields<MutationSetWeeklyScheduleArgs, 'intervals'>>;
+  setWeeklySchedule?: Resolver<ResolversTypes['ScheduleUpdate'], ParentType, ContextType, RequireFields<MutationSetWeeklyScheduleArgs, 'barberId' | 'intervals'>>;
   signIn?: Resolver<ResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<MutationSignInArgs, 'input'>>;
   signUp?: Resolver<ResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<MutationSignUpArgs, 'input'>>;
-  unblockDate?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationUnblockDateArgs, 'date'>>;
-  updateBarberProfile?: Resolver<ResolversTypes['Barber'], ParentType, ContextType, RequireFields<MutationUpdateBarberProfileArgs, 'input'>>;
-  updateBarbershop?: Resolver<ResolversTypes['Barbershop'], ParentType, ContextType, RequireFields<MutationUpdateBarbershopArgs, 'input'>>;
+  unblockDate?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationUnblockDateArgs, 'barberId' | 'date'>>;
+  updateBarberProfile?: Resolver<ResolversTypes['Barber'], ParentType, ContextType, RequireFields<MutationUpdateBarberProfileArgs, 'barberId' | 'input'>>;
+  updateBarbershop?: Resolver<ResolversTypes['Barbershop'], ParentType, ContextType, RequireFields<MutationUpdateBarbershopArgs, 'id' | 'input'>>;
   updateProfile?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationUpdateProfileArgs, 'input'>>;
   updateService?: Resolver<ResolversTypes['Service'], ParentType, ContextType, RequireFields<MutationUpdateServiceArgs, 'id' | 'input'>>;
 };
@@ -787,15 +812,15 @@ export type NotificationResolvers<ContextType = GraphQLContext, ParentType exten
 export type QueryResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   availableSlots?: Resolver<Array<ResolversTypes['DateTime']>, ParentType, ContextType, RequireFields<QueryAvailableSlotsArgs, 'barberId' | 'date' | 'serviceId'>>;
   barber?: Resolver<Maybe<ResolversTypes['Barber']>, ParentType, ContextType, RequireFields<QueryBarberArgs, 'id'>>;
-  barberAgenda?: Resolver<Array<ResolversTypes['Appointment']>, ParentType, ContextType, RequireFields<QueryBarberAgendaArgs, 'date'>>;
+  barberAgenda?: Resolver<Array<ResolversTypes['Appointment']>, ParentType, ContextType, RequireFields<QueryBarberAgendaArgs, 'barberId' | 'date'>>;
   barbershop?: Resolver<Maybe<ResolversTypes['Barbershop']>, ParentType, ContextType, RequireFields<QueryBarbershopArgs, 'id'>>;
   barbershopsNearby?: Resolver<Array<ResolversTypes['NearbyBarbershop']>, ParentType, ContextType, RequireFields<QueryBarbershopsNearbyArgs, 'latitude' | 'limit' | 'longitude' | 'radiusKm'>>;
   health?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   me?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
   myAppointments?: Resolver<Array<ResolversTypes['Appointment']>, ParentType, ContextType, RequireFields<QueryMyAppointmentsArgs, 'upcoming'>>;
-  myBarberProfile?: Resolver<Maybe<ResolversTypes['Barber']>, ParentType, ContextType>;
-  myBarbershop?: Resolver<Maybe<ResolversTypes['Barbershop']>, ParentType, ContextType>;
-  mySchedule?: Resolver<ResolversTypes['BarberSchedule'], ParentType, ContextType>;
+  myBarberProfiles?: Resolver<Array<ResolversTypes['Barber']>, ParentType, ContextType>;
+  myBarbershops?: Resolver<Array<ResolversTypes['Barbershop']>, ParentType, ContextType>;
+  mySchedule?: Resolver<ResolversTypes['BarberSchedule'], ParentType, ContextType, RequireFields<QueryMyScheduleArgs, 'barberId'>>;
   notifications?: Resolver<Array<ResolversTypes['Notification']>, ParentType, ContextType, RequireFields<QueryNotificationsArgs, 'limit' | 'offset'>>;
   rescheduleSlots?: Resolver<Array<ResolversTypes['DateTime']>, ParentType, ContextType, RequireFields<QueryRescheduleSlotsArgs, 'appointmentId' | 'date'>>;
   searchBarbershops?: Resolver<Array<ResolversTypes['Barbershop']>, ParentType, ContextType, RequireFields<QuerySearchBarbershopsArgs, 'limit' | 'offset' | 'query'>>;
@@ -817,7 +842,7 @@ export type ServiceResolvers<ContextType = GraphQLContext, ParentType extends Re
 };
 
 export type SubscriptionResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = {
-  agendaChanged?: SubscriptionResolver<ResolversTypes['AgendaChange'], "agendaChanged", ParentType, ContextType>;
+  agendaChanged?: SubscriptionResolver<ResolversTypes['AgendaChange'], "agendaChanged", ParentType, ContextType, RequireFields<SubscriptionAgendaChangedArgs, 'barberId'>>;
 };
 
 export type UserResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']> = {

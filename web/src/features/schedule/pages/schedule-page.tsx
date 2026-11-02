@@ -1,4 +1,4 @@
-import { currentShop, useRoles } from '@/features/roles/hooks/use-roles';
+import { useCurrentBarber } from '@/features/workspaces/hooks/use-workspaces';
 import { PageHeader } from '@/shared/ui/page-header';
 import { ErrorState, PageSkeleton } from '@/shared/ui/states';
 import { DaysOff } from '../components/days-off';
@@ -6,14 +6,14 @@ import { WeeklyHoursForm } from '../components/weekly-hours-form';
 import { useMySchedule } from '../hooks/use-schedule';
 
 export function SchedulePage() {
-  const roles = useRoles();
-  const timeZone = currentShop(roles.data!)!.timezone;
-  const schedule = useMySchedule();
+  const { barber, shop } = useCurrentBarber();
+  const timeZone = shop.timezone;
+  const schedule = useMySchedule(barber.id);
   return (
     <>
       <PageHeader
         title="Horários"
-        description="Os horários em que os clientes podem agendar com você, no fuso da barbearia."
+        description="Os horários em que os clientes podem agendar com você nesta barbearia, no fuso dela."
       />
       {schedule.isPending ? (
         <PageSkeleton />
@@ -25,9 +25,9 @@ export function SchedulePage() {
             <h2 id="weekly-title" className="text-xl">
               Semana
             </h2>
-            <WeeklyHoursForm schedule={schedule.data} timeZone={timeZone} />
+            <WeeklyHoursForm barberId={barber.id} schedule={schedule.data} timeZone={timeZone} />
           </section>
-          <DaysOff schedule={schedule.data} timeZone={timeZone} />
+          <DaysOff barberId={barber.id} schedule={schedule.data} timeZone={timeZone} />
         </div>
       )}
     </>

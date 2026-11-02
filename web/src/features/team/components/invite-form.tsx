@@ -16,8 +16,8 @@ const schema = z.object({
 // answers about the email itself go under the field
 const FIELD_CODES = new Set(['INVALID_EMAIL', 'INVITE_ALREADY_SENT', 'ALREADY_A_BARBER']);
 
-export function InviteForm() {
-  const invite = useInviteBarber();
+export function InviteForm({ shopId }: { shopId: string }) {
+  const invite = useInviteBarber(shopId);
   const form = useForm({ resolver: zodResolver(schema), defaultValues: { email: '' } });
   const { errors, isSubmitting } = form.formState;
 

@@ -24,9 +24,6 @@ export async function createBarbershop(
   actorId: string,
   input: BarbershopInput,
 ): Promise<Barbershop> {
-  if (await deps.shops.findByOwner(actorId)) {
-    throw new DomainError('SHOP_ALREADY_OWNED', 'You already own a barbershop.');
-  }
   await assertOwnFile(deps, actorId, input.logoFileId);
   const { latitude, longitude, ...rest } = input;
   const shop = Barbershop.create(
@@ -40,9 +37,10 @@ export async function createBarbershop(
 export async function updateBarbershop(
   deps: ShopsDeps,
   actorId: string,
+  shopId: string,
   patch: Partial<BarbershopInput>,
 ): Promise<Barbershop> {
-  const shop = await requireOwnedShop(deps, actorId);
+  const shop = await requireOwnedShop(deps, actorId, shopId);
   await assertOwnFile(deps, actorId, patch.logoFileId);
   const { latitude, longitude, ...rest } = patch;
   const moved =

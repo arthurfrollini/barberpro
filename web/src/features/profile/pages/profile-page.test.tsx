@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { routes } from '@/app/routes';
-import { BARBER, ME, roles } from '@/test/fixtures';
+import { BARBER, ME, workspaces } from '@/test/fixtures';
 import { api, gqlData } from '@/test/graphql';
 import { renderRoutes, signIn } from '@/test/render';
 import { server } from '@/test/server';
@@ -18,8 +18,11 @@ function setup({ barber = true, avatarUrl = null as string | null } = {}) {
   let profile = { ...BARBER, avatarUrl };
   const calls: { op: string; variables: unknown }[] = [];
   server.use(
-    api.query('Roles', () =>
-      gqlData({ ...roles({ barber, owner: !barber }), myBarberProfile: barber ? profile : null }),
+    api.query('Workspaces', () =>
+      gqlData({
+        ...workspaces({ barber, owner: !barber }),
+        myBarberProfiles: barber ? [profile] : [],
+      }),
     ),
     api.query('Me', () => gqlData({ me })),
     api.mutation('UpdateProfile', ({ variables }) => {
@@ -76,7 +79,9 @@ describe('profile', () => {
     await user.click(within(section).getByRole('button', { name: 'Salvar perfil' }));
 
     expect(await screen.findByText('Perfil salvo')).toBeInTheDocument();
-    expect(calls).toEqual([{ op: 'barber', variables: { input: { bio: 'Navalha e tesoura.' } } }]);
+    expect(calls).toEqual([
+      { op: 'barber', variables: { barberId: 'barber-1', input: { bio: 'Navalha e tesoura.' } } },
+    ]);
   });
 
   it('sends a new photo, and null to remove it', async () => {
@@ -100,8 +105,8 @@ describe('profile', () => {
 
     await waitFor(() => expect(calls).toHaveLength(2));
     expect(calls.map((c) => c.variables)).toEqual([
-      { input: { avatarFileId: 'f9' } },
-      { input: { avatarFileId: null } },
+      { barberId: 'barber-1', input: { avatarFileId: 'f9' } },
+      { barberId: 'barber-1', input: { avatarFileId: null } },
     ]);
   });
 

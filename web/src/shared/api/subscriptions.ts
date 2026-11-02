@@ -30,8 +30,9 @@ export function createSubscriber(options: {
 }) {
   const { session, backoff = exponential } = options;
 
-  return function subscribe<R>(
-    document: TypedDocumentString<R, Record<string, never>>,
+  return function subscribe<R, V extends Record<string, unknown>>(
+    document: TypedDocumentString<R, V>,
+    variables: V,
     handlers: Handlers<R>,
   ): () => void {
     let stopped = false;
@@ -56,7 +57,7 @@ export function createSubscriber(options: {
         restart();
       };
       dispose = options.client().subscribe<R>(
-        { query: document.toString() },
+        { query: document.toString(), variables },
         {
           next: (result) => {
             const code = (result.errors?.[0]?.extensions as { code?: string } | undefined)?.code;

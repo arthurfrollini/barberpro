@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { routes } from '@/app/routes';
 import { appointment } from '@/test/agenda-fixtures';
-import { ME, roles } from '@/test/fixtures';
+import { ME, workspaces } from '@/test/fixtures';
 import { api, gqlData, gqlError } from '@/test/graphql';
 import { renderRoutes, signIn } from '@/test/render';
 import { server } from '@/test/server';
@@ -17,7 +17,7 @@ const MONDAY_HOURS = [{ weekday: 1, startTime: '08:00', endTime: '20:00' }];
 function mockApi(days: Record<string, AgendaAppointment[]>, blockedDates: string[] = []) {
   const requested: string[] = [];
   server.use(
-    api.query('Roles', () => gqlData(roles({ barber: true }))),
+    api.query('Workspaces', () => gqlData(workspaces({ barber: true }))),
     api.query('Me', () => gqlData({ me: ME })),
     api.query('MySchedule', () => gqlData({ mySchedule: { weekly: MONDAY_HOURS, blockedDates } })),
     api.query('BarberAgenda', ({ variables }) => {

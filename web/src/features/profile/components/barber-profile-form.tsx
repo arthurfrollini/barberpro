@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import type { Roles } from '@/features/roles/api/roles';
+import type { BarberProfile } from '@/features/workspaces/lib/workspaces';
 import { ImageField } from '@/features/uploads/components/image-field';
 import { isApiError } from '@/shared/api';
 import { messageFor } from '@/shared/lib/error-messages';
@@ -21,8 +21,8 @@ const schema = z.object({
 
 type Values = z.infer<typeof schema>;
 
-export function BarberProfileForm({ barber }: { barber: NonNullable<Roles['barber']> }) {
-  const update = useUpdateBarberProfile();
+export function BarberProfileForm({ barber }: { barber: BarberProfile }) {
+  const update = useUpdateBarberProfile(barber.id);
   const defaults: Values = { bio: barber.bio, photo: { url: barber.avatarUrl ?? null } };
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: defaults });
   const { errors, isDirty, dirtyFields } = form.formState;

@@ -28,7 +28,8 @@ export function createSessionStore(options: {
   lock?: Lock;
   now?: () => number;
 }) {
-  const { storage, refresh, lock = browserLock, now = Date.now } = options;
+  // read the clock at call time, so a faked clock (tests) is the one used
+  const { storage, refresh, lock = browserLock, now = () => Date.now() } = options;
   const listeners = new Set<(session: Session | null) => void>();
   let inflight: Promise<string | null> | null = null;
   // whether the session ended because someone signed out (here or in another tab), as

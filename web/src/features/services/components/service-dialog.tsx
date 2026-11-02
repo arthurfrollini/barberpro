@@ -28,14 +28,16 @@ import {
 
 /** Creates a service, or edits `service` when given. Remounted per open, so it starts clean. */
 export function ServiceDialog({
+  barberId,
   service,
   onClose,
 }: {
+  barberId: string;
   service: Service | null;
   onClose: () => void;
 }) {
-  const create = useCreateService();
-  const update = useUpdateService();
+  const create = useCreateService(barberId);
+  const update = useUpdateService(barberId);
   const form = useForm<ServiceFormInput, unknown, ServiceFormOutput>({
     resolver: zodResolver(serviceSchema),
     defaultValues: service ? formValues(service) : emptyService,

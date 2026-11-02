@@ -34,9 +34,28 @@ export async function seedShop(ds: DataSource) {
     now,
   );
   await shops.shops.save(shop);
-  const addBarber = async (name: string) => {
-    const u = await user(name);
-    const barber = Barber.create({ shopId: shop.id, userId: u.id }, now);
+  /** Another shop with the same owner. */
+  const addShop = async (name: string) => {
+    const other = Barbershop.create(
+      {
+        ownerId: owner.id,
+        name,
+        description: '',
+        foundedYear: 2015,
+        logoFileId: null,
+        address: 'Rua 2',
+        location: Location.of(-23.57, -46.66),
+        timezone: 'America/Sao_Paulo',
+      },
+      now,
+    );
+    await shops.shops.save(other);
+    return other;
+  };
+  /** A barber profile with a 30-minute service; `existing` barbers in another shop too. */
+  const addBarber = async (name: string, options: { existing?: User; shopId?: string } = {}) => {
+    const u = options.existing ?? (await user(name));
+    const barber = Barber.create({ shopId: options.shopId ?? shop.id, userId: u.id }, now);
     await shops.barbers.save(barber);
     const service = Service.create(
       {
@@ -51,5 +70,5 @@ export async function seedShop(ds: DataSource) {
     await shops.services.save(service);
     return { user: u, barber, service };
   };
-  return { owner, shop, user, addBarber };
+  return { owner, shop, user, addShop, addBarber };
 }

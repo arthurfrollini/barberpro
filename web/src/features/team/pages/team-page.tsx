@@ -1,7 +1,7 @@
 import { toast } from 'sonner';
 import type { MyShop } from '@/features/shop/api/shop';
 import { useMyShop } from '@/features/shop/hooks/use-shop';
-import { useRoles } from '@/features/roles/hooks/use-roles';
+import { useCurrentWorkspace } from '@/features/workspaces/hooks/use-workspaces';
 import { formatDayMonth, localDateOf } from '@/shared/lib/time';
 import { toastError } from '@/shared/ui/toast-error';
 import {
@@ -136,8 +136,8 @@ function Invites({ shop }: { shop: MyShop }) {
 }
 
 export function TeamPage() {
-  const shop = useMyShop();
-  const roles = useRoles();
+  const workspace = useCurrentWorkspace();
+  const shop = useMyShop(workspace.shop.id);
   return (
     <>
       <PageHeader
@@ -154,13 +154,13 @@ export function TeamPage() {
             <h2 id="barbers-title" className="text-xl">
               Barbeiros
             </h2>
-            <Barbers shop={shop.data} myBarberId={roles.data?.barber?.id} />
+            <Barbers shop={shop.data} myBarberId={workspace.barber?.id} />
           </section>
           <section aria-labelledby="invites-title" className="flex flex-col gap-4">
             <h2 id="invites-title" className="text-xl">
               Convidar
             </h2>
-            <InviteForm />
+            <InviteForm shopId={shop.data.id} />
             <Invites shop={shop.data} />
           </section>
         </div>

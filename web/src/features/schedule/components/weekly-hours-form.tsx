@@ -124,13 +124,15 @@ function DayRow({ form, index, onCopy }: { form: Form; index: number; onCopy: ()
 }
 
 export function WeeklyHoursForm({
+  barberId,
   schedule,
   timeZone,
 }: {
+  barberId: string;
   schedule: MySchedule;
   timeZone: string;
 }) {
-  const save = useSetWeeklySchedule();
+  const save = useSetWeeklySchedule(barberId);
   const [canceled, setCanceled] = useState<AgendaAppointment[]>([]);
   const form = useForm<WeekForm>({
     resolver: zodResolver(weekSchema),

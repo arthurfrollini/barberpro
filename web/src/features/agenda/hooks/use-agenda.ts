@@ -11,11 +11,14 @@ import { forgetChangedHere, markChangedHere } from '../lib/changed-here';
 
 export const agendaKeys = {
   all: ['agenda'] as const,
-  day: (date: string) => ['agenda', date] as const,
+  day: (barberId: string, date: string) => ['agenda', barberId, date] as const,
 };
 
-export function useAgenda(date: string) {
-  return useQuery({ queryKey: agendaKeys.day(date), queryFn: () => fetchAgenda(date) });
+export function useAgenda(barberId: string, date: string) {
+  return useQuery({
+    queryKey: agendaKeys.day(barberId, date),
+    queryFn: () => fetchAgenda(barberId, date),
+  });
 }
 
 export function useRescheduleSlots(id: string, date: string | null) {
@@ -39,7 +42,7 @@ function applyChange(queryClient: QueryClient, changed: AgendaAppointment, timeZ
   })) {
     if (!list) continue;
     const others = list.filter((a) => a.id !== changed.id);
-    const here = key[1] === day && list.some((a) => a.id === changed.id);
+    const here = key[2] === day && list.some((a) => a.id === changed.id);
     queryClient.setQueryData(
       key,
       here ? list.map((a) => (a.id === changed.id ? changed : a)) : others,

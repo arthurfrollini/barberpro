@@ -9,7 +9,7 @@ web/src/
   app/          providers, rotas, layout, guards
   features/
     auth/       api/  hooks/  components/  pages/
-    roles/      api/  hooks/
+    workspaces/ api/  hooks/  lib/  components/   (barbearias da pessoa e o seletor)
     ...         (agenda, horários, serviços, perfil, barbearia, equipe)
   shared/
     api/        cliente GraphQL, sessão, erros, query client
@@ -25,7 +25,7 @@ pages  →  components  →  hooks  →  api  →  shared/api (fetch)
 ```
 
 - **api/**: as operações GraphQL (`graphql(\`...\`)`) e funções como `signIn(input)`. É a única camada que chama o cliente.
-- **hooks/**: TanStack Query em volta das funções da api: `useSignIn()`, `useRoles()`. Aqui ficam as chaves de cache e o que invalidar depois de uma mutation.
+- **hooks/**: TanStack Query em volta das funções da api: `useSignIn()`, `useActiveWorkspace()`. Aqui ficam as chaves de cache e o que invalidar depois de uma mutation.
 - **components/** e **pages/**: só React. Não sabem que existe GraphQL.
 
 Uma regra do ESLint proíbe `fetch` fora de `shared/api`. Assim, se amanhã o transporte mudar, muda um arquivo.
@@ -36,7 +36,7 @@ Uma regra do ESLint proíbe `fetch` fora de `shared/api`. Assim, se amanhã o tr
 
 Não tem Apollo nem urql. O codegen (client preset, `documentMode: 'string'`) lê os `.graphql` da API e gera, para cada operação, uma string tipada (`TypedDocumentString<Resultado, Variáveis>`). O cliente faz um POST com essa string e o TypeScript sabe o formato da resposta.
 
-- O cache é do TanStack Query, por chave (`['me']`, `['roles']`), não normalizado por id como no Apollo. Para uma dashboard isso basta: depois de uma mutation, invalida a chave e pronto.
+- O cache é do TanStack Query, por chave (`['me']`, `['agenda', barberId, dia]`), não normalizado por id como no Apollo. Para uma dashboard isso basta: depois de uma mutation, invalida a chave e pronto.
 - Nenhum runtime GraphQL vai para o navegador (o bundle fica menor).
 - Se a API mudar o schema e quebrar uma operação, o `npm run codegen` ou o `typecheck` falham no mesmo PR.
 
@@ -54,9 +54,9 @@ Detalhes no [ADR 6](../docs/adr/0006-session-in-local-storage.md). O essencial:
 
 ## Rotas e papéis
 
-Papel vem dos dados, como na API: `myBarberProfile` e `myBarbershop` numa query só (`useRoles`).
+Papel vem dos dados, como na API: `myBarbershops` e `myBarberProfiles` numa query só, transformada em **workspaces** (uma entrada por barbearia, com o papel da pessoa ali). O seletor no canto inferior esquerdo escolhe a barbearia ativa, e é sobre ela que as rotas e os guards decidem (`useActiveWorkspace`). Detalhes em [Várias barbearias](Multiplas-Barbearias.md).
 
-- `/` não tem tela: manda o barbeiro para `/agenda`, o dono para `/barbearia` e os outros para `/comecar`.
+- `/` não tem tela: na barbearia ativa, manda quem atende para `/agenda`, quem só é dono para `/barbearia`; quem não tem nenhuma vai para `/comecar`.
 - `RequireAuth` protege tudo que precisa de login. `RequireRole` protege páginas de barbeiro e de dono e redireciona quem não tem o papel.
 - `RedirectIfSignedIn` tira quem já está logado das telas de login e é ele que leva para o `?voltar` depois do login (o formulário só cria a sessão; assim não há duas navegações disputando).
 
