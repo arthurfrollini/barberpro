@@ -4,3 +4,4 @@ node_modules
 src/shared/adapters/graphql/generated
 docs/assets
 docs/superpowers
+web

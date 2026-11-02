@@ -1,0 +1,5 @@
+dist
+node_modules
+src/gql
+playwright-report
+test-results

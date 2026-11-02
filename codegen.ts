@@ -26,6 +26,8 @@ const config: CodegenConfig = {
           WeeklyInterval: '../../../../modules/scheduling/domain/weekly-schedule.js#WeeklyInterval',
           BarberSchedule: '../../../../modules/scheduling/application/ports.js#ScheduleView',
           ScheduleUpdate: '../../../../modules/scheduling/application/ports.js#ScheduleUpdate',
+          Notification: '../../../../modules/notifications/domain/notification.js#Notification',
+          AgendaChange: '../pubsub.js#AgendaChangeMessage',
         },
       },
     },

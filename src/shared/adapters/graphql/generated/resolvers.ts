@@ -9,6 +9,8 @@ import type { Invite as InviteModel } from '../../../../modules/shops/domain/inv
 import type { Appointment as AppointmentModel } from '../../../../modules/scheduling/domain/appointment.js';
 import type { WeeklyInterval as WeeklyIntervalModel } from '../../../../modules/scheduling/domain/weekly-schedule.js';
 import type { ScheduleView as ScheduleViewModel, ScheduleUpdate as ScheduleUpdateModel } from '../../../../modules/scheduling/application/ports.js';
+import type { Notification as NotificationModel } from '../../../../modules/notifications/domain/notification.js';
+import type { AgendaChangeMessage as AgendaChangeMessageModel } from '../pubsub.js';
 import type { GraphQLContext } from '../context.js';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
@@ -23,6 +25,19 @@ export type Scalars = {
   /** An instant in ISO 8601. Inputs must carry Z or an offset; outputs are always UTC (2026-11-02T13:30:00.000Z). */
   DateTime: { input: Date; output: Date; }
 };
+
+export type AgendaChange = {
+  __typename?: 'AgendaChange';
+  appointment: Appointment;
+  /** Set for RESCHEDULED. */
+  previousStartsAt?: Maybe<Scalars['DateTime']['output']>;
+  type: AgendaChangeType;
+};
+
+export type AgendaChangeType =
+  | 'BOOKED'
+  | 'CANCELED'
+  | 'RESCHEDULED';
 
 export type Appointment = {
   __typename?: 'Appointment';
@@ -172,6 +187,8 @@ export type Mutation = {
   createService: Service;
   /** Emails a 7-day invite. Errors: NOT_SHOP_OWNER, ALREADY_A_BARBER, INVITE_ALREADY_SENT, EMAIL_NOT_SENT. */
   inviteBarber: Invite;
+  /** Errors: NOTIFICATION_NOT_FOUND. */
+  markNotificationRead: Scalars['Boolean']['output'];
   /** Swaps a refresh token for a new session. Errors: INVALID_REFRESH_TOKEN. */
   refreshToken: AuthPayload;
   /** Errors: NOT_SHOP_OWNER, BARBER_NOT_FOUND. */
@@ -233,6 +250,11 @@ export type MutationCreateServiceArgs = {
 
 export type MutationInviteBarberArgs = {
   email: Scalars['String']['input'];
+};
+
+
+export type MutationMarkNotificationReadArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -303,6 +325,24 @@ export type NearbyBarbershop = {
   distanceKm: Scalars['Float']['output'];
 };
 
+/** An entry in the signed-in user's list. The same text also goes out by email. */
+export type Notification = {
+  __typename?: 'Notification';
+  appointment?: Maybe<Appointment>;
+  body: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  read: Scalars['Boolean']['output'];
+  title: Scalars['String']['output'];
+  type: NotificationType;
+};
+
+export type NotificationType =
+  | 'APPOINTMENT_BOOKED'
+  | 'APPOINTMENT_CANCELED'
+  | 'APPOINTMENT_REMINDER'
+  | 'APPOINTMENT_RESCHEDULED';
+
 export type Query = {
   __typename?: 'Query';
   /** Free start times on a date (YYYY-MM-DD in the shop's zone), every 15 minutes. Public. */
@@ -325,8 +365,11 @@ export type Query = {
   /** The shop the signed-in user owns, if any. */
   myBarbershop?: Maybe<Barbershop>;
   mySchedule: BarberSchedule;
+  /** Newest first; limit up to 50. */
+  notifications: Array<Notification>;
   /** Matches names with typos. Errors: INVALID_SEARCH (fewer than 2 characters). */
   searchBarbershops: Array<Barbershop>;
+  unreadNotificationCount: Scalars['Int']['output'];
 };
 
 
@@ -365,6 +408,12 @@ export type QueryMyAppointmentsArgs = {
 };
 
 
+export type QueryNotificationsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
 export type QuerySearchBarbershopsArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
@@ -399,6 +448,12 @@ export type SignUpInput = {
   name: Scalars['String']['input'];
   /** 8 to 128 characters. */
   password: Scalars['String']['input'];
+};
+
+export type Subscription = {
+  __typename?: 'Subscription';
+  /** The signed-in barber's agenda as it changes: bookings, cancellations, reschedules. Errors: UNAUTHENTICATED, NOT_A_BARBER. */
+  agendaChanged: AgendaChange;
 };
 
 export type UpdateBarberProfileInput = {
@@ -527,6 +582,8 @@ export type DirectiveResolverFn<TResult = Record<PropertyKey, never>, TParent = 
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
+  AgendaChange: ResolverTypeWrapper<AgendaChangeMessageModel>;
+  AgendaChangeType: AgendaChangeType;
   Appointment: ResolverTypeWrapper<AppointmentModel>;
   AppointmentStatus: AppointmentStatus;
   AuthPayload: ResolverTypeWrapper<SessionModel>;
@@ -547,12 +604,15 @@ export type ResolversTypes = {
   InviteStatus: InviteStatus;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
   NearbyBarbershop: ResolverTypeWrapper<NearbyShopModel>;
+  Notification: ResolverTypeWrapper<NotificationModel>;
+  NotificationType: NotificationType;
   Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
   ScheduleUpdate: ResolverTypeWrapper<ScheduleUpdateModel>;
   Service: ResolverTypeWrapper<ServiceModel>;
   SignInInput: SignInInput;
   SignUpInput: SignUpInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
+  Subscription: ResolverTypeWrapper<Record<PropertyKey, never>>;
   UpdateBarberProfileInput: UpdateBarberProfileInput;
   UpdateBarbershopInput: UpdateBarbershopInput;
   UpdateProfileInput: UpdateProfileInput;
@@ -564,6 +624,7 @@ export type ResolversTypes = {
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
+  AgendaChange: AgendaChangeMessageModel;
   Appointment: AppointmentModel;
   AuthPayload: SessionModel;
   Barber: BarberModel;
@@ -581,12 +642,14 @@ export type ResolversParentTypes = {
   Invite: InviteModel;
   Mutation: Record<PropertyKey, never>;
   NearbyBarbershop: NearbyShopModel;
+  Notification: NotificationModel;
   Query: Record<PropertyKey, never>;
   ScheduleUpdate: ScheduleUpdateModel;
   Service: ServiceModel;
   SignInInput: SignInInput;
   SignUpInput: SignUpInput;
   String: Scalars['String']['output'];
+  Subscription: Record<PropertyKey, never>;
   UpdateBarberProfileInput: UpdateBarberProfileInput;
   UpdateBarbershopInput: UpdateBarbershopInput;
   UpdateProfileInput: UpdateProfileInput;
@@ -594,6 +657,12 @@ export type ResolversParentTypes = {
   User: UserModel;
   WeeklyInterval: WeeklyIntervalModel;
   WeeklyIntervalInput: WeeklyIntervalInput;
+};
+
+export type AgendaChangeResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['AgendaChange'] = ResolversParentTypes['AgendaChange']> = {
+  appointment?: Resolver<ResolversTypes['Appointment'], ParentType, ContextType>;
+  previousStartsAt?: Resolver<Maybe<ResolversTypes['DateTime']>, ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['AgendaChangeType'], ParentType, ContextType>;
 };
 
 export type AppointmentResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Appointment'] = ResolversParentTypes['Appointment']> = {
@@ -674,6 +743,7 @@ export type MutationResolvers<ContextType = GraphQLContext, ParentType extends R
   createBarbershop?: Resolver<ResolversTypes['Barbershop'], ParentType, ContextType, RequireFields<MutationCreateBarbershopArgs, 'input'>>;
   createService?: Resolver<ResolversTypes['Service'], ParentType, ContextType, RequireFields<MutationCreateServiceArgs, 'input'>>;
   inviteBarber?: Resolver<ResolversTypes['Invite'], ParentType, ContextType, RequireFields<MutationInviteBarberArgs, 'email'>>;
+  markNotificationRead?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationMarkNotificationReadArgs, 'id'>>;
   refreshToken?: Resolver<ResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<MutationRefreshTokenArgs, 'token'>>;
   removeBarber?: Resolver<ResolversTypes['Barber'], ParentType, ContextType, RequireFields<MutationRemoveBarberArgs, 'id'>>;
   rescheduleAppointment?: Resolver<ResolversTypes['Appointment'], ParentType, ContextType, RequireFields<MutationRescheduleAppointmentArgs, 'id' | 'startsAt'>>;
@@ -693,6 +763,16 @@ export type NearbyBarbershopResolvers<ContextType = GraphQLContext, ParentType e
   distanceKm?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
 };
 
+export type NotificationResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Notification'] = ResolversParentTypes['Notification']> = {
+  appointment?: Resolver<Maybe<ResolversTypes['Appointment']>, ParentType, ContextType>;
+  body?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  read?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  title?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['NotificationType'], ParentType, ContextType>;
+};
+
 export type QueryResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   availableSlots?: Resolver<Array<ResolversTypes['DateTime']>, ParentType, ContextType, RequireFields<QueryAvailableSlotsArgs, 'barberId' | 'date' | 'serviceId'>>;
   barber?: Resolver<Maybe<ResolversTypes['Barber']>, ParentType, ContextType, RequireFields<QueryBarberArgs, 'id'>>;
@@ -705,7 +785,9 @@ export type QueryResolvers<ContextType = GraphQLContext, ParentType extends Reso
   myBarberProfile?: Resolver<Maybe<ResolversTypes['Barber']>, ParentType, ContextType>;
   myBarbershop?: Resolver<Maybe<ResolversTypes['Barbershop']>, ParentType, ContextType>;
   mySchedule?: Resolver<ResolversTypes['BarberSchedule'], ParentType, ContextType>;
+  notifications?: Resolver<Array<ResolversTypes['Notification']>, ParentType, ContextType, RequireFields<QueryNotificationsArgs, 'limit' | 'offset'>>;
   searchBarbershops?: Resolver<Array<ResolversTypes['Barbershop']>, ParentType, ContextType, RequireFields<QuerySearchBarbershopsArgs, 'limit' | 'offset' | 'query'>>;
+  unreadNotificationCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
 export type ScheduleUpdateResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['ScheduleUpdate'] = ResolversParentTypes['ScheduleUpdate']> = {
@@ -722,6 +804,10 @@ export type ServiceResolvers<ContextType = GraphQLContext, ParentType extends Re
   priceCents?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
+export type SubscriptionResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = {
+  agendaChanged?: SubscriptionResolver<ResolversTypes['AgendaChange'], "agendaChanged", ParentType, ContextType>;
+};
+
 export type UserResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']> = {
   createdAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -736,6 +822,7 @@ export type WeeklyIntervalResolvers<ContextType = GraphQLContext, ParentType ext
 };
 
 export type Resolvers<ContextType = GraphQLContext> = {
+  AgendaChange?: AgendaChangeResolvers<ContextType>;
   Appointment?: AppointmentResolvers<ContextType>;
   AuthPayload?: AuthPayloadResolvers<ContextType>;
   Barber?: BarberResolvers<ContextType>;
@@ -746,9 +833,11 @@ export type Resolvers<ContextType = GraphQLContext> = {
   Invite?: InviteResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   NearbyBarbershop?: NearbyBarbershopResolvers<ContextType>;
+  Notification?: NotificationResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   ScheduleUpdate?: ScheduleUpdateResolvers<ContextType>;
   Service?: ServiceResolvers<ContextType>;
+  Subscription?: SubscriptionResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
   WeeklyInterval?: WeeklyIntervalResolvers<ContextType>;
 };

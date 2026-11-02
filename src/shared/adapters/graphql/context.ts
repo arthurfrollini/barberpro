@@ -1,11 +1,11 @@
-import type { ShopsLoaders } from '../../../modules/shops/adapters/graphql/loaders.js';
 import { DomainError } from '../../domain/domain-error.js';
+import type { Loaders } from './loaders.js';
 
 export type GraphQLContext = {
   /** Set from a valid `Authorization: Bearer <access token>`; null for anonymous requests. */
   currentUserId: string | null;
   /** DataLoaders, created fresh for every request. */
-  loaders: ShopsLoaders;
+  loaders: Loaders;
 };
 
 export function requireUser(ctx: GraphQLContext): string {

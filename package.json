@@ -10,8 +10,10 @@
   },
   "scripts": {
     "dev": "tsx watch src/main.ts",
+    "dev:worker": "tsx watch src/worker.ts",
     "build": "tsc -p tsconfig.build.json && node scripts/copy-graphql.mjs",
     "start": "node dist/main.js",
+    "start:worker": "node dist/worker.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
@@ -28,7 +30,9 @@
   },
   "dependencies": {
     "@fastify/multipart": "^10.1.6",
+    "@graphql-yoga/redis-event-target": "^4.0.0",
     "argon2": "^0.45.1",
+    "bullmq": "^6.5.2",
     "dataloader": "^2.2.3",
     "fastify": "^5.12.7",
     "graphql": "^17.0.2",

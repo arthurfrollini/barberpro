@@ -58,5 +58,40 @@ services:
       mailpit:
         condition: service_started
 
+  worker:
+    # sends queued email and fires reminders; same image as the api, other entry point
+    build:
+      context: .
+      target: dev
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://barberpro:barberpro@postgres:5432/barberpro
+      REDIS_URL: redis://redis:6379
+      SMTP_URL: smtp://mailpit:1025
+    command: ['npm', 'run', 'dev:worker']
+    volumes:
+      - ./src:/app/src
+    depends_on:
+      api:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+  web:
+    # the dashboard; Vite forwards /graphql, /uploads and /files to the api service
+    build:
+      context: ./web
+      target: dev
+    environment:
+      API_URL: http://api:4000
+    ports:
+      - '5180:5180'
+    volumes:
+      - ./web/src:/app/src
+      - ./web/public:/app/public
+    depends_on:
+      api:
+        condition: service_started
+
 volumes:
   postgres-data:

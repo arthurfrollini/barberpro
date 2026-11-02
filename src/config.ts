@@ -12,6 +12,7 @@ const schema = z.object({
   MAIL_FROM: z.string().default('BarberPro <no-reply@barberpro.dev>'),
   UPLOAD_DIR: z.string().default('uploads'),
   PUBLIC_URL: z.url().default('http://localhost:4000'),
+  QUEUE_PREFIX: z.string().min(1).default('barberpro'),
 });
 
 export type Config = {
@@ -26,6 +27,8 @@ export type Config = {
   mailFrom: string;
   uploadDir: string;
   publicUrl: string;
+  /** Namespace of the BullMQ keys in Redis; tests use their own. */
+  queuePrefix: string;
 };
 
 /** Reads and validates the environment once, at startup, so a bad deploy fails fast. */
@@ -50,5 +53,6 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     mailFrom: e.MAIL_FROM,
     uploadDir: e.UPLOAD_DIR,
     publicUrl: e.PUBLIC_URL,
+    queuePrefix: e.QUEUE_PREFIX,
   };
 }

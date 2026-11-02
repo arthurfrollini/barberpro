@@ -49,6 +49,7 @@ export async function inviteBarber(
         `You were invited to join ${shop.name} as a barber on BarberPro.\n\n` +
         `Sign in with this email and accept the invite with this code: ${token}\n\n` +
         `The invite expires on ${invite.expiresAt.toISOString().slice(0, 10)}.`,
+      inviteId: invite.id,
     });
   } catch {
     // nobody has the code, so the invite would only block a retry for 7 days
@@ -57,6 +58,17 @@ export async function inviteBarber(
     throw new DomainError('EMAIL_NOT_SENT', 'We could not send the invite email. Try again.');
   }
   return invite;
+}
+
+/**
+ * Called by the worker when it gave up on an invite email: nobody has the code, so the
+ * pending invite would only block a resend for 7 days. The owner sees it as revoked.
+ */
+export async function revokeUndeliveredInvite(deps: ShopsDeps, inviteId: string) {
+  const invite = await deps.invites.findById(inviteId);
+  if (!invite) return;
+  invite.revoke(deps.clock.now());
+  await deps.invites.save(invite);
 }
 
 export async function revokeInvite(deps: ShopsDeps, actorId: string, inviteId: string) {

@@ -47,7 +47,13 @@ export interface ServiceRepository {
   save(service: Service): Promise<void>;
 }
 
-export type MailMessage = { to: string; subject: string; text: string };
+export type MailMessage = {
+  to: string;
+  subject: string;
+  text: string;
+  /** Set on invite emails, so the invite can be revoked if the email is never delivered. */
+  inviteId?: string;
+};
 
 export interface Mailer {
   send(message: MailMessage): Promise<void>;

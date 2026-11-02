@@ -11,7 +11,7 @@ import {
   searchBarbershops,
   updateBarbershop,
 } from './barbershops.js';
-import { acceptInvite, inviteBarber, revokeInvite } from './invites.js';
+import { acceptInvite, inviteBarber, revokeInvite, revokeUndeliveredInvite } from './invites.js';
 import { archiveService, createService, updateService } from './services.js';
 
 const code = (c: string) => expect.objectContaining({ code: c });
@@ -204,6 +204,16 @@ describe('shops use cases', () => {
       deps.mailer.send = send;
       const token = await inviteJose();
       expect((await acceptInvite(deps, jose.id, token)).userId).toBe(jose.id);
+    });
+
+    it('revokes an invite whose email the worker could not deliver, so it can be resent', async () => {
+      const invite = await inviteBarber(deps, owner.id, 'jose@x.com');
+      expect(deps.mailer.sent.at(-1)?.inviteId).toBe(invite.id);
+
+      await revokeUndeliveredInvite(deps, invite.id);
+
+      expect((await deps.invites.findById(invite.id))?.status(clock.now())).toBe('revoked');
+      await inviteBarber(deps, owner.id, 'jose@x.com');
     });
 
     it('refuses to invite someone already barbering in the shop', async () => {
