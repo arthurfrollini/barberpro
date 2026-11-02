@@ -106,7 +106,9 @@ describe('shops repositories', () => {
 
     // another shop is fine: one profile per shop
     const other = await shop('Filial', pinheiros);
-    await repos.barbers.save(Barber.create({ shopId: other.id, userId: jose.id }, now));
+    // a minute later, so the oldest-first order does not fall back to the random ids
+    const later = new Date(now.getTime() + 60_000);
+    await repos.barbers.save(Barber.create({ shopId: other.id, userId: jose.id }, later));
     expect((await repos.barbers.listActiveByUser(jose.id)).map((b) => b.shopId)).toEqual([
       s.id,
       other.id,

@@ -175,10 +175,30 @@ describe('scheduling under concurrency', () => {
     await schedules.replaceWeekly(jose.barber.id, hours);
     await schedules.replaceWeekly(joseThere.barber.id, hours);
     const [ana, bia] = [await seed.user('ana'), await seed.user('bia')];
+    // pause the first booking after it read José's free time and before it writes, so the
+    // second booking, at the other shop, commits in between: only the database can refuse it
+    let armed = true;
+    let reached!: () => void;
+    let release!: () => void;
+    const reachedP = new Promise<void>((r) => (reached = r));
+    const releaseP = new Promise<void>((r) => (release = r));
+    const pauseAfterRead = (repos: SchedulingRepositories): SchedulingRepositories => {
+      const busyFor = repos.appointments.busyFor.bind(repos.appointments);
+      repos.appointments.busyFor = async (...args) => {
+        const busy = await busyFor(...args);
+        if (armed) {
+          armed = false;
+          reached();
+          await releaseP;
+        }
+        return busy;
+      };
+      return repos;
+    };
     const shops = shopsRepositories(ds.manager);
     const deps: SchedulingDeps = {
       ...schedulingRepositories(ds.manager),
-      transaction: (work) => ds.transaction((m) => work(schedulingRepositories(m))),
+      transaction: (work) => ds.transaction((m) => work(pauseAfterRead(schedulingRepositories(m)))),
       directory: {
         barber: (id) => shops.barbers.findById(id),
         shop: (id) => shops.shops.findById(id),
@@ -188,20 +208,24 @@ describe('scheduling under concurrency', () => {
       clock,
     };
 
-    const results = await Promise.allSettled([
-      bookAppointment(deps, ana.id, {
-        barberId: jose.barber.id,
-        serviceId: jose.service.id,
-        startsAt: at('2026-11-02T17:00:00Z'),
-        reminderLeadMinutes: null,
-      }),
-      bookAppointment(deps, bia.id, {
-        barberId: joseThere.barber.id,
-        serviceId: joseThere.service.id,
-        startsAt: at('2026-11-02T17:15:00Z'),
-        reminderLeadMinutes: null,
-      }),
-    ]);
+    const first = bookAppointment(deps, ana.id, {
+      barberId: jose.barber.id,
+      serviceId: jose.service.id,
+      startsAt: at('2026-11-02T17:00:00Z'),
+      reminderLeadMinutes: null,
+    });
+    await reachedP;
+    const second = await bookAppointment(deps, bia.id, {
+      barberId: joseThere.barber.id,
+      serviceId: joseThere.service.id,
+      startsAt: at('2026-11-02T17:15:00Z'),
+      reminderLeadMinutes: null,
+    });
+    release();
+    const results = [
+      { status: 'fulfilled' as const, value: second },
+      ...(await Promise.allSettled([first])),
+    ];
 
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
     const failed = results.find((r) => r.status === 'rejected') as PromiseRejectedResult;
