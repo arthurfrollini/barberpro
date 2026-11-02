@@ -56,6 +56,7 @@ CONSTRAINT appointments_barber_no_overlap
 - `WHERE (status = 'booked')`: cancelado não ocupa horário.
 - Uma constraint igual para `customer_id` impede o cliente de marcar dois horários sobrepostos com barbeiros diferentes (`CUSTOMER_BUSY`).
 - A violação (`SQLSTATE 23P01`) vira `SLOT_UNAVAILABLE` no repositório. O teste `lets exactly one of two simultaneous bookings for the same slot win` dispara duas reservas em paralelo e espera uma só.
+- **V2:** uma terceira constraint, por `barber_user_id`, cobre a pessoa que atende em duas barbearias: ela não pode ser reservada às 14h nas duas. E a disponibilidade já desconta o que está ocupado nas outras barbearias dela. Veja [Várias barbearias](Multiplas-Barbearias.md).
 
 ## Concorrência além da dupla reserva (o que a revisão do PR pegou)
 

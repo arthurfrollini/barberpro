@@ -2,8 +2,10 @@
 
 ## O modelo
 
+> **V2:** o modelo abaixo é o da fase 2. Desde a V2 uma pessoa pode ser dona de várias barbearias e atender em várias, com um perfil de barbeiro por barbearia. Veja [Várias barbearias](Multiplas-Barbearias.md).
+
 ```
-users ──1:1── barbershops (dono)        a página da barbearia: vitrine
+users ──1:N── barbershops (dono)        a página da barbearia: vitrine
   │                 │
   │                 ├──1:N── barbers ──1:N── services   cada barbeiro tem os seus
   │                 │
@@ -12,7 +14,7 @@ users ──1:1── barbershops (dono)        a página da barbearia: vitrine
 ```
 
 - **Um usuário, vários papéis.** Ser dono vem de ter uma linha em `barbershops`; ser barbeiro vem de ter uma linha ativa em `barbers`. Não existe coluna `role`.
-- **Barbeiro é uma "matrícula" na barbearia.** Remover não apaga a linha (`removed_at`), porque os agendamentos antigos (fase 3) apontam para ela. O índice único parcial `barbers (user_id) WHERE removed_at IS NULL` garante uma barbearia ativa por barbeiro e libera a pessoa para entrar em outra depois.
+- **Barbeiro é uma "matrícula" na barbearia.** Remover não apaga a linha (`removed_at`), porque os agendamentos antigos (fase 3) apontam para ela. O índice único parcial `barbers (user_id, shop_id) WHERE removed_at IS NULL` garante um perfil ativo por pessoa **em cada barbearia** (na v1 era `barbers (user_id)`, uma barbearia só) e libera a pessoa para voltar depois de removida.
 - **Serviço é do barbeiro**, não da barbearia: o José cobra R$ 50 por 15 minutos e o João R$ 60 por 30 no mesmo lugar. Preço em centavos (`priceCents`), duração em minutos múltiplos de 5 (de 5 a 480). Arquivar esconde da lista, mas mantém o histórico.
 
 ## "Barbearias perto de mim" com PostGIS

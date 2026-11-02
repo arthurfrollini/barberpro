@@ -3,10 +3,10 @@
 ## Roteiro de demo (5 minutos)
 
 1. **`docker compose up`**: sobem Postgres com PostGIS, Redis, Mailpit, a API e o worker. Abrir o GraphiQL em http://localhost:4000/graphql e o Mailpit em http://localhost:8025.
-2. **Dono:** `signUp`, `createBarbershop` (com latitude e longitude), `becomeBarber`, `createService` (Corte, R$ 60, 30 min), `setWeeklySchedule` com 10:00-12:00 e 14:00-22:00.
-3. **Convite:** `inviteBarber("jose@...")`. Mostrar o email no Mailpit. O José cria conta e chama `acceptInvite` com o código.
+2. **Dono:** `signUp`, `createBarbershop` (com latitude e longitude), `becomeBarber(shopId)`, `createService(barberId, ...)` (Corte, R$ 60, 30 min), `setWeeklySchedule(barberId, ...)` com 10:00-12:00 e 14:00-22:00.
+3. **Convite:** `inviteBarber(shopId, "jose@...")`. Mostrar o email no Mailpit. O José cria conta e chama `acceptInvite` com o código.
 4. **Cliente sem conta:** `barbershopsNearby` e `searchBarbershops(query: "barbaria")`, com erro de digitação. Depois `availableSlots`: nenhum horário no almoço, e 11:45 não aparece porque o corte terminaria 12:15.
-5. **Reserva:** em outra aba, o barbeiro abre `subscription { agendaChanged }`. O cliente chama `bookAppointment` e o evento chega ao vivo. A notificação aparece em `notifications`, e o email "New booking" chega no Mailpit.
+5. **Reserva:** em outra aba, o barbeiro abre `subscription { agendaChanged(barberId: ...) }`. O cliente chama `bookAppointment` e o evento chega ao vivo. A notificação aparece em `notifications`, e o email "New booking" chega no Mailpit.
 6. **Regras:** tentar reservar o mesmo horário com outra conta dá `SLOT_UNAVAILABLE`. `blockDate` cancela os horários a 2 horas ou mais e devolve quais foram cancelados.
 7. **Código:** `availability.ts` (uma função para listar e validar), a migration com `EXCLUDE USING gist` e o teste de corrida em `races.test.ts`.
 
@@ -19,7 +19,8 @@
 5. **Equipe:** convidar um email, abrir o Mailpit, clicar no link em outra janela anônima, criar conta, o código já vem preenchido, aceitar.
 6. **Agenda ao vivo:** `npm run seed:demo` em `web/` cria um barbeiro com agendamentos. Entrar com ele, deixar a agenda aberta e reservar pela API (GraphiQL) com outra conta: o bloco aparece, o toast e o sino também, sem recarregar.
 7. **Cancelar e remarcar** pelo painel lateral; mostrar os botões travados a menos de 2 horas e o motivo.
-8. **Código:** `features/agenda/lib/timeline.ts` (funções puras com teste), `shared/api/session.ts` (refresh com Web Lock entre abas), `shared/api/subscriptions.ts` (stream que se reabre) e um teste do Playwright.
+8. **V2, várias barbearias:** pelo seletor no canto inferior esquerdo, "Nova barbearia". Mostrar a lista com os papéis ("Dono", "Dono e barbeiro"), trocar e ver a navegação mudar. Depois, pela API, tentar reservar o mesmo barbeiro às 14h nas duas barbearias: a segunda leva `SLOT_UNAVAILABLE`.
+9. **Código:** `features/agenda/lib/timeline.ts` (funções puras com teste), `shared/api/session.ts` (refresh com Web Lock entre abas), `shared/api/subscriptions.ts` (stream que se reabre) e um teste do Playwright.
 
 ## Perguntas prováveis
 
