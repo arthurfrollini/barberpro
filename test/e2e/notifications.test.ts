@@ -30,27 +30,35 @@ describe('notifications and the live agenda', () => {
 
   const barber = async (name: string) => {
     const token = await signUp(name);
-    await gql(
-      t.app,
-      `mutation { createBarbershop(input: { name: "${name} Cortes", foundedYear: 2010,
-        address: "Rua 1", latitude: -23.56, longitude: -46.65 }) { id } }`,
-      {},
-      token,
-    );
-    const barberId = (await gql(t.app, 'mutation { becomeBarber { id } }', {}, token)).data!
-      .becomeBarber.id;
+    const shopId = (
+      await gql(
+        t.app,
+        `mutation { createBarbershop(input: { name: "${name} Cortes", foundedYear: 2010,
+          address: "Rua 1", latitude: -23.56, longitude: -46.65 }) { id } }`,
+        {},
+        token,
+      )
+    ).data!.createBarbershop.id;
+    const barberId = (
+      await gql(
+        t.app,
+        'mutation ($shopId: ID!) { becomeBarber(shopId: $shopId) { id } }',
+        { shopId },
+        token,
+      )
+    ).data!.becomeBarber.id;
     const serviceId = (
       await gql(
         t.app,
-        'mutation { createService(input: { name: "Corte", priceCents: 6000, durationMinutes: 30 }) { id } }',
-        {},
+        'mutation ($barberId: ID!) { createService(barberId: $barberId, input: { name: "Corte", priceCents: 6000, durationMinutes: 30 }) { id } }',
+        { barberId },
         token,
       )
     ).data!.createService.id;
     await gql(
       t.app,
-      'mutation { setWeeklySchedule(intervals: [{ weekday: 1, startTime: "08:00", endTime: "20:00" }]) { weekly { weekday } } }',
-      {},
+      'mutation ($barberId: ID!) { setWeeklySchedule(barberId: $barberId, intervals: [{ weekday: 1, startTime: "08:00", endTime: "20:00" }]) { weekly { weekday } } }',
+      { barberId },
       token,
     );
     return { token, barberId, serviceId };
@@ -118,18 +126,22 @@ describe('notifications and the live agenda', () => {
         joao.token,
       )
     ).data!.notifications;
-    expect(list).toEqual([
-      {
-        type: 'APPOINTMENT_RESCHEDULED',
-        appointmentStartsAt: '2026-11-02T18:00:00.000Z',
-        appointment: { startsAt: '2026-11-02T18:00:00.000Z' },
-      },
-      {
-        type: 'APPOINTMENT_BOOKED',
-        appointmentStartsAt: '2026-11-02T17:00:00.000Z',
-        appointment: { startsAt: '2026-11-02T18:00:00.000Z' },
-      },
-    ]);
+    // both are created at the same instant on the test clock: compare without order
+    expect(list).toHaveLength(2);
+    expect(list).toEqual(
+      expect.arrayContaining([
+        {
+          type: 'APPOINTMENT_RESCHEDULED',
+          appointmentStartsAt: '2026-11-02T18:00:00.000Z',
+          appointment: { startsAt: '2026-11-02T18:00:00.000Z' },
+        },
+        {
+          type: 'APPOINTMENT_BOOKED',
+          appointmentStartsAt: '2026-11-02T17:00:00.000Z',
+          appointment: { startsAt: '2026-11-02T18:00:00.000Z' },
+        },
+      ]),
+    );
   });
 
   it('marks a notification read for its owner only', async () => {
@@ -162,7 +174,7 @@ describe('notifications and the live agenda', () => {
       base = `http://127.0.0.1:${(t.app.server.address() as AddressInfo).port}`;
     });
 
-    const subscribe = (token?: string) =>
+    const subscribe = (token?: string, barberId = 'none') =>
       fetch(`${base}/graphql`, {
         method: 'POST',
         headers: {
@@ -171,7 +183,9 @@ describe('notifications and the live agenda', () => {
           ...(token ? { authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          query: 'subscription { agendaChanged { type appointment { id customer { name } } } }',
+          query:
+            'subscription ($barberId: ID!) { agendaChanged(barberId: $barberId) { type appointment { id customer { name } } } }',
+          variables: { barberId },
         }),
       });
 
@@ -196,7 +210,7 @@ describe('notifications and the live agenda', () => {
     it("pushes a new booking to the barber's open subscription", async () => {
       const joao = await barber('Joao');
       const ana = await signUp('Ana');
-      const stream = await subscribe(joao.token);
+      const stream = await subscribe(joao.token, joao.barberId);
       const event = firstEvent(stream);
       // give the subscription a moment to reach Redis before publishing
       await new Promise((r) => setTimeout(r, 300));
@@ -220,7 +234,9 @@ describe('notifications and the live agenda', () => {
             authorization: `Bearer ${joao.token}`,
           },
           body: JSON.stringify({
-            query: 'subscription { agendaChanged { type appointment { status startsAt } } }',
+            query:
+              'subscription ($barberId: ID!) { agendaChanged(barberId: $barberId) { type appointment { status startsAt } } }',
+            variables: { barberId: joao.barberId },
           }),
         }),
         3,
