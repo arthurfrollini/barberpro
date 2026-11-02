@@ -1,0 +1,46 @@
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  createdAt: DateTime!
+}
+
+"A signed-in session. Send accessToken as `Authorization: Bearer <token>`."
+type AuthPayload {
+  accessToken: String!
+  accessTokenExpiresAt: DateTime!
+  "Single use: exchange it with refreshToken before it expires (30 days)."
+  refreshToken: String!
+  user: User!
+}
+
+input SignUpInput {
+  name: String!
+  email: String!
+  "8 to 128 characters."
+  password: String!
+}
+
+input SignInInput {
+  email: String!
+  password: String!
+}
+
+input UpdateProfileInput {
+  name: String!
+}
+
+type Query {
+  "The signed-in user. UNAUTHENTICATED without a valid access token."
+  me: User!
+}
+
+type Mutation {
+  "Errors: INVALID_EMAIL, WEAK_PASSWORD, INVALID_NAME, EMAIL_TAKEN."
+  signUp(input: SignUpInput!): AuthPayload!
+  "Errors: INVALID_CREDENTIALS."
+  signIn(input: SignInInput!): AuthPayload!
+  "Swaps a refresh token for a new session. Errors: INVALID_REFRESH_TOKEN."
+  refreshToken(token: String!): AuthPayload!
+  updateProfile(input: UpdateProfileInput!): User!
+}
