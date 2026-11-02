@@ -90,11 +90,7 @@ export class TypeOrmBarbershopRepository implements BarbershopRepository {
   }
 
   async save(shop: Barbershop) {
-    await guardUnique(
-      this.manager.upsert(BarbershopRecord, barbershopMapper.toRecord(shop), ['id']),
-      'barbershops_owner_id_key',
-      () => new DomainError('SHOP_ALREADY_OWNED', 'You already own a barbershop.'),
-    );
+    await this.manager.upsert(BarbershopRecord, barbershopMapper.toRecord(shop), ['id']);
   }
 }
 

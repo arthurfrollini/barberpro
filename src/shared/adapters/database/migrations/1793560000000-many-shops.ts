@@ -28,6 +28,7 @@ export class ManyShops1793560000000 implements MigrationInterface {
         WHERE (status = 'booked')`);
   }
 
+  /** Fails once someone owns two shops or barbers in two: v1's limits no longer fit the data. */
   async down(q: QueryRunner): Promise<void> {
     await q.query('ALTER TABLE appointments DROP CONSTRAINT appointments_barber_user_no_overlap');
     await q.query('ALTER TABLE appointments DROP COLUMN barber_user_id');
