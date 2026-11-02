@@ -38,7 +38,7 @@ function setup({ signedIn = true } = {}) {
   const subscribe = createSubscriber({ client: () => fake.client, session, backoff: () => 1000 });
   const next = vi.fn();
   const reconnected = vi.fn();
-  const stop = subscribe(Doc, { next, reconnected });
+  const stop = subscribe(Doc, {}, { next, reconnected });
   return { ...fake, session, next, reconnected, stop };
 }
 

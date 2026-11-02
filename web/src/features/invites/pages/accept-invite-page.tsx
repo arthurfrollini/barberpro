@@ -1,7 +1,6 @@
 import { useId, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
-import { useRoles } from '@/features/roles/hooks/use-roles';
 import { isApiError, session } from '@/shared/api';
 import { messageFor } from '@/shared/lib/error-messages';
 import { Button } from '@/shared/ui/button';
@@ -18,34 +17,27 @@ export function AcceptInvitePage() {
   const [code, setCode] = useState(search.get('codigo') ?? '');
   const accept = useAcceptInvite();
   const navigate = useNavigate();
-  const roles = useRoles();
   const errorCode = isApiError(accept.error) ? accept.error.code : undefined;
   const errorMessage =
-    errorCode === 'ALREADY_A_BARBER' ? 'Você já atende em uma barbearia.' : messageFor(errorCode);
+    errorCode === 'ALREADY_A_BARBER' ? 'Você já atende nesta barbearia.' : messageFor(errorCode);
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    accept.mutate(code.trim(), {
-      onSuccess: (barber) => {
-        toast.success(`Bem-vindo à equipe da ${barber.barbershop.name}`);
-        navigate('/agenda', { replace: true });
-      },
-    });
+    // awaited rather than mutate's onSuccess: joining switches the active shop, which
+    // remounts this page, and mutate's callbacks do not run for an unmounted component
+    const barber = await accept.mutateAsync(code.trim()).catch(() => null);
+    if (!barber) return;
+    toast.success(`Bem-vindo à equipe da ${barber.barbershop.name}`);
+    navigate('/agenda', { replace: true });
   };
 
   return (
     <>
       <PageHeader
         title="Aceitar convite"
-        description="Use o código do email do convite. Ele vale para o email com que você entrou."
+        description="Use o código do email do convite. Ele vale para o email com que você entrou. Você pode atender em mais de uma barbearia."
       />
-      <form onSubmit={submit} className="flex max-w-md flex-col gap-5">
-        {roles.data?.shop && !roles.data.barber && (
-          <p className="rounded-md border border-primary/40 bg-primary/10 px-4 py-3 text-sm">
-            Você é dono da {roles.data.shop.name}. Ao aceitar, você passa a atender na barbearia do
-            convite, não na sua.
-          </p>
-        )}
+      <form onSubmit={(event) => void submit(event)} className="flex max-w-md flex-col gap-5">
         {accept.isError && (
           <div className="flex flex-col items-start gap-2">
             <FormError message={errorMessage} />

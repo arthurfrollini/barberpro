@@ -29,14 +29,22 @@ const capitalized = (date: string) => {
   return text.charAt(0).toUpperCase() + text.slice(1);
 };
 
-export function DaysOff({ schedule, timeZone }: { schedule: MySchedule; timeZone: string }) {
+export function DaysOff({
+  barberId,
+  schedule,
+  timeZone,
+}: {
+  barberId: string;
+  schedule: MySchedule;
+  timeZone: string;
+}) {
   const dateId = useId();
   const today = todayIn(timeZone, useNow());
   const [date, setDate] = useState('');
   const [confirming, setConfirming] = useState(false);
   const [canceled, setCanceled] = useState<AgendaAppointment[]>([]);
-  const block = useBlockDate();
-  const unblock = useUnblockDate();
+  const block = useBlockDate(barberId);
+  const unblock = useUnblockDate(barberId);
   const upcoming = schedule.blockedDates.filter((d) => d >= today).sort();
   const error = block.error ?? unblock.error;
 

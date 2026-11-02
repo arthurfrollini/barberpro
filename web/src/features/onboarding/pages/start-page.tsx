@@ -1,7 +1,9 @@
 import { Mail, Store } from 'lucide-react';
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router';
-import { landingPath, useRoles } from '@/features/roles/hooks/use-roles';
+import { useActiveWorkspace } from '@/features/workspaces/hooks/use-workspaces';
+import { choose } from '@/features/workspaces/lib/choice';
+import { landingPath } from '@/features/workspaces/lib/workspaces';
 import { ShopForm } from '@/features/shop/components/shop-form';
 import { Button } from '@/shared/ui/button';
 import { PageHeader } from '@/shared/ui/page-header';
@@ -11,13 +13,11 @@ const choice =
 
 /** For someone signed in who neither owns a shop nor barbers anywhere yet. */
 export function StartPage() {
-  const roles = useRoles();
+  const { active } = useActiveWorkspace();
   const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
 
-  if (roles.data && (roles.data.barber || roles.data.shop) && !creating) {
-    return <Navigate to={landingPath(roles.data)} replace />;
-  }
+  if (active && !creating) return <Navigate to={landingPath(active)} replace />;
 
   return (
     <>
@@ -30,7 +30,12 @@ export function StartPage() {
           <h2 id="new-shop-title" className="text-xl">
             Sua barbearia
           </h2>
-          <ShopForm onCreated={() => navigate('/barbearia', { replace: true })} />
+          <ShopForm
+            onCreated={(shopId) => {
+              choose(shopId);
+              navigate('/barbearia', { replace: true });
+            }}
+          />
           <div>
             <Button variant="ghost" onClick={() => setCreating(false)}>
               Voltar

@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router';
 import { AgendaPage } from '@/features/agenda/pages/agenda-page';
 import { ProfilePage } from '@/features/profile/pages/profile-page';
+import { NewShopPage } from '@/features/shop/pages/new-shop-page';
 import { ShopPage } from '@/features/shop/pages/shop-page';
 import { TeamPage } from '@/features/team/pages/team-page';
 import { SchedulePage } from '@/features/schedule/pages/schedule-page';
@@ -54,6 +55,7 @@ export const routes: RouteObject[] = [
                   },
                   { path: '/perfil', element: <ProfilePage /> },
                   { path: '/comecar', element: <StartPage /> },
+                  { path: '/barbearias/nova', element: <NewShopPage /> },
                   { path: '/convite', element: <AcceptInvitePage /> },
                 ],
               },

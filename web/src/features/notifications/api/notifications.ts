@@ -27,7 +27,12 @@ const NotificationsQuery = graphql(`
           name
         }
         barber {
+          id
           name
+          barbershop {
+            id
+            timezone
+          }
         }
       }
     }

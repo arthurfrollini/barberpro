@@ -1,22 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { rolesKey } from '@/features/roles/hooks/use-roles';
+import { workspacesKey } from '@/features/workspaces/hooks/use-workspaces';
 import { becomeBarber, createShop, fetchMyShop, updateShop } from '../api/shop';
 
-export const shopKey = ['shop'] as const;
+export const shopKey = (shopId: string) => ['shop', shopId] as const;
 
-export function useMyShop() {
-  return useQuery({ queryKey: shopKey, queryFn: fetchMyShop });
+export function useMyShop(shopId: string) {
+  return useQuery({ queryKey: shopKey(shopId), queryFn: () => fetchMyShop(shopId) });
 }
 
-/** Creating, editing or joining the shop changes what the user is: roles refetch too. */
+/**
+ * Creating, editing or joining a shop changes the user's workspaces (names, logos, roles):
+ * the mutation resolves only after they refetch, so the next screen sees the new state.
+ */
 function useShopMutation<V, R>(mutationFn: (variables: V) => Promise<R>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn,
     onSuccess: () =>
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: shopKey }),
-        queryClient.invalidateQueries({ queryKey: rolesKey }),
+        queryClient.invalidateQueries({ queryKey: ['shop'] }),
+        queryClient.invalidateQueries({ queryKey: workspacesKey }),
       ]),
   });
 }

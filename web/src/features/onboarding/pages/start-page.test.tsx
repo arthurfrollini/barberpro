@@ -12,11 +12,16 @@ function setup(path: string) {
   let barber: typeof BARBER | null = null;
   const calls: unknown[] = [];
   server.use(
-    api.query('Roles', () => gqlData({ myBarberProfile: barber, myBarbershop: shop })),
+    api.query('Workspaces', () =>
+      gqlData({
+        myBarberProfiles: barber ? [barber] : [],
+        myBarbershops: shop ? [shop] : [],
+      }),
+    ),
     api.query('Me', () => gqlData({ me: ME })),
     api.query('MyShop', () =>
       gqlData({
-        myBarbershop: shop && {
+        barbershop: shop && {
           ...shop,
           description: '',
           foundedYear: 2020,
@@ -46,7 +51,9 @@ function setup(path: string) {
       calls.push(variables);
       if (variables.token === 'wrong-email') return gqlError('INVITE_EMAIL_MISMATCH');
       barber = BARBER;
-      return gqlData({ acceptInvite: { id: BARBER.id, barbershop: { name: SHOP.name } } });
+      return gqlData({
+        acceptInvite: { id: BARBER.id, barbershop: { id: SHOP.id, name: SHOP.name } },
+      });
     }),
   );
   return { ...renderRoutes(routes, { path }), calls };
@@ -120,17 +127,39 @@ describe('accepting an invite', () => {
     );
   });
 
-  it('warns an owner that accepting moves them to another shop', async () => {
+  it('lets an owner join another shop, which becomes the active one', async () => {
     signIn();
+    const other = {
+      id: 'shop-2',
+      name: 'Outra Barbearia',
+      timezone: 'America/Sao_Paulo',
+      logoUrl: null,
+    };
+    let joined = false;
     server.use(
-      api.query('Roles', () => gqlData({ myBarberProfile: null, myBarbershop: SHOP })),
-      api.query('Me', () => gqlData({ me: ME })),
-    );
-    renderRoutes(routes, { path: '/convite?codigo=x' });
-    expect(
-      await screen.findByText(
-        'Você é dono da Mega Barbearia SP. Ao aceitar, você passa a atender na barbearia do convite, não na sua.',
+      api.query('Workspaces', () =>
+        gqlData({
+          myBarbershops: [SHOP],
+          myBarberProfiles: joined ? [{ ...BARBER, id: 'barber-2', barbershop: other }] : [],
+        }),
       ),
+      api.query('Me', () => gqlData({ me: ME })),
+      api.query('BarberAgenda', () => gqlData({ barberAgenda: [] })),
+      api.query('MySchedule', () => gqlData({ mySchedule: { weekly: [], blockedDates: [] } })),
+      api.mutation('AcceptInvite', () => {
+        joined = true;
+        return gqlData({ acceptInvite: { id: 'barber-2', barbershop: other } });
+      }),
+    );
+    const { user, router } = renderRoutes(routes, { path: '/convite?codigo=x' });
+    await user.click(await screen.findByRole('button', { name: 'Aceitar convite' }));
+
+    expect(await screen.findByText('Bem-vindo à equipe da Outra Barbearia')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/agenda');
+    expect(
+      await screen.findByRole('button', {
+        name: 'Barbearia atual: Outra Barbearia. Trocar de barbearia',
+      }),
     ).toBeInTheDocument();
   });
 });

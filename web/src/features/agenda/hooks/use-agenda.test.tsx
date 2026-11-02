@@ -28,7 +28,7 @@ describe('agenda mutations', () => {
       ),
     );
     const { result } = renderHookWithClient(() => ({
-      day: useAgenda('2026-11-02'),
+      day: useAgenda('barber-1', '2026-11-02'),
       cancel: useCancelAppointment('America/Sao_Paulo'),
     }));
     await waitFor(() => expect(result.current.day.data).toHaveLength(1));
@@ -58,8 +58,8 @@ describe('agenda mutations', () => {
       ),
     );
     const { result, queryClient } = renderHookWithClient(() => ({
-      monday: useAgenda('2026-11-02'),
-      tuesday: useAgenda('2026-11-03'),
+      monday: useAgenda('barber-1', '2026-11-02'),
+      tuesday: useAgenda('barber-1', '2026-11-03'),
       move: useRescheduleAppointment('America/Sao_Paulo'),
     }));
     await waitFor(() => expect(requested.sort()).toEqual(['2026-11-02', '2026-11-03']));
@@ -69,7 +69,9 @@ describe('agenda mutations', () => {
     );
 
     await waitFor(() => expect(requested).toHaveLength(4));
-    expect(queryClient.getQueryState(agendaKeys.day('2026-11-02'))?.isInvalidated).toBe(false);
+    expect(queryClient.getQueryState(agendaKeys.day('barber-1', '2026-11-02'))?.isInvalidated).toBe(
+      false,
+    );
   });
 
   it('marks a change as made here before the server answers', async () => {
@@ -114,7 +116,7 @@ describe('agenda mutations', () => {
       ),
     );
     const { result } = renderHookWithClient(() => ({
-      monday: useAgenda('2026-11-02'),
+      monday: useAgenda('barber-1', '2026-11-02'),
       move: useRescheduleAppointment('America/Sao_Paulo'),
     }));
     await waitFor(() => expect(result.current.monday.data).toHaveLength(1));

@@ -16,74 +16,74 @@ import * as types from './graphql';
  */
 type Documents = {
     "\n  fragment AgendaAppointment on Appointment {\n    id\n    startsAt\n    endsAt\n    status\n    serviceName\n    priceCents\n    durationMinutes\n    reminderLeadMinutes\n    cancelReason\n    canceledAt\n    customer {\n      id\n      name\n    }\n  }\n": typeof types.AgendaAppointmentFragmentDoc,
-    "\n  query BarberAgenda($date: String!) {\n    barberAgenda(date: $date) {\n      ...AgendaAppointment\n    }\n  }\n": typeof types.BarberAgendaDocument,
+    "\n  query BarberAgenda($barberId: ID!, $date: String!) {\n    barberAgenda(barberId: $barberId, date: $date) {\n      ...AgendaAppointment\n    }\n  }\n": typeof types.BarberAgendaDocument,
     "\n  mutation CancelAppointment($id: ID!) {\n    cancelAppointment(id: $id) {\n      ...AgendaAppointment\n    }\n  }\n": typeof types.CancelAppointmentDocument,
     "\n  mutation RescheduleAppointment($id: ID!, $startsAt: DateTime!) {\n    rescheduleAppointment(id: $id, startsAt: $startsAt) {\n      ...AgendaAppointment\n    }\n  }\n": typeof types.RescheduleAppointmentDocument,
     "\n  query RescheduleSlots($id: ID!, $date: String!) {\n    rescheduleSlots(appointmentId: $id, date: $date)\n  }\n": typeof types.RescheduleSlotsDocument,
-    "\n  subscription AgendaChanged {\n    agendaChanged {\n      type\n      previousStartsAt\n      appointment {\n        ...AgendaAppointment\n      }\n    }\n  }\n": typeof types.AgendaChangedDocument,
+    "\n  subscription AgendaChanged($barberId: ID!) {\n    agendaChanged(barberId: $barberId) {\n      type\n      previousStartsAt\n      appointment {\n        ...AgendaAppointment\n      }\n    }\n  }\n": typeof types.AgendaChangedDocument,
     "\n  mutation SignIn($input: SignInInput!) {\n    signIn(input: $input) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n      user {\n        id\n        name\n        email\n      }\n    }\n  }\n": typeof types.SignInDocument,
     "\n  mutation SignUp($input: SignUpInput!) {\n    signUp(input: $input) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n      user {\n        id\n        name\n        email\n      }\n    }\n  }\n": typeof types.SignUpDocument,
     "\n  query Me {\n    me {\n      id\n      name\n      email\n    }\n  }\n": typeof types.MeDocument,
-    "\n  mutation AcceptInvite($token: String!) {\n    acceptInvite(token: $token) {\n      id\n      barbershop {\n        name\n      }\n    }\n  }\n": typeof types.AcceptInviteDocument,
+    "\n  mutation AcceptInvite($token: String!) {\n    acceptInvite(token: $token) {\n      id\n      barbershop {\n        id\n        name\n      }\n    }\n  }\n": typeof types.AcceptInviteDocument,
     "\n  query UnreadNotificationCount {\n    unreadNotificationCount\n  }\n": typeof types.UnreadNotificationCountDocument,
-    "\n  query Notifications($limit: Int) {\n    notifications(limit: $limit) {\n      id\n      type\n      title\n      body\n      read\n      createdAt\n      appointmentStartsAt\n      appointment {\n        id\n        startsAt\n        serviceName\n        cancelReason\n        customer {\n          id\n          name\n        }\n        barber {\n          name\n        }\n      }\n    }\n  }\n": typeof types.NotificationsDocument,
+    "\n  query Notifications($limit: Int) {\n    notifications(limit: $limit) {\n      id\n      type\n      title\n      body\n      read\n      createdAt\n      appointmentStartsAt\n      appointment {\n        id\n        startsAt\n        serviceName\n        cancelReason\n        customer {\n          id\n          name\n        }\n        barber {\n          id\n          name\n          barbershop {\n            id\n            timezone\n          }\n        }\n      }\n    }\n  }\n": typeof types.NotificationsDocument,
     "\n  mutation MarkNotificationRead($id: ID!) {\n    markNotificationRead(id: $id)\n  }\n": typeof types.MarkNotificationReadDocument,
     "\n  mutation UpdateProfile($input: UpdateProfileInput!) {\n    updateProfile(input: $input) {\n      id\n      name\n      email\n    }\n  }\n": typeof types.UpdateProfileDocument,
-    "\n  mutation UpdateBarberProfile($input: UpdateBarberProfileInput!) {\n    updateBarberProfile(input: $input) {\n      id\n      bio\n      avatarUrl\n    }\n  }\n": typeof types.UpdateBarberProfileDocument,
-    "\n  query Roles {\n    myBarberProfile {\n      id\n      name\n      bio\n      avatarUrl\n      barbershop {\n        id\n        name\n        timezone\n        logoUrl\n      }\n    }\n    myBarbershop {\n      id\n      name\n      timezone\n      logoUrl\n    }\n  }\n": typeof types.RolesDocument,
-    "\n  query MySchedule {\n    mySchedule {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      blockedDates\n    }\n  }\n": typeof types.MyScheduleDocument,
-    "\n  mutation SetWeeklySchedule($intervals: [WeeklyIntervalInput!]!) {\n    setWeeklySchedule(intervals: $intervals) {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      canceledAppointments {\n        ...AgendaAppointment\n      }\n    }\n  }\n": typeof types.SetWeeklyScheduleDocument,
-    "\n  mutation BlockDate($date: String!) {\n    blockDate(date: $date) {\n      ...AgendaAppointment\n    }\n  }\n": typeof types.BlockDateDocument,
-    "\n  mutation UnblockDate($date: String!) {\n    unblockDate(date: $date)\n  }\n": typeof types.UnblockDateDocument,
+    "\n  mutation UpdateBarberProfile($barberId: ID!, $input: UpdateBarberProfileInput!) {\n    updateBarberProfile(barberId: $barberId, input: $input) {\n      id\n      bio\n      avatarUrl\n    }\n  }\n": typeof types.UpdateBarberProfileDocument,
+    "\n  query MySchedule($barberId: ID!) {\n    mySchedule(barberId: $barberId) {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      blockedDates\n    }\n  }\n": typeof types.MyScheduleDocument,
+    "\n  mutation SetWeeklySchedule($barberId: ID!, $intervals: [WeeklyIntervalInput!]!) {\n    setWeeklySchedule(barberId: $barberId, intervals: $intervals) {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      canceledAppointments {\n        ...AgendaAppointment\n      }\n    }\n  }\n": typeof types.SetWeeklyScheduleDocument,
+    "\n  mutation BlockDate($barberId: ID!, $date: String!) {\n    blockDate(barberId: $barberId, date: $date) {\n      ...AgendaAppointment\n    }\n  }\n": typeof types.BlockDateDocument,
+    "\n  mutation UnblockDate($barberId: ID!, $date: String!) {\n    unblockDate(barberId: $barberId, date: $date)\n  }\n": typeof types.UnblockDateDocument,
     "\n  fragment ServiceFields on Service {\n    id\n    name\n    description\n    priceCents\n    durationMinutes\n    archived\n  }\n": typeof types.ServiceFieldsFragmentDoc,
-    "\n  query MyServices {\n    myBarberProfile {\n      id\n      services {\n        ...ServiceFields\n      }\n    }\n  }\n": typeof types.MyServicesDocument,
-    "\n  mutation CreateService($input: CreateServiceInput!) {\n    createService(input: $input) {\n      ...ServiceFields\n    }\n  }\n": typeof types.CreateServiceDocument,
+    "\n  query MyServices($barberId: ID!) {\n    barber(id: $barberId) {\n      id\n      services {\n        ...ServiceFields\n      }\n    }\n  }\n": typeof types.MyServicesDocument,
+    "\n  mutation CreateService($barberId: ID!, $input: CreateServiceInput!) {\n    createService(barberId: $barberId, input: $input) {\n      ...ServiceFields\n    }\n  }\n": typeof types.CreateServiceDocument,
     "\n  mutation UpdateService($id: ID!, $input: UpdateServiceInput!) {\n    updateService(id: $id, input: $input) {\n      ...ServiceFields\n    }\n  }\n": typeof types.UpdateServiceDocument,
     "\n  mutation ArchiveService($id: ID!) {\n    archiveService(id: $id) {\n      ...ServiceFields\n    }\n  }\n": typeof types.ArchiveServiceDocument,
     "\n  fragment ShopFields on Barbershop {\n    id\n    name\n    description\n    foundedYear\n    logoUrl\n    address\n    latitude\n    longitude\n    timezone\n  }\n": typeof types.ShopFieldsFragmentDoc,
-    "\n  query MyShop {\n    myBarbershop {\n      ...ShopFields\n      barbers {\n        id\n        name\n        avatarUrl\n      }\n      invites {\n        id\n        email\n        status\n        expiresAt\n        createdAt\n      }\n    }\n  }\n": typeof types.MyShopDocument,
+    "\n  query MyShop($id: ID!) {\n    barbershop(id: $id) {\n      ...ShopFields\n      barbers {\n        id\n        name\n        avatarUrl\n      }\n      invites {\n        id\n        email\n        status\n        expiresAt\n        createdAt\n      }\n    }\n  }\n": typeof types.MyShopDocument,
     "\n  mutation CreateBarbershop($input: CreateBarbershopInput!) {\n    createBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n": typeof types.CreateBarbershopDocument,
-    "\n  mutation UpdateBarbershop($input: UpdateBarbershopInput!) {\n    updateBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n": typeof types.UpdateBarbershopDocument,
-    "\n  mutation BecomeBarber {\n    becomeBarber {\n      id\n    }\n  }\n": typeof types.BecomeBarberDocument,
-    "\n  mutation InviteBarber($email: String!) {\n    inviteBarber(email: $email) {\n      id\n      email\n      status\n      expiresAt\n      createdAt\n    }\n  }\n": typeof types.InviteBarberDocument,
+    "\n  mutation UpdateBarbershop($id: ID!, $input: UpdateBarbershopInput!) {\n    updateBarbershop(id: $id, input: $input) {\n      ...ShopFields\n    }\n  }\n": typeof types.UpdateBarbershopDocument,
+    "\n  mutation BecomeBarber($shopId: ID!) {\n    becomeBarber(shopId: $shopId) {\n      id\n    }\n  }\n": typeof types.BecomeBarberDocument,
+    "\n  mutation InviteBarber($shopId: ID!, $email: String!) {\n    inviteBarber(shopId: $shopId, email: $email) {\n      id\n      email\n      status\n      expiresAt\n      createdAt\n    }\n  }\n": typeof types.InviteBarberDocument,
     "\n  mutation RevokeInvite($id: ID!) {\n    revokeInvite(id: $id) {\n      id\n      status\n    }\n  }\n": typeof types.RevokeInviteDocument,
     "\n  mutation RemoveBarber($id: ID!) {\n    removeBarber(id: $id) {\n      id\n    }\n  }\n": typeof types.RemoveBarberDocument,
+    "\n  query Workspaces {\n    myBarbershops {\n      id\n      name\n      timezone\n      logoUrl\n    }\n    myBarberProfiles {\n      id\n      name\n      bio\n      avatarUrl\n      barbershop {\n        id\n        name\n        timezone\n        logoUrl\n      }\n    }\n  }\n": typeof types.WorkspacesDocument,
     "\n  mutation RefreshToken($token: String!) {\n    refreshToken(token: $token) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n    }\n  }\n": typeof types.RefreshTokenDocument,
 };
 const documents: Documents = {
     "\n  fragment AgendaAppointment on Appointment {\n    id\n    startsAt\n    endsAt\n    status\n    serviceName\n    priceCents\n    durationMinutes\n    reminderLeadMinutes\n    cancelReason\n    canceledAt\n    customer {\n      id\n      name\n    }\n  }\n": types.AgendaAppointmentFragmentDoc,
-    "\n  query BarberAgenda($date: String!) {\n    barberAgenda(date: $date) {\n      ...AgendaAppointment\n    }\n  }\n": types.BarberAgendaDocument,
+    "\n  query BarberAgenda($barberId: ID!, $date: String!) {\n    barberAgenda(barberId: $barberId, date: $date) {\n      ...AgendaAppointment\n    }\n  }\n": types.BarberAgendaDocument,
     "\n  mutation CancelAppointment($id: ID!) {\n    cancelAppointment(id: $id) {\n      ...AgendaAppointment\n    }\n  }\n": types.CancelAppointmentDocument,
     "\n  mutation RescheduleAppointment($id: ID!, $startsAt: DateTime!) {\n    rescheduleAppointment(id: $id, startsAt: $startsAt) {\n      ...AgendaAppointment\n    }\n  }\n": types.RescheduleAppointmentDocument,
     "\n  query RescheduleSlots($id: ID!, $date: String!) {\n    rescheduleSlots(appointmentId: $id, date: $date)\n  }\n": types.RescheduleSlotsDocument,
-    "\n  subscription AgendaChanged {\n    agendaChanged {\n      type\n      previousStartsAt\n      appointment {\n        ...AgendaAppointment\n      }\n    }\n  }\n": types.AgendaChangedDocument,
+    "\n  subscription AgendaChanged($barberId: ID!) {\n    agendaChanged(barberId: $barberId) {\n      type\n      previousStartsAt\n      appointment {\n        ...AgendaAppointment\n      }\n    }\n  }\n": types.AgendaChangedDocument,
     "\n  mutation SignIn($input: SignInInput!) {\n    signIn(input: $input) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n      user {\n        id\n        name\n        email\n      }\n    }\n  }\n": types.SignInDocument,
     "\n  mutation SignUp($input: SignUpInput!) {\n    signUp(input: $input) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n      user {\n        id\n        name\n        email\n      }\n    }\n  }\n": types.SignUpDocument,
     "\n  query Me {\n    me {\n      id\n      name\n      email\n    }\n  }\n": types.MeDocument,
-    "\n  mutation AcceptInvite($token: String!) {\n    acceptInvite(token: $token) {\n      id\n      barbershop {\n        name\n      }\n    }\n  }\n": types.AcceptInviteDocument,
+    "\n  mutation AcceptInvite($token: String!) {\n    acceptInvite(token: $token) {\n      id\n      barbershop {\n        id\n        name\n      }\n    }\n  }\n": types.AcceptInviteDocument,
     "\n  query UnreadNotificationCount {\n    unreadNotificationCount\n  }\n": types.UnreadNotificationCountDocument,
-    "\n  query Notifications($limit: Int) {\n    notifications(limit: $limit) {\n      id\n      type\n      title\n      body\n      read\n      createdAt\n      appointmentStartsAt\n      appointment {\n        id\n        startsAt\n        serviceName\n        cancelReason\n        customer {\n          id\n          name\n        }\n        barber {\n          name\n        }\n      }\n    }\n  }\n": types.NotificationsDocument,
+    "\n  query Notifications($limit: Int) {\n    notifications(limit: $limit) {\n      id\n      type\n      title\n      body\n      read\n      createdAt\n      appointmentStartsAt\n      appointment {\n        id\n        startsAt\n        serviceName\n        cancelReason\n        customer {\n          id\n          name\n        }\n        barber {\n          id\n          name\n          barbershop {\n            id\n            timezone\n          }\n        }\n      }\n    }\n  }\n": types.NotificationsDocument,
     "\n  mutation MarkNotificationRead($id: ID!) {\n    markNotificationRead(id: $id)\n  }\n": types.MarkNotificationReadDocument,
     "\n  mutation UpdateProfile($input: UpdateProfileInput!) {\n    updateProfile(input: $input) {\n      id\n      name\n      email\n    }\n  }\n": types.UpdateProfileDocument,
-    "\n  mutation UpdateBarberProfile($input: UpdateBarberProfileInput!) {\n    updateBarberProfile(input: $input) {\n      id\n      bio\n      avatarUrl\n    }\n  }\n": types.UpdateBarberProfileDocument,
-    "\n  query Roles {\n    myBarberProfile {\n      id\n      name\n      bio\n      avatarUrl\n      barbershop {\n        id\n        name\n        timezone\n        logoUrl\n      }\n    }\n    myBarbershop {\n      id\n      name\n      timezone\n      logoUrl\n    }\n  }\n": types.RolesDocument,
-    "\n  query MySchedule {\n    mySchedule {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      blockedDates\n    }\n  }\n": types.MyScheduleDocument,
-    "\n  mutation SetWeeklySchedule($intervals: [WeeklyIntervalInput!]!) {\n    setWeeklySchedule(intervals: $intervals) {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      canceledAppointments {\n        ...AgendaAppointment\n      }\n    }\n  }\n": types.SetWeeklyScheduleDocument,
-    "\n  mutation BlockDate($date: String!) {\n    blockDate(date: $date) {\n      ...AgendaAppointment\n    }\n  }\n": types.BlockDateDocument,
-    "\n  mutation UnblockDate($date: String!) {\n    unblockDate(date: $date)\n  }\n": types.UnblockDateDocument,
+    "\n  mutation UpdateBarberProfile($barberId: ID!, $input: UpdateBarberProfileInput!) {\n    updateBarberProfile(barberId: $barberId, input: $input) {\n      id\n      bio\n      avatarUrl\n    }\n  }\n": types.UpdateBarberProfileDocument,
+    "\n  query MySchedule($barberId: ID!) {\n    mySchedule(barberId: $barberId) {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      blockedDates\n    }\n  }\n": types.MyScheduleDocument,
+    "\n  mutation SetWeeklySchedule($barberId: ID!, $intervals: [WeeklyIntervalInput!]!) {\n    setWeeklySchedule(barberId: $barberId, intervals: $intervals) {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      canceledAppointments {\n        ...AgendaAppointment\n      }\n    }\n  }\n": types.SetWeeklyScheduleDocument,
+    "\n  mutation BlockDate($barberId: ID!, $date: String!) {\n    blockDate(barberId: $barberId, date: $date) {\n      ...AgendaAppointment\n    }\n  }\n": types.BlockDateDocument,
+    "\n  mutation UnblockDate($barberId: ID!, $date: String!) {\n    unblockDate(barberId: $barberId, date: $date)\n  }\n": types.UnblockDateDocument,
     "\n  fragment ServiceFields on Service {\n    id\n    name\n    description\n    priceCents\n    durationMinutes\n    archived\n  }\n": types.ServiceFieldsFragmentDoc,
-    "\n  query MyServices {\n    myBarberProfile {\n      id\n      services {\n        ...ServiceFields\n      }\n    }\n  }\n": types.MyServicesDocument,
-    "\n  mutation CreateService($input: CreateServiceInput!) {\n    createService(input: $input) {\n      ...ServiceFields\n    }\n  }\n": types.CreateServiceDocument,
+    "\n  query MyServices($barberId: ID!) {\n    barber(id: $barberId) {\n      id\n      services {\n        ...ServiceFields\n      }\n    }\n  }\n": types.MyServicesDocument,
+    "\n  mutation CreateService($barberId: ID!, $input: CreateServiceInput!) {\n    createService(barberId: $barberId, input: $input) {\n      ...ServiceFields\n    }\n  }\n": types.CreateServiceDocument,
     "\n  mutation UpdateService($id: ID!, $input: UpdateServiceInput!) {\n    updateService(id: $id, input: $input) {\n      ...ServiceFields\n    }\n  }\n": types.UpdateServiceDocument,
     "\n  mutation ArchiveService($id: ID!) {\n    archiveService(id: $id) {\n      ...ServiceFields\n    }\n  }\n": types.ArchiveServiceDocument,
     "\n  fragment ShopFields on Barbershop {\n    id\n    name\n    description\n    foundedYear\n    logoUrl\n    address\n    latitude\n    longitude\n    timezone\n  }\n": types.ShopFieldsFragmentDoc,
-    "\n  query MyShop {\n    myBarbershop {\n      ...ShopFields\n      barbers {\n        id\n        name\n        avatarUrl\n      }\n      invites {\n        id\n        email\n        status\n        expiresAt\n        createdAt\n      }\n    }\n  }\n": types.MyShopDocument,
+    "\n  query MyShop($id: ID!) {\n    barbershop(id: $id) {\n      ...ShopFields\n      barbers {\n        id\n        name\n        avatarUrl\n      }\n      invites {\n        id\n        email\n        status\n        expiresAt\n        createdAt\n      }\n    }\n  }\n": types.MyShopDocument,
     "\n  mutation CreateBarbershop($input: CreateBarbershopInput!) {\n    createBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n": types.CreateBarbershopDocument,
-    "\n  mutation UpdateBarbershop($input: UpdateBarbershopInput!) {\n    updateBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n": types.UpdateBarbershopDocument,
-    "\n  mutation BecomeBarber {\n    becomeBarber {\n      id\n    }\n  }\n": types.BecomeBarberDocument,
-    "\n  mutation InviteBarber($email: String!) {\n    inviteBarber(email: $email) {\n      id\n      email\n      status\n      expiresAt\n      createdAt\n    }\n  }\n": types.InviteBarberDocument,
+    "\n  mutation UpdateBarbershop($id: ID!, $input: UpdateBarbershopInput!) {\n    updateBarbershop(id: $id, input: $input) {\n      ...ShopFields\n    }\n  }\n": types.UpdateBarbershopDocument,
+    "\n  mutation BecomeBarber($shopId: ID!) {\n    becomeBarber(shopId: $shopId) {\n      id\n    }\n  }\n": types.BecomeBarberDocument,
+    "\n  mutation InviteBarber($shopId: ID!, $email: String!) {\n    inviteBarber(shopId: $shopId, email: $email) {\n      id\n      email\n      status\n      expiresAt\n      createdAt\n    }\n  }\n": types.InviteBarberDocument,
     "\n  mutation RevokeInvite($id: ID!) {\n    revokeInvite(id: $id) {\n      id\n      status\n    }\n  }\n": types.RevokeInviteDocument,
     "\n  mutation RemoveBarber($id: ID!) {\n    removeBarber(id: $id) {\n      id\n    }\n  }\n": types.RemoveBarberDocument,
+    "\n  query Workspaces {\n    myBarbershops {\n      id\n      name\n      timezone\n      logoUrl\n    }\n    myBarberProfiles {\n      id\n      name\n      bio\n      avatarUrl\n      barbershop {\n        id\n        name\n        timezone\n        logoUrl\n      }\n    }\n  }\n": types.WorkspacesDocument,
     "\n  mutation RefreshToken($token: String!) {\n    refreshToken(token: $token) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n    }\n  }\n": types.RefreshTokenDocument,
 };
 
@@ -94,7 +94,7 @@ export function graphql(source: "\n  fragment AgendaAppointment on Appointment {
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query BarberAgenda($date: String!) {\n    barberAgenda(date: $date) {\n      ...AgendaAppointment\n    }\n  }\n"): typeof import('./graphql').BarberAgendaDocument;
+export function graphql(source: "\n  query BarberAgenda($barberId: ID!, $date: String!) {\n    barberAgenda(barberId: $barberId, date: $date) {\n      ...AgendaAppointment\n    }\n  }\n"): typeof import('./graphql').BarberAgendaDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -110,7 +110,7 @@ export function graphql(source: "\n  query RescheduleSlots($id: ID!, $date: Stri
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  subscription AgendaChanged {\n    agendaChanged {\n      type\n      previousStartsAt\n      appointment {\n        ...AgendaAppointment\n      }\n    }\n  }\n"): typeof import('./graphql').AgendaChangedDocument;
+export function graphql(source: "\n  subscription AgendaChanged($barberId: ID!) {\n    agendaChanged(barberId: $barberId) {\n      type\n      previousStartsAt\n      appointment {\n        ...AgendaAppointment\n      }\n    }\n  }\n"): typeof import('./graphql').AgendaChangedDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -126,7 +126,7 @@ export function graphql(source: "\n  query Me {\n    me {\n      id\n      name\
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation AcceptInvite($token: String!) {\n    acceptInvite(token: $token) {\n      id\n      barbershop {\n        name\n      }\n    }\n  }\n"): typeof import('./graphql').AcceptInviteDocument;
+export function graphql(source: "\n  mutation AcceptInvite($token: String!) {\n    acceptInvite(token: $token) {\n      id\n      barbershop {\n        id\n        name\n      }\n    }\n  }\n"): typeof import('./graphql').AcceptInviteDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -134,7 +134,7 @@ export function graphql(source: "\n  query UnreadNotificationCount {\n    unread
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query Notifications($limit: Int) {\n    notifications(limit: $limit) {\n      id\n      type\n      title\n      body\n      read\n      createdAt\n      appointmentStartsAt\n      appointment {\n        id\n        startsAt\n        serviceName\n        cancelReason\n        customer {\n          id\n          name\n        }\n        barber {\n          name\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').NotificationsDocument;
+export function graphql(source: "\n  query Notifications($limit: Int) {\n    notifications(limit: $limit) {\n      id\n      type\n      title\n      body\n      read\n      createdAt\n      appointmentStartsAt\n      appointment {\n        id\n        startsAt\n        serviceName\n        cancelReason\n        customer {\n          id\n          name\n        }\n        barber {\n          id\n          name\n          barbershop {\n            id\n            timezone\n          }\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').NotificationsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -146,27 +146,23 @@ export function graphql(source: "\n  mutation UpdateProfile($input: UpdateProfil
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation UpdateBarberProfile($input: UpdateBarberProfileInput!) {\n    updateBarberProfile(input: $input) {\n      id\n      bio\n      avatarUrl\n    }\n  }\n"): typeof import('./graphql').UpdateBarberProfileDocument;
+export function graphql(source: "\n  mutation UpdateBarberProfile($barberId: ID!, $input: UpdateBarberProfileInput!) {\n    updateBarberProfile(barberId: $barberId, input: $input) {\n      id\n      bio\n      avatarUrl\n    }\n  }\n"): typeof import('./graphql').UpdateBarberProfileDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query Roles {\n    myBarberProfile {\n      id\n      name\n      bio\n      avatarUrl\n      barbershop {\n        id\n        name\n        timezone\n        logoUrl\n      }\n    }\n    myBarbershop {\n      id\n      name\n      timezone\n      logoUrl\n    }\n  }\n"): typeof import('./graphql').RolesDocument;
+export function graphql(source: "\n  query MySchedule($barberId: ID!) {\n    mySchedule(barberId: $barberId) {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      blockedDates\n    }\n  }\n"): typeof import('./graphql').MyScheduleDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query MySchedule {\n    mySchedule {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      blockedDates\n    }\n  }\n"): typeof import('./graphql').MyScheduleDocument;
+export function graphql(source: "\n  mutation SetWeeklySchedule($barberId: ID!, $intervals: [WeeklyIntervalInput!]!) {\n    setWeeklySchedule(barberId: $barberId, intervals: $intervals) {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      canceledAppointments {\n        ...AgendaAppointment\n      }\n    }\n  }\n"): typeof import('./graphql').SetWeeklyScheduleDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation SetWeeklySchedule($intervals: [WeeklyIntervalInput!]!) {\n    setWeeklySchedule(intervals: $intervals) {\n      weekly {\n        weekday\n        startTime\n        endTime\n      }\n      canceledAppointments {\n        ...AgendaAppointment\n      }\n    }\n  }\n"): typeof import('./graphql').SetWeeklyScheduleDocument;
+export function graphql(source: "\n  mutation BlockDate($barberId: ID!, $date: String!) {\n    blockDate(barberId: $barberId, date: $date) {\n      ...AgendaAppointment\n    }\n  }\n"): typeof import('./graphql').BlockDateDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation BlockDate($date: String!) {\n    blockDate(date: $date) {\n      ...AgendaAppointment\n    }\n  }\n"): typeof import('./graphql').BlockDateDocument;
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  mutation UnblockDate($date: String!) {\n    unblockDate(date: $date)\n  }\n"): typeof import('./graphql').UnblockDateDocument;
+export function graphql(source: "\n  mutation UnblockDate($barberId: ID!, $date: String!) {\n    unblockDate(barberId: $barberId, date: $date)\n  }\n"): typeof import('./graphql').UnblockDateDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -174,11 +170,11 @@ export function graphql(source: "\n  fragment ServiceFields on Service {\n    id
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query MyServices {\n    myBarberProfile {\n      id\n      services {\n        ...ServiceFields\n      }\n    }\n  }\n"): typeof import('./graphql').MyServicesDocument;
+export function graphql(source: "\n  query MyServices($barberId: ID!) {\n    barber(id: $barberId) {\n      id\n      services {\n        ...ServiceFields\n      }\n    }\n  }\n"): typeof import('./graphql').MyServicesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation CreateService($input: CreateServiceInput!) {\n    createService(input: $input) {\n      ...ServiceFields\n    }\n  }\n"): typeof import('./graphql').CreateServiceDocument;
+export function graphql(source: "\n  mutation CreateService($barberId: ID!, $input: CreateServiceInput!) {\n    createService(barberId: $barberId, input: $input) {\n      ...ServiceFields\n    }\n  }\n"): typeof import('./graphql').CreateServiceDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -194,7 +190,7 @@ export function graphql(source: "\n  fragment ShopFields on Barbershop {\n    id
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query MyShop {\n    myBarbershop {\n      ...ShopFields\n      barbers {\n        id\n        name\n        avatarUrl\n      }\n      invites {\n        id\n        email\n        status\n        expiresAt\n        createdAt\n      }\n    }\n  }\n"): typeof import('./graphql').MyShopDocument;
+export function graphql(source: "\n  query MyShop($id: ID!) {\n    barbershop(id: $id) {\n      ...ShopFields\n      barbers {\n        id\n        name\n        avatarUrl\n      }\n      invites {\n        id\n        email\n        status\n        expiresAt\n        createdAt\n      }\n    }\n  }\n"): typeof import('./graphql').MyShopDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -202,15 +198,15 @@ export function graphql(source: "\n  mutation CreateBarbershop($input: CreateBar
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation UpdateBarbershop($input: UpdateBarbershopInput!) {\n    updateBarbershop(input: $input) {\n      ...ShopFields\n    }\n  }\n"): typeof import('./graphql').UpdateBarbershopDocument;
+export function graphql(source: "\n  mutation UpdateBarbershop($id: ID!, $input: UpdateBarbershopInput!) {\n    updateBarbershop(id: $id, input: $input) {\n      ...ShopFields\n    }\n  }\n"): typeof import('./graphql').UpdateBarbershopDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation BecomeBarber {\n    becomeBarber {\n      id\n    }\n  }\n"): typeof import('./graphql').BecomeBarberDocument;
+export function graphql(source: "\n  mutation BecomeBarber($shopId: ID!) {\n    becomeBarber(shopId: $shopId) {\n      id\n    }\n  }\n"): typeof import('./graphql').BecomeBarberDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation InviteBarber($email: String!) {\n    inviteBarber(email: $email) {\n      id\n      email\n      status\n      expiresAt\n      createdAt\n    }\n  }\n"): typeof import('./graphql').InviteBarberDocument;
+export function graphql(source: "\n  mutation InviteBarber($shopId: ID!, $email: String!) {\n    inviteBarber(shopId: $shopId, email: $email) {\n      id\n      email\n      status\n      expiresAt\n      createdAt\n    }\n  }\n"): typeof import('./graphql').InviteBarberDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -219,6 +215,10 @@ export function graphql(source: "\n  mutation RevokeInvite($id: ID!) {\n    revo
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation RemoveBarber($id: ID!) {\n    removeBarber(id: $id) {\n      id\n    }\n  }\n"): typeof import('./graphql').RemoveBarberDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query Workspaces {\n    myBarbershops {\n      id\n      name\n      timezone\n      logoUrl\n    }\n    myBarberProfiles {\n      id\n      name\n      bio\n      avatarUrl\n      barbershop {\n        id\n        name\n        timezone\n        logoUrl\n      }\n    }\n  }\n"): typeof import('./graphql').WorkspacesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

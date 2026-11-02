@@ -1,8 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { landingPath } from '@/features/roles/hooks/use-roles';
 import { SESSION_KEY } from '@/shared/api/session';
-import { ME, roles } from '@/test/fixtures';
+import { ME, workspaces } from '@/test/fixtures';
 import { api, gqlData } from '@/test/graphql';
 import { renderRoutes, signIn } from '@/test/render';
 import { server } from '@/test/server';
@@ -10,22 +9,10 @@ import { routes } from './routes';
 
 function mockApi(r: { barber?: boolean; owner?: boolean }) {
   server.use(
-    api.query('Roles', () => gqlData(roles(r))),
+    api.query('Workspaces', () => gqlData(workspaces(r))),
     api.query('Me', () => gqlData({ me: ME })),
   );
 }
-
-describe('landingPath', () => {
-  it.each([
-    [{ barber: true, owner: false }, '/agenda'],
-    [{ barber: true, owner: true }, '/agenda'],
-    [{ barber: false, owner: true }, '/barbearia'],
-    [{ barber: false, owner: false }, '/comecar'],
-  ])('%o lands on %s', (r, path) => {
-    const { myBarberProfile, myBarbershop } = roles(r);
-    expect(landingPath({ barber: myBarberProfile, shop: myBarbershop })).toBe(path);
-  });
-});
 
 describe('route guards', () => {
   it('sends signed-out users to sign in, remembering where they were going', async () => {
@@ -71,7 +58,7 @@ describe('route guards', () => {
     mockApi({ barber: true });
     const { router, queryClient } = renderRoutes(routes, { path: '/agenda' });
     expect(await screen.findByRole('heading', { name: 'Agenda' })).toBeInTheDocument();
-    expect(queryClient.getQueryData(['roles'])).toBeDefined();
+    expect(queryClient.getQueryData(['workspaces'])).toBeDefined();
 
     // what the browser delivers when another tab removes the session
     localStorage.removeItem(SESSION_KEY);
@@ -79,7 +66,7 @@ describe('route guards', () => {
 
     expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
     expect(router.state.location.search).toBe('');
-    expect(queryClient.getQueryData(['roles'])).toBeUndefined();
+    expect(queryClient.getQueryData(['workspaces'])).toBeUndefined();
     expect(queryClient.getQueryData(['me'])).toBeUndefined();
   });
 });

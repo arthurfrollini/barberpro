@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { session } from '@/shared/api';
-import { ME, roles } from '@/test/fixtures';
+import { ME, workspaces } from '@/test/fixtures';
 import { api, gqlData } from '@/test/graphql';
 import { renderRoutes, signIn } from '@/test/render';
 import { server } from '@/test/server';
@@ -10,7 +10,7 @@ import { routes } from '../routes';
 function setup(r: { barber?: boolean; owner?: boolean }, path: string) {
   signIn();
   server.use(
-    api.query('Roles', () => gqlData(roles(r))),
+    api.query('Workspaces', () => gqlData(workspaces(r))),
     api.query('Me', () => gqlData({ me: ME })),
   );
   return renderRoutes(routes, { path });

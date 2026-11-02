@@ -8,21 +8,29 @@ import { markChangedHere } from '../lib/changed-here';
 import { useAgendaLive } from './use-agenda-live';
 
 function fakeWatch() {
-  const handlers: Parameters<AgendaWatcher>[0][] = [];
+  const handlers: Parameters<AgendaWatcher>[1][] = [];
+  const barberIds: string[] = [];
   const stop = vi.fn();
-  const watch: AgendaWatcher = (h) => {
+  const watch: AgendaWatcher = (barberId, h) => {
+    barberIds.push(barberId);
     handlers.push(h);
     return stop;
   };
-  return { watch, stop, emit: (change: AgendaChange) => handlers.at(-1)!.next(change), handlers };
+  return {
+    watch,
+    stop,
+    emit: (change: AgendaChange) => handlers.at(-1)!.next(change),
+    handlers,
+    barberIds,
+  };
 }
 
 function setup() {
   const queryClient = createQueryClient({ retries: 0 });
-  queryClient.setQueryData(['agenda', '2026-11-02'], []);
+  queryClient.setQueryData(['agenda', 'barber-1', '2026-11-02'], []);
   queryClient.setQueryData(['notifications', 'unread'], 0);
   const live = fakeWatch();
-  const view = renderHook(() => useAgendaLive('America/Sao_Paulo', live.watch), {
+  const view = renderHook(() => useAgendaLive('barber-1', 'America/Sao_Paulo', live.watch), {
     wrapper: ({ children }) => <Providers queryClient={queryClient}>{children}</Providers>,
   });
   return { ...view, queryClient, live };
@@ -39,7 +47,10 @@ describe('useAgendaLive', () => {
     act(() => live.emit({ type: 'BOOKED', previousStartsAt: null, appointment: ana }));
 
     expect(await screen.findByText('Novo agendamento: Ana, seg 2/11 às 14:00')).toBeInTheDocument();
-    expect(queryClient.getQueryState(['agenda', '2026-11-02'])?.isInvalidated).toBe(true);
+    expect(live.barberIds).toEqual(['barber-1']);
+    expect(queryClient.getQueryState(['agenda', 'barber-1', '2026-11-02'])?.isInvalidated).toBe(
+      true,
+    );
     expect(queryClient.getQueryState(['notifications', 'unread'])?.isInvalidated).toBe(true);
   });
 
@@ -67,7 +78,9 @@ describe('useAgendaLive', () => {
     const clara = appointment({ customer: { id: 'c3', name: 'Clara' } });
     markChangedHere(clara.id);
     act(() => live.emit({ type: 'CANCELED', previousStartsAt: null, appointment: clara }));
-    expect(queryClient.getQueryState(['agenda', '2026-11-02'])?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(['agenda', 'barber-1', '2026-11-02'])?.isInvalidated).toBe(
+      true,
+    );
     // give a toast the chance to render, then check there is none
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(screen.queryByText(/Clara/)).not.toBeInTheDocument();
@@ -76,7 +89,9 @@ describe('useAgendaLive', () => {
   it('refetches quietly after reconnecting, and stops when unmounted', () => {
     const { queryClient, live, unmount } = setup();
     act(() => live.handlers.at(-1)!.reconnected());
-    expect(queryClient.getQueryState(['agenda', '2026-11-02'])?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(['agenda', 'barber-1', '2026-11-02'])?.isInvalidated).toBe(
+      true,
+    );
     unmount();
     expect(live.stop).toHaveBeenCalledTimes(1);
   });

@@ -2,27 +2,37 @@ import { Menu } from 'lucide-react';
 import { useState } from 'react';
 import { Link, Outlet } from 'react-router';
 import { NotificationBell } from '@/features/notifications/components/notification-bell';
-import type { Roles } from '@/features/roles/api/roles';
-import { currentShop, useRoles } from '@/features/roles/hooks/use-roles';
+import { WorkspaceSwitcher } from '@/features/workspaces/components/workspace-switcher';
+import { useActiveWorkspace } from '@/features/workspaces/hooks/use-workspaces';
+import type { Workspace } from '@/features/workspaces/lib/workspaces';
 import { Button } from '@/shared/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/shared/ui/sheet';
 import { ErrorState, PageSkeleton } from '@/shared/ui/states';
 import { AccountMenu } from './account-menu';
 import { MainNav } from './nav';
 
-function Brand({ roles }: { roles: Roles }) {
-  const shop = currentShop(roles);
+function Brand() {
   return (
     <Link to="/" className="block rounded-md focus-visible:ring-2 focus-visible:ring-ring">
       <img src="/wordmark.svg" alt="BarberPro" className="mx-auto w-36" />
-      {shop && (
-        <p className="mt-3 truncate text-center text-sm text-muted-foreground">{shop.name}</p>
-      )}
     </Link>
   );
 }
 
-function MobileMenu({ roles }: { roles: Roles }) {
+/** Logo on top, the pages in the middle, the shop switcher at the bottom. */
+function Sidebar({ active, onNavigate }: { active: Workspace | null; onNavigate?: () => void }) {
+  return (
+    <div className="flex h-full flex-col gap-8">
+      <Brand />
+      <MainNav active={active} onNavigate={onNavigate} />
+      <div className="mt-auto">
+        <WorkspaceSwitcher onNavigate={onNavigate} />
+      </div>
+    </div>
+  );
+}
+
+function MobileMenu({ active }: { active: Workspace | null }) {
   const [open, setOpen] = useState(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -34,42 +44,41 @@ function MobileMenu({ roles }: { roles: Roles }) {
       <SheetContent side="left" className="w-72 bg-sidebar p-5">
         <SheetTitle className="sr-only">Menu</SheetTitle>
         <SheetDescription className="sr-only">Páginas da dashboard</SheetDescription>
-        <div className="mb-6 px-6">
-          <Brand roles={roles} />
-        </div>
-        <MainNav roles={roles} onNavigate={() => setOpen(false)} />
+        <Sidebar active={active} onNavigate={() => setOpen(false)} />
       </SheetContent>
     </Sheet>
   );
 }
 
 export function AppLayout() {
-  const roles = useRoles();
+  const workspaces = useActiveWorkspace();
+  const ready = !workspaces.isPending && !workspaces.isError;
   return (
     <div className="min-h-svh md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
-      <aside className="hidden border-r border-sidebar-border bg-sidebar p-5 md:flex md:flex-col md:gap-8">
-        {roles.data && (
-          <>
-            <Brand roles={roles.data} />
-            <MainNav roles={roles.data} />
-          </>
-        )}
+      <aside className="sticky top-0 hidden h-svh border-r border-sidebar-border bg-sidebar p-5 md:block">
+        {ready && <Sidebar active={workspaces.active} />}
       </aside>
       <div className="flex min-w-0 flex-col">
         <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur md:px-8">
-          {roles.data && <MobileMenu roles={roles.data} />}
+          {ready && <MobileMenu active={workspaces.active} />}
           <img src="/wordmark.svg" alt="" className="h-8 md:hidden" />
+          {workspaces.active && (
+            <span className="truncate text-sm text-muted-foreground md:hidden">
+              {workspaces.active.shop.name}
+            </span>
+          )}
           <div className="flex-1" />
           <NotificationBell />
           <AccountMenu />
         </header>
         <main className="mx-auto w-full max-w-5xl px-4 py-8 md:px-8">
-          {roles.isPending ? (
+          {workspaces.isPending ? (
             <PageSkeleton />
-          ) : roles.isError ? (
-            <ErrorState error={roles.error} onRetry={() => roles.refetch()} />
+          ) : workspaces.isError ? (
+            <ErrorState error={workspaces.error} onRetry={() => workspaces.refetch()} />
           ) : (
-            <Outlet />
+            // remounted per shop, so no page keeps state from the previous one
+            <Outlet key={workspaces.active?.shop.id ?? 'none'} />
           )}
         </main>
       </div>

@@ -20,11 +20,13 @@ import { PageHeader } from '@/shared/ui/page-header';
 import { EmptyState, ErrorState, PageSkeleton } from '@/shared/ui/states';
 import type { Service } from '../api/services';
 import { ServiceDialog } from '../components/service-dialog';
+import { useCurrentBarber } from '@/features/workspaces/hooks/use-workspaces';
 import { useArchiveService, useMyServices } from '../hooks/use-services';
 
 export function ServicesPage() {
-  const services = useMyServices();
-  const archive = useArchiveService();
+  const { barber } = useCurrentBarber();
+  const services = useMyServices(barber.id);
+  const archive = useArchiveService(barber.id);
   // undefined: closed; null: creating; a service: editing it
   const [editing, setEditing] = useState<Service | null | undefined>(undefined);
 
@@ -110,6 +112,7 @@ export function ServicesPage() {
       )}
       {editing !== undefined && (
         <ServiceDialog
+          barberId={barber.id}
           key={editing?.id ?? 'new'}
           service={editing}
           onClose={() => setEditing(undefined)}

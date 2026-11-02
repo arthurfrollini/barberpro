@@ -1,5 +1,5 @@
 import { toast } from 'sonner';
-import { useRoles } from '@/features/roles/hooks/use-roles';
+import { useCurrentWorkspace } from '@/features/workspaces/hooks/use-workspaces';
 import { Button } from '@/shared/ui/button';
 import { toastError } from '@/shared/ui/toast-error';
 import { PageHeader } from '@/shared/ui/page-header';
@@ -7,7 +7,7 @@ import { ErrorState, PageSkeleton } from '@/shared/ui/states';
 import { ShopForm } from '../components/shop-form';
 import { useBecomeBarber, useMyShop } from '../hooks/use-shop';
 
-function JoinAsBarber() {
+function JoinAsBarber({ shopId }: { shopId: string }) {
   const join = useBecomeBarber();
   return (
     <section
@@ -25,10 +25,10 @@ function JoinAsBarber() {
       <Button
         disabled={join.isPending}
         onClick={() =>
-          join.mutate(undefined, {
+          join.mutate(shopId, {
             onSuccess: () => toast.success('Pronto. Configure seus horários e serviços.'),
             onError: (error) =>
-              toastError(error, { ALREADY_A_BARBER: 'Você já atende em uma barbearia.' }),
+              toastError(error, { ALREADY_A_BARBER: 'Você já atende nesta barbearia.' }),
           })
         }
       >
@@ -39,12 +39,12 @@ function JoinAsBarber() {
 }
 
 export function ShopPage() {
-  const shop = useMyShop();
-  const roles = useRoles();
+  const workspace = useCurrentWorkspace();
+  const shop = useMyShop(workspace.shop.id);
   return (
     <>
       <PageHeader title="Barbearia" description="A página que os clientes veem ao procurar você." />
-      {roles.data && !roles.data.barber && <JoinAsBarber />}
+      {!workspace.barber && <JoinAsBarber shopId={workspace.shop.id} />}
       {shop.isPending ? (
         <PageSkeleton />
       ) : shop.isError ? (

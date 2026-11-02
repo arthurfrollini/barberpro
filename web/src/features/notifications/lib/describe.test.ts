@@ -19,7 +19,7 @@ const base = (overrides: Partial<Notification> = {}): Notification => ({
     serviceName: 'Corte',
     cancelReason: null,
     customer: { id: 'user-ana', name: 'Ana' },
-    barber: { name: 'José' },
+    barber: { id: 'barber-1', name: 'José', barbershop: { id: 'shop-1', timezone: SP } },
   },
   ...overrides,
 });

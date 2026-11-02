@@ -26,7 +26,11 @@ function describe(change: AgendaChange, timeZone: string): string {
  * shows what happened. After a dropped connection it refetches once, without toasts for
  * whatever happened while offline.
  */
-export function useAgendaLive(timeZone: string, watch: AgendaWatcher = watchAgenda) {
+export function useAgendaLive(
+  barberId: string,
+  timeZone: string,
+  watch: AgendaWatcher = watchAgenda,
+) {
   const queryClient = useQueryClient();
   useEffect(() => {
     const refresh = () => {
@@ -35,12 +39,12 @@ export function useAgendaLive(timeZone: string, watch: AgendaWatcher = watchAgen
       // a slot offered for a move may just have been taken
       void queryClient.invalidateQueries({ queryKey: ['reschedule-slots'] });
     };
-    return watch({
+    return watch(barberId, {
       next: (change) => {
         refresh();
         if (!wasChangedHere(change.appointment.id)) toast(describe(change, timeZone));
       },
       reconnected: refresh,
     });
-  }, [queryClient, timeZone, watch]);
+  }, [barberId, queryClient, timeZone, watch]);
 }

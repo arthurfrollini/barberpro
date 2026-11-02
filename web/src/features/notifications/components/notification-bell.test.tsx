@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ME, roles } from '@/test/fixtures';
+import { ME, workspaces } from '@/test/fixtures';
 import { api, gqlData } from '@/test/graphql';
 import { renderRoutes, signIn } from '@/test/render';
 import { server } from '@/test/server';
@@ -22,7 +22,11 @@ const notification = (overrides: Record<string, unknown>) => ({
     serviceName: 'Corte',
     cancelReason: null,
     customer: { id: 'c1', name: 'Ana' },
-    barber: { name: 'José' },
+    barber: {
+      id: 'barber-1',
+      name: 'José',
+      barbershop: { id: 'shop-1', timezone: 'America/Sao_Paulo' },
+    },
   },
   ...overrides,
 });
@@ -32,7 +36,7 @@ function setup(unread: number, list: ReturnType<typeof notification>[]) {
   const marked: string[] = [];
   let count = unread;
   server.use(
-    api.query('Roles', () => gqlData(roles({ barber: true }))),
+    api.query('Workspaces', () => gqlData(workspaces({ barber: true }))),
     api.query('Me', () => gqlData({ me: ME })),
     api.query('UnreadNotificationCount', () => gqlData({ unreadNotificationCount: count })),
     api.query('Notifications', () => gqlData({ notifications: list })),

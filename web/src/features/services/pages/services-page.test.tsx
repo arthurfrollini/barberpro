@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { routes } from '@/app/routes';
-import { ME, roles } from '@/test/fixtures';
+import { ME, workspaces } from '@/test/fixtures';
 import { api, gqlData, gqlError } from '@/test/graphql';
 import { renderRoutes, signIn } from '@/test/render';
 import { server } from '@/test/server';
@@ -29,9 +29,9 @@ function setup(initial: Service[]) {
   let services = [...initial];
   const calls: { op: string; variables: unknown }[] = [];
   server.use(
-    api.query('Roles', () => gqlData(roles({ barber: true }))),
+    api.query('Workspaces', () => gqlData(workspaces({ barber: true }))),
     api.query('Me', () => gqlData({ me: ME })),
-    api.query('MyServices', () => gqlData({ myBarberProfile: { id: 'barber-1', services } })),
+    api.query('MyServices', () => gqlData({ barber: { id: 'barber-1', services } })),
     api.mutation('CreateService', ({ variables }) => {
       calls.push({ op: 'create', variables });
       const input = variables.input as Omit<Service, 'id' | 'archived'>;
@@ -99,6 +99,7 @@ describe('services', () => {
       {
         op: 'create',
         variables: {
+          barberId: 'barber-1',
           input: { name: 'Barba', description: '', priceCents: 3550, durationMinutes: 20 },
         },
       },

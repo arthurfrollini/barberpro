@@ -2,7 +2,7 @@ import { Bell } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useMe } from '@/features/auth/hooks/use-auth';
-import { currentShop, useRoles } from '@/features/roles/hooks/use-roles';
+import { useActiveWorkspace } from '@/features/workspaces/hooks/use-workspaces';
 import { formatRelative, localDateOf } from '@/shared/lib/time';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
@@ -23,15 +23,23 @@ export function NotificationBell() {
   const unread = useUnreadCount().data ?? 0;
   const list = useNotifications({ enabled: open });
   const markRead = useMarkRead();
-  const roles = useRoles();
+  const { workspaces, select } = useActiveWorkspace();
   const me = useMe();
   const navigate = useNavigate();
-  const timeZone = (roles.data && currentShop(roles.data)?.timezone) ?? 'America/Sao_Paulo';
+  /** Each notification is read in the zone of the shop its appointment is at. */
+  const zoneOf = (n: Notification) =>
+    n.appointment?.barber.barbershop.timezone ?? 'America/Sao_Paulo';
 
   const openItem = (n: Notification) => {
     if (!n.read) markRead.mutate(n.id);
     setOpen(false);
-    if (n.appointment) navigate(`/agenda?dia=${localDateOf(n.appointment.startsAt, timeZone)}`);
+    // the agenda shows the user's own bookings as a barber: switch to that shop, then go
+    const appointment = n.appointment;
+    const mine = workspaces.find((w) => w.barber && w.barber.id === appointment?.barber.id);
+    if (appointment && mine) {
+      select(mine.shop.id);
+      navigate(`/agenda?dia=${localDateOf(appointment.startsAt, zoneOf(n))}`);
+    }
   };
 
   return (
@@ -65,7 +73,7 @@ export function NotificationBell() {
         ) : (
           <ul className="max-h-96 overflow-y-auto">
             {list.data.map((n) => {
-              const { title, body } = describeNotification(n, me.data?.id, timeZone);
+              const { title, body } = describeNotification(n, me.data?.id, zoneOf(n));
               return (
                 <li key={n.id} className="border-b last:border-b-0">
                   <button

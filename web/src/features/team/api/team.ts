@@ -2,8 +2,8 @@ import { graphql } from '@/gql';
 import { api } from '@/shared/api';
 
 const InviteMutation = graphql(`
-  mutation InviteBarber($email: String!) {
-    inviteBarber(email: $email) {
+  mutation InviteBarber($shopId: ID!, $email: String!) {
+    inviteBarber(shopId: $shopId, email: $email) {
       id
       email
       status
@@ -30,8 +30,8 @@ const RemoveMutation = graphql(`
   }
 `);
 
-export const inviteBarber = async (email: string) =>
-  (await api.request(InviteMutation, { email })).inviteBarber;
+export const inviteBarber = async ({ shopId, email }: { shopId: string; email: string }) =>
+  (await api.request(InviteMutation, { shopId, email })).inviteBarber;
 
 export const revokeInvite = async (id: string) =>
   (await api.request(RevokeMutation, { id })).revokeInvite;

@@ -25,8 +25,8 @@ test('a new barber sets hours, a day off, a service and a profile, and can be bo
 }) => {
   const email = uniqueEmail('owner');
   const token = await signUp(API, 'Rita Navalha', email, PASSWORD);
-  await createShop(API, token, `Rita Cortes ${Date.now()}`);
-  const barberId = await becomeBarber(API, token);
+  const shopId = await createShop(API, token, `Rita Cortes ${Date.now()}`);
+  const barberId = await becomeBarber(API, token, shopId);
 
   await page.goto('/entrar');
   await page.getByLabel('Email').fill(email);
@@ -72,7 +72,7 @@ test('a new barber sets hours, a day off, a service and a profile, and can be bo
   await expect(page.getByText('Perfil salvo')).toBeVisible();
 
   // a customer can now book the next Monday from 09:00, and the last start fits before 18:00
-  const [corte] = await myServiceIds(API, token);
+  const [corte] = await myServiceIds(API, barberId);
   const slots = await availableSlots(API, { barberId, serviceId: corte!.id, date: nextMonday() });
   expect(slots).toContain(`${nextMonday()}T12:00:00.000Z`);
   expect(slots).toContain(`${nextMonday()}T20:30:00.000Z`);

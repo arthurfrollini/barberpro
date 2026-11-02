@@ -14,8 +14,8 @@ graphql(`
 `);
 
 const MyServicesQuery = graphql(`
-  query MyServices {
-    myBarberProfile {
+  query MyServices($barberId: ID!) {
+    barber(id: $barberId) {
       id
       services {
         ...ServiceFields
@@ -25,8 +25,8 @@ const MyServicesQuery = graphql(`
 `);
 
 const CreateMutation = graphql(`
-  mutation CreateService($input: CreateServiceInput!) {
-    createService(input: $input) {
+  mutation CreateService($barberId: ID!, $input: CreateServiceInput!) {
+    createService(barberId: $barberId, input: $input) {
       ...ServiceFields
     }
   }
@@ -48,12 +48,17 @@ const ArchiveMutation = graphql(`
   }
 `);
 
-/** Bookable services only: the API leaves archived ones out. */
-export const fetchMyServices = async () =>
-  (await api.request(MyServicesQuery)).myBarberProfile?.services ?? [];
+/** One barber profile's bookable services (the API leaves archived ones out). */
+export const fetchMyServices = async (barberId: string) =>
+  (await api.request(MyServicesQuery, { barberId })).barber?.services ?? [];
 
-export const createService = async (input: CreateServiceInput) =>
-  (await api.request(CreateMutation, { input })).createService;
+export const createService = async ({
+  barberId,
+  input,
+}: {
+  barberId: string;
+  input: CreateServiceInput;
+}) => (await api.request(CreateMutation, { barberId, input })).createService;
 
 export const updateService = async ({ id, input }: { id: string; input: UpdateServiceInput }) =>
   (await api.request(UpdateMutation, { id, input })).updateService;

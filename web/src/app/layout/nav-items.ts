@@ -7,7 +7,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
-import type { Roles } from '@/features/roles/api/roles';
+import type { Workspace } from '@/features/workspaces/lib/workspaces';
 
 export type Item = { to: string; label: string; icon: LucideIcon };
 
@@ -22,9 +22,12 @@ const OWNER: Item[] = [
   { to: '/equipe', label: 'Equipe', icon: Users },
 ];
 
-/** Barbers see their tools first; owners get the shop pages; the profile is everyone's. */
-export function navItems(roles: Roles): Item[] {
-  if (roles.barber) return [...BARBER, PROFILE, ...(roles.shop ? OWNER : [])];
-  if (roles.shop) return [...OWNER, PROFILE];
+/**
+ * What the active shop lets the user do: barbers see their tools first, owners get the shop
+ * pages, the profile is everyone's.
+ */
+export function navItems(active: Workspace | null): Item[] {
+  if (active?.barber) return [...BARBER, PROFILE, ...(active.owner ? OWNER : [])];
+  if (active?.owner) return [...OWNER, PROFILE];
   return [{ to: '/comecar', label: 'Começar', icon: Store }, PROFILE];
 }

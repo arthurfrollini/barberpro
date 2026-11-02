@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { routes } from '@/app/routes';
 import { appointment } from '@/test/agenda-fixtures';
-import { ME, roles } from '@/test/fixtures';
+import { ME, workspaces } from '@/test/fixtures';
 import { api, gqlData } from '@/test/graphql';
 import { renderRoutes, signIn } from '@/test/render';
 import { server } from '@/test/server';
@@ -14,7 +14,7 @@ function setup(weekly = NINE_TO_SIX([1, 2, 3, 4, 5, 6, 0]), canceled: unknown[] 
   signIn();
   const sent: unknown[] = [];
   server.use(
-    api.query('Roles', () => gqlData(roles({ barber: true }))),
+    api.query('Workspaces', () => gqlData(workspaces({ barber: true }))),
     api.query('Me', () => gqlData({ me: ME })),
     api.query('MySchedule', () => gqlData({ mySchedule: { weekly, blockedDates: [] } })),
     api.mutation('SetWeeklySchedule', ({ variables }) => {

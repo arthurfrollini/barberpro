@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { Navigate, Outlet, useLocation, useSearchParams } from 'react-router';
 import { returnPath } from '@/features/auth/components/return-path';
 import { useIsSignedIn } from '@/features/auth/hooks/use-auth';
-import { landingPath, useRoles } from '@/features/roles/hooks/use-roles';
+import { useActiveWorkspace } from '@/features/workspaces/hooks/use-workspaces';
+import { landingPath, type Workspace } from '@/features/workspaces/lib/workspaces';
 import { session } from '@/shared/api';
 import { ErrorState, PageSkeleton } from '@/shared/ui/states';
 
@@ -24,33 +25,34 @@ export function RedirectIfSignedIn() {
   return useIsSignedIn() ? <Navigate to={returnPath(search)} replace /> : <Outlet />;
 }
 
-function WithRoles({
-  children,
-}: {
-  children: (roles: NonNullable<ReturnType<typeof useRoles>['data']>) => ReactNode;
-}) {
-  const roles = useRoles();
-  if (roles.isPending) return <PageSkeleton />;
-  if (roles.isError) return <ErrorState error={roles.error} onRetry={() => roles.refetch()} />;
-  return children(roles.data);
+function WithWorkspace({ children }: { children: (active: Workspace | null) => ReactNode }) {
+  const workspaces = useActiveWorkspace();
+  if (workspaces.isPending) return <PageSkeleton />;
+  if (workspaces.isError) {
+    return <ErrorState error={workspaces.error} onRetry={() => workspaces.refetch()} />;
+  }
+  return children(workspaces.active);
 }
 
-/** `/` has no page of its own: it sends each user to where they work. */
+/** `/` has no page of its own: it sends each user to where they work in the active shop. */
 export function Landing() {
-  return <WithRoles>{(roles) => <Navigate to={landingPath(roles)} replace />}</WithRoles>;
+  return <WithWorkspace>{(active) => <Navigate to={landingPath(active)} replace />}</WithWorkspace>;
 }
 
-/** Pages for one role; anyone else goes to their own landing page. */
+/**
+ * Pages for one role in the active shop; anyone else goes to their landing page. Switching
+ * shops keeps the page when the new shop allows it.
+ */
 export function RequireRole({ role }: { role: 'barber' | 'owner' }) {
   return (
-    <WithRoles>
-      {(roles) =>
-        (role === 'barber' ? roles.barber : roles.shop) ? (
+    <WithWorkspace>
+      {(active) =>
+        (role === 'barber' ? active?.barber : active?.owner) ? (
           <Outlet />
         ) : (
-          <Navigate to={landingPath(roles)} replace />
+          <Navigate to={landingPath(active)} replace />
         )
       }
-    </WithRoles>
+    </WithWorkspace>
   );
 }

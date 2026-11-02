@@ -21,8 +21,8 @@ graphql(`
 `);
 
 const AgendaQuery = graphql(`
-  query BarberAgenda($date: String!) {
-    barberAgenda(date: $date) {
+  query BarberAgenda($barberId: ID!, $date: String!) {
+    barberAgenda(barberId: $barberId, date: $date) {
       ...AgendaAppointment
     }
   }
@@ -50,8 +50,8 @@ const RescheduleSlotsQuery = graphql(`
   }
 `);
 
-export const fetchAgenda = async (date: string) =>
-  (await api.request(AgendaQuery, { date })).barberAgenda;
+export const fetchAgenda = async (barberId: string, date: string) =>
+  (await api.request(AgendaQuery, { barberId, date })).barberAgenda;
 
 export const cancelAppointment = async (id: string) =>
   (await api.request(CancelMutation, { id })).cancelAppointment;

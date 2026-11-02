@@ -50,11 +50,11 @@ export async function createShop(api: Api, token: string, name: string) {
   return createBarbershop.id;
 }
 
-export async function becomeBarber(api: Api, token: string) {
+export async function becomeBarber(api: Api, token: string, shopId: string) {
   const { becomeBarber } = await call<{ becomeBarber: { id: string } }>(
     api,
-    'mutation { becomeBarber { id } }',
-    {},
+    'mutation ($shopId: ID!) { becomeBarber(shopId: $shopId) { id } }',
+    { shopId },
     token,
   );
   return becomeBarber.id;
@@ -72,14 +72,33 @@ export async function availableSlots(
   return data.availableSlots;
 }
 
-export async function myServiceIds(api: Api, token: string) {
-  const data = await call<{ myBarberProfile: { services: { id: string; name: string }[] } }>(
+export async function myServiceIds(api: Api, barberId: string) {
+  const data = await call<{ barber: { services: { id: string; name: string }[] } }>(
     api,
-    '{ myBarberProfile { services { id name } } }',
-    {},
+    'query ($barberId: ID!) { barber(id: $barberId) { services { id name } } }',
+    { barberId },
+  );
+  return data.barber.services;
+}
+
+/** Invites `email` to one of the owner's shops; the code arrives by email (Mailpit). */
+export async function invite(api: Api, ownerToken: string, shopId: string, email: string) {
+  await call(
+    api,
+    'mutation ($shopId: ID!, $email: String!) { inviteBarber(shopId: $shopId, email: $email) { id } }',
+    { shopId, email },
+    ownerToken,
+  );
+}
+
+export async function acceptInvite(api: Api, token: string, code: string) {
+  const { acceptInvite } = await call<{ acceptInvite: { id: string } }>(
+    api,
+    'mutation ($code: String!) { acceptInvite(token: $code) { id } }',
+    { code },
     token,
   );
-  return data.myBarberProfile.services;
+  return acceptInvite.id;
 }
 
 /** An owner who barbers in their own shop, open `hours` every day, with one service. */
@@ -92,7 +111,7 @@ export async function setUpBarber(
     service?: { name: string; priceCents: number; durationMinutes: number };
   },
 ) {
-  await call(
+  const { createBarbershop } = await call<{ createBarbershop: { id: string } }>(
     api,
     `mutation ($input: CreateBarbershopInput!) { createBarbershop(input: $input) { id } }`,
     {
@@ -109,15 +128,16 @@ export async function setUpBarber(
   );
   const { becomeBarber } = await call<{ becomeBarber: { id: string } }>(
     api,
-    'mutation { becomeBarber { id } }',
-    {},
+    'mutation ($shopId: ID!) { becomeBarber(shopId: $shopId) { id } }',
+    { shopId: createBarbershop.id },
     token,
   );
   const hours = options.hours ?? [['08:00', '20:00']];
   await call(
     api,
-    'mutation ($intervals: [WeeklyIntervalInput!]!) { setWeeklySchedule(intervals: $intervals) { weekly { weekday } } }',
+    'mutation ($barberId: ID!, $intervals: [WeeklyIntervalInput!]!) { setWeeklySchedule(barberId: $barberId, intervals: $intervals) { weekly { weekday } } }',
     {
+      barberId: becomeBarber.id,
       intervals: [0, 1, 2, 3, 4, 5, 6].flatMap((weekday) =>
         hours.map(([startTime, endTime]) => ({ weekday, startTime, endTime })),
       ),
@@ -127,22 +147,23 @@ export async function setUpBarber(
   const service = options.service ?? { name: 'Corte', priceCents: 5000, durationMinutes: 30 };
   const { createService } = await call<{ createService: { id: string } }>(
     api,
-    'mutation ($input: CreateServiceInput!) { createService(input: $input) { id } }',
-    { input: service },
+    'mutation ($barberId: ID!, $input: CreateServiceInput!) { createService(barberId: $barberId, input: $input) { id } }',
+    { barberId: becomeBarber.id, input: service },
     token,
   );
-  return { barberId: becomeBarber.id, serviceId: createService.id };
+  return { shopId: createBarbershop.id, barberId: becomeBarber.id, serviceId: createService.id };
 }
 
 export async function addService(
   api: Api,
   token: string,
+  barberId: string,
   service: { name: string; priceCents: number; durationMinutes: number },
 ) {
   const { createService } = await call<{ createService: { id: string } }>(
     api,
-    'mutation ($input: CreateServiceInput!) { createService(input: $input) { id } }',
-    { input: service },
+    'mutation ($barberId: ID!, $input: CreateServiceInput!) { createService(barberId: $barberId, input: $input) { id } }',
+    { barberId, input: service },
     token,
   );
   return createService.id;
@@ -156,10 +177,51 @@ export async function book(
   const { bookAppointment } = await call<{ bookAppointment: { id: string } }>(
     api,
     'mutation ($input: BookAppointmentInput!) { bookAppointment(input: $input) { id } }',
-    { input: { ...input, reminderLeadMinutes: 15 } },
+    {
+      // only the booking's own fields: callers often spread a whole setUpBarber() result
+      input: {
+        barberId: input.barberId,
+        serviceId: input.serviceId,
+        startsAt: input.startsAt,
+        reminderLeadMinutes: 15,
+      },
+    },
     customerToken,
   );
   return bookAppointment.id;
+}
+
+export async function setHours(
+  api: Api,
+  token: string,
+  barberId: string,
+  hours: [string, string][] = [['08:00', '20:00']],
+) {
+  await call(
+    api,
+    'mutation ($barberId: ID!, $intervals: [WeeklyIntervalInput!]!) { setWeeklySchedule(barberId: $barberId, intervals: $intervals) { weekly { weekday } } }',
+    {
+      barberId,
+      intervals: [0, 1, 2, 3, 4, 5, 6].flatMap((weekday) =>
+        hours.map(([startTime, endTime]) => ({ weekday, startTime, endTime })),
+      ),
+    },
+    token,
+  );
+}
+
+/** Books and returns the error code instead of throwing, for refusals the test expects. */
+export async function tryBook(
+  api: Api,
+  customerToken: string,
+  input: { barberId: string; serviceId: string; startsAt: string },
+): Promise<string | null> {
+  try {
+    await book(api, customerToken, input);
+    return null;
+  } catch (error) {
+    return (error as Error).message;
+  }
 }
 
 export async function cancel(api: Api, token: string, id: string) {

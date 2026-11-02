@@ -17,13 +17,14 @@ export const BARBER = {
 
 export const ME = { id: 'user-1', name: 'José Silva', email: 'jose@example.com' };
 
-export const roles = ({
+/** The Workspaces query's answer for a user who barbers and/or owns SHOP. */
+export const workspaces = ({
   barber = false,
   owner = false,
 }: {
   barber?: boolean;
   owner?: boolean;
 }) => ({
-  myBarberProfile: barber ? BARBER : null,
-  myBarbershop: owner ? SHOP : null,
+  myBarbershops: owner ? [SHOP] : [],
+  myBarberProfiles: barber ? [BARBER] : [],
 });
