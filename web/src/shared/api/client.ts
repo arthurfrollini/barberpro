@@ -41,6 +41,31 @@ export async function postGraphQL<R, V>(
   }
 }
 
+type UploadBody = { id: string; url: string } | { code: string; message: string };
+
+async function postUpload(
+  transport: Transport,
+  file: File,
+  token: string | null,
+): Promise<{ status: number; body: UploadBody }> {
+  const body = new FormData();
+  body.append('file', file);
+  let response: Response;
+  try {
+    response = await transport.fetch(`${transport.baseUrl}/uploads`, {
+      method: 'POST',
+      headers: token ? { authorization: `Bearer ${token}` } : {},
+      body,
+    });
+  } catch {
+    throw networkError();
+  }
+  if (response.status >= 500) throw networkError();
+  const json = (await response.json().catch(() => null)) as UploadBody | null;
+  if (!json) throw networkError();
+  return { status: response.status, body: json };
+}
+
 export function unwrap<R>(result: GraphQLResponse<R>): R {
   const error = result.errors?.[0];
   if (error) throw new ApiError(error.extensions?.code ?? 'INTERNAL', error.message);
@@ -87,27 +112,20 @@ export function createApiClient(options: {
       return unwrap(result);
     },
 
-    /** POST /uploads: an image for a logo or avatar. Returns the id the mutations take. */
+    /**
+     * POST /uploads: an image for a logo or avatar. Returns the id the mutations take. A 401
+     * gets the same single refresh and retry as a GraphQL call.
+     */
     async upload(file: File): Promise<{ id: string; url: string }> {
       const token = await session.accessToken();
-      const body = new FormData();
-      body.append('file', file);
-      let response: Response;
-      try {
-        response = await transport.fetch(`${transport.baseUrl}/uploads`, {
-          method: 'POST',
-          headers: token ? { authorization: `Bearer ${token}` } : {},
-          body,
-        });
-      } catch {
-        throw networkError();
+      let result = await postUpload(transport, file, token);
+      if (token && result.status === 401) {
+        const renewed = await session.accessToken({ force: true });
+        if (renewed) result = await postUpload(transport, file, renewed);
+        if (!renewed || result.status === 401) expire();
       }
-      if (response.status >= 500) throw networkError();
-      const json = (await response.json().catch(() => null)) as
-        { id: string; url: string } | { code: string; message: string } | null;
-      if (!json) throw networkError();
-      if ('code' in json) throw new ApiError(json.code, json.message);
-      return json;
+      if ('code' in result.body) throw new ApiError(result.body.code, result.body.message);
+      return result.body;
     },
   };
 }

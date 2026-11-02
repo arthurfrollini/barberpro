@@ -114,6 +114,26 @@ describe('api client', () => {
     expect(authorization).toBe('Bearer t1');
   });
 
+  it('refreshes once and retries an upload the API rejected as unauthenticated', async () => {
+    const seen: (string | null)[] = [];
+    server.use(
+      http.post('*/uploads', ({ request }) => {
+        const auth = request.headers.get('authorization');
+        seen.push(auth);
+        return auth === 'Bearer t2'
+          ? HttpResponse.json({ id: 'f1', url: 'http://x/files/f1' }, { status: 201 })
+          : HttpResponse.json({ code: 'UNAUTHENTICATED', message: 'no' }, { status: 401 });
+      }),
+    );
+    const { client, refresh } = setup();
+    await expect(client.upload(new File(['x'], 'a.png', { type: 'image/png' }))).resolves.toEqual({
+      id: 'f1',
+      url: 'http://x/files/f1',
+    });
+    expect(seen).toEqual(['Bearer t1', 'Bearer t2']);
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
   it('maps upload errors to their code', async () => {
     server.use(
       http.post('*/uploads', () =>

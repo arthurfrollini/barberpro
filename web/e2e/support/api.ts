@@ -31,6 +31,57 @@ export async function signUp(api: Api, name: string, email: string, password: st
   return data.signUp.accessToken;
 }
 
+export async function createShop(api: Api, token: string, name: string) {
+  const { createBarbershop } = await call<{ createBarbershop: { id: string } }>(
+    api,
+    `mutation ($input: CreateBarbershopInput!) { createBarbershop(input: $input) { id } }`,
+    {
+      input: {
+        name,
+        description: 'Cortes clássicos e barba na navalha.',
+        foundedYear: 2012,
+        address: 'Rua Augusta, 1500, São Paulo',
+        latitude: -23.5614,
+        longitude: -46.6559,
+      },
+    },
+    token,
+  );
+  return createBarbershop.id;
+}
+
+export async function becomeBarber(api: Api, token: string) {
+  const { becomeBarber } = await call<{ becomeBarber: { id: string } }>(
+    api,
+    'mutation { becomeBarber { id } }',
+    {},
+    token,
+  );
+  return becomeBarber.id;
+}
+
+export async function availableSlots(
+  api: Api,
+  input: { barberId: string; serviceId: string; date: string },
+) {
+  const data = await call<{ availableSlots: string[] }>(
+    api,
+    'query ($barberId: ID!, $serviceId: ID!, $date: String!) { availableSlots(barberId: $barberId, serviceId: $serviceId, date: $date) }',
+    input,
+  );
+  return data.availableSlots;
+}
+
+export async function myServiceIds(api: Api, token: string) {
+  const data = await call<{ myBarberProfile: { services: { id: string; name: string }[] } }>(
+    api,
+    '{ myBarberProfile { services { id name } } }',
+    {},
+    token,
+  );
+  return data.myBarberProfile.services;
+}
+
 /** An owner who barbers in their own shop, open `hours` every day, with one service. */
 export async function setUpBarber(
   api: Api,

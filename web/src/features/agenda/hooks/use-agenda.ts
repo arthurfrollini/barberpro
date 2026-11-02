@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import {
   cancelAppointment,
   fetchAgenda,
-  fetchMySchedule,
   fetchRescheduleSlots,
   rescheduleAppointment,
   type AgendaAppointment,
@@ -15,14 +14,8 @@ export const agendaKeys = {
   day: (date: string) => ['agenda', date] as const,
 };
 
-export const scheduleKey = ['schedule'] as const;
-
 export function useAgenda(date: string) {
   return useQuery({ queryKey: agendaKeys.day(date), queryFn: () => fetchAgenda(date) });
-}
-
-export function useMySchedule() {
-  return useQuery({ queryKey: scheduleKey, queryFn: fetchMySchedule });
 }
 
 export function useRescheduleSlots(id: string, date: string | null) {

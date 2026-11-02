@@ -28,19 +28,6 @@ const AgendaQuery = graphql(`
   }
 `);
 
-const MyScheduleQuery = graphql(`
-  query MySchedule {
-    mySchedule {
-      weekly {
-        weekday
-        startTime
-        endTime
-      }
-      blockedDates
-    }
-  }
-`);
-
 const CancelMutation = graphql(`
   mutation CancelAppointment($id: ID!) {
     cancelAppointment(id: $id) {
@@ -66,8 +53,6 @@ const RescheduleSlotsQuery = graphql(`
 export const fetchAgenda = async (date: string) =>
   (await api.request(AgendaQuery, { date })).barberAgenda;
 
-export const fetchMySchedule = async () => (await api.request(MyScheduleQuery)).mySchedule;
-
 export const cancelAppointment = async (id: string) =>
   (await api.request(CancelMutation, { id })).cancelAppointment;
 
@@ -78,4 +63,3 @@ export const fetchRescheduleSlots = async (id: string, date: string) =>
   (await api.request(RescheduleSlotsQuery, { id, date })).rescheduleSlots;
 
 export type { AgendaAppointmentFragment as AgendaAppointment } from '@/gql/graphql';
-export type MySchedule = Awaited<ReturnType<typeof fetchMySchedule>>;

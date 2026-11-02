@@ -10,7 +10,8 @@ export const SHOP = {
 export const BARBER = {
   id: 'barber-1',
   name: 'José',
-  avatarUrl: null,
+  bio: 'Cortes clássicos.',
+  avatarUrl: null as string | null,
   barbershop: SHOP,
 };
 

@@ -18,8 +18,8 @@ This is a rewrite of a 2021 Express project (kept under the [`v2021`](https://gi
 | 4     | Notifications: email queue, reminders, live agenda subscription          | done  |
 | Web 1 | Dashboard skeleton: sign in and up, session, role-based navigation       | done  |
 | Web 2 | Agenda: day timeline, cancel, reschedule, live updates, notifications    | done  |
-| Web 3 | Barber setup: weekly hours, days off, services, profile                  | next  |
-| Web 4 | Owner: shop page, team, invites                                          |       |
+| Web 3 | Barber setup: weekly hours, days off, services, profile                  | done  |
+| Web 4 | Owner: shop page, team, invites                                          | next  |
 
 The design is in [`docs/superpowers/specs`](docs/superpowers/specs/2026-10-30-barberpro-api-design.md) and each phase has its plan in [`docs/superpowers/plans`](docs/superpowers/plans).
 
