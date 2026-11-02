@@ -1,0 +1,95 @@
+enum AppointmentStatus {
+  BOOKED
+  CANCELED
+}
+
+enum CancelReason {
+  CUSTOMER
+  BARBER
+  DAY_BLOCKED
+  SCHEDULE_CHANGED
+  BARBER_REMOVED
+}
+
+"Who booked; barbers see the name only."
+type Customer {
+  id: ID!
+  name: String!
+}
+
+type Appointment {
+  id: ID!
+  startsAt: DateTime!
+  endsAt: DateTime!
+  status: AppointmentStatus!
+  "Name, price and duration as they were when booked."
+  serviceName: String!
+  priceCents: Int!
+  durationMinutes: Int!
+  "Minutes before the start to remind the customer; null for no reminder."
+  reminderLeadMinutes: Int
+  cancelReason: CancelReason
+  canceledAt: DateTime
+  barber: Barber!
+  customer: Customer!
+}
+
+"Working hours on a weekday (0 = Sunday), as HH:MM in the shop's time zone."
+type WeeklyInterval {
+  weekday: Int!
+  startTime: String!
+  endTime: String!
+}
+
+type BarberSchedule {
+  weekly: [WeeklyInterval!]!
+  "Days off, as YYYY-MM-DD in the shop's time zone."
+  blockedDates: [String!]!
+}
+
+type ScheduleUpdate {
+  weekly: [WeeklyInterval!]!
+  "Appointments 2 hours or more away that no longer fit and were canceled."
+  canceledAppointments: [Appointment!]!
+}
+
+input WeeklyIntervalInput {
+  weekday: Int!
+  "HH:MM, in steps of 5 minutes."
+  startTime: String!
+  "HH:MM, up to 24:00."
+  endTime: String!
+}
+
+input BookAppointmentInput {
+  barberId: ID!
+  serviceId: ID!
+  "One of the times availableSlots returned."
+  startsAt: DateTime!
+  "5 to 60 in steps of 5; leave out for no reminder."
+  reminderLeadMinutes: Int
+}
+
+type Query {
+  "Free start times on a date (YYYY-MM-DD in the shop's zone), every 15 minutes. Public."
+  availableSlots(barberId: ID!, serviceId: ID!, date: String!): [DateTime!]!
+  "The signed-in customer's appointments: upcoming soonest first, or the latest 100."
+  myAppointments(upcoming: Boolean = true): [Appointment!]!
+  "The signed-in barber's appointments on a local date, canceled ones included. Errors: NOT_A_BARBER."
+  barberAgenda(date: String!): [Appointment!]!
+  mySchedule: BarberSchedule!
+}
+
+type Mutation {
+  "Replaces the weekly hours. Errors: NOT_A_BARBER, INVALID_SCHEDULE."
+  setWeeklySchedule(intervals: [WeeklyIntervalInput!]!): ScheduleUpdate!
+  "Blocks a whole day and returns the appointments it canceled (those 2 hours or more away)."
+  blockDate(date: String!): [Appointment!]!
+  unblockDate(date: String!): Boolean!
+  "Errors: SLOT_UNAVAILABLE, SLOT_IN_PAST, BEYOND_BOOKING_HORIZON, CUSTOMER_BUSY, BARBER_CANNOT_BOOK_SELF, INVALID_REMINDER_LEAD, BARBER_NOT_FOUND, SERVICE_NOT_FOUND."
+  bookAppointment(input: BookAppointmentInput!): Appointment!
+  "Customer or barber, up to 2 hours before. Errors: CANCELLATION_WINDOW_CLOSED, APPOINTMENT_NOT_FOUND."
+  cancelAppointment(id: ID!): Appointment!
+  "Same barber and service, new time. Errors: as bookAppointment, plus CANCELLATION_WINDOW_CLOSED."
+  rescheduleAppointment(id: ID!, startsAt: DateTime!): Appointment!
+}

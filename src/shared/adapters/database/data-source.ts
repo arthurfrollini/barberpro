@@ -1,9 +1,11 @@
 import { DataSource, type DataSourceOptions } from 'typeorm';
 import { RefreshTokenRecord } from '../../../modules/identity/adapters/persistence/refresh-token.record.js';
 import { UserRecord } from '../../../modules/identity/adapters/persistence/user.record.js';
+import { schedulingRecords } from '../../../modules/scheduling/adapters/persistence/records.js';
 import { shopsRecords } from '../../../modules/shops/adapters/persistence/records.js';
 import { FileRecord } from '../files/file.record.js';
 import { Identity1793373465720 } from './migrations/1793373465720-identity.js';
+import { Scheduling1793375502792 } from './migrations/1793375502792-scheduling.js';
 import { Shops1793374278141 } from './migrations/1793374278141-shops.js';
 
 // Listed by hand instead of globs: explicit, and it works the same under tsx, tsc and Vitest.
@@ -12,8 +14,9 @@ const entities: NonNullable<DataSourceOptions['entities']> = [
   RefreshTokenRecord,
   FileRecord,
   ...shopsRecords,
+  ...schedulingRecords,
 ];
-const migrations = [Identity1793373465720, Shops1793374278141];
+const migrations = [Identity1793373465720, Shops1793374278141, Scheduling1793375502792];
 
 export function createDataSource(url: string): DataSource {
   return new DataSource({

@@ -28,7 +28,7 @@ export async function removeBarber(
     throw new DomainError('BARBER_NOT_FOUND', 'This barber is not in your shop.');
   }
   barber.remove(deps.clock.now());
-  await deps.barbers.save(barber);
+  await deps.persistRemoval(barber, actorId);
   return barber;
 }
 

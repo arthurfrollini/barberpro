@@ -285,6 +285,18 @@ describe('shops use cases', () => {
       ).rejects.toEqual(code('NOT_A_BARBER'));
     });
 
+    it('hands the removal to persistRemoval, which also cancels appointments', async () => {
+      const removed: string[] = [];
+      deps.persistRemoval = async (barber) => {
+        removed.push(barber.id);
+      };
+      const barber = await becomeBarber(deps, owner.id);
+
+      await removeBarber(deps, owner.id, barber.id);
+
+      expect(removed).toEqual([barber.id]);
+    });
+
     it('only removes barbers of the owner shop', async () => {
       await createBarbershop(deps, ana.id, shopInput({ name: 'Ana Cortes' }));
       const anaBarber = await becomeBarber(deps, ana.id);
