@@ -61,6 +61,7 @@ function toRecord(a: Appointment): AppointmentRecord {
   return Object.assign(new AppointmentRecord(), {
     id: a.id,
     barberId: a.barberId,
+    barberUserId: a.barberUserId,
     customerId: a.customerId,
     serviceId: a.serviceId,
     serviceName: a.serviceName,
@@ -83,7 +84,11 @@ async function guardOverlap(write: Promise<unknown>): Promise<void> {
   try {
     await write;
   } catch (error) {
-    if (isConstraintViolation(error, 'appointments_barber_no_overlap')) {
+    if (
+      isConstraintViolation(error, 'appointments_barber_no_overlap') ||
+      // the same person booked at another of their shops
+      isConstraintViolation(error, 'appointments_barber_user_no_overlap')
+    ) {
       throw new DomainError('SLOT_UNAVAILABLE', 'This time is no longer available.');
     }
     if (isConstraintViolation(error, 'appointments_customer_no_overlap')) {
@@ -120,11 +125,16 @@ export class TypeOrmAppointmentRepository implements AppointmentRepository {
     await guardOverlap(this.manager.update(AppointmentRecord, { id }, changes));
   }
 
-  async busyFor(barberId: string, from: Date, to: Date, excludeId?: string): Promise<TimeRange[]> {
+  async busyFor(
+    barberUserId: string,
+    from: Date,
+    to: Date,
+    excludeId?: string,
+  ): Promise<TimeRange[]> {
     const rows = await this.manager.find(AppointmentRecord, {
       select: { startsAt: true, endsAt: true },
       where: {
-        barberId,
+        barberUserId,
         status: 'booked',
         startsAt: LessThan(to),
         endsAt: MoreThan(from),

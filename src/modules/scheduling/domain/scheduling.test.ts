@@ -156,6 +156,7 @@ describe('Appointment', () => {
     Appointment.book(
       {
         barberId: 'b',
+        barberUserId: 'u-b',
         customerId: 'c',
         service: { id: 's', name: 'Corte', priceCents: 6000, durationMinutes: 30 },
         startsAt,
@@ -204,6 +205,7 @@ describe('Appointment', () => {
       Appointment.book(
         {
           barberId: 'b',
+          barberUserId: 'u-b',
           customerId: 'c',
           service: { id: 's', name: 'Corte', priceCents: 1, durationMinutes: 30 },
           startsAt: mondayMorning,

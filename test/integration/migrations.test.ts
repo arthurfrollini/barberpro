@@ -25,4 +25,19 @@ describe('migrations', () => {
 
     expect(names).toEqual(expect.arrayContaining(['users', 'refresh_tokens']));
   });
+
+  it('let a person barber in many shops, but never at two places at once', async () => {
+    const indexes: { indexname: string }[] = await ds.query(
+      `SELECT indexname FROM pg_indexes WHERE tablename IN ('barbers', 'barbershops')`,
+    );
+    const names = indexes.map((i) => i.indexname);
+    expect(names).toEqual(
+      expect.arrayContaining(['barbers_active_user_shop_idx', 'barbershops_owner_idx']),
+    );
+    expect(names).not.toContain('barbers_active_user_idx');
+    const constraints: { conname: string }[] = await ds.query(
+      `SELECT conname FROM pg_constraint WHERE conrelid = 'appointments'::regclass`,
+    );
+    expect(constraints.map((c) => c.conname)).toContain('appointments_barber_user_no_overlap');
+  });
 });

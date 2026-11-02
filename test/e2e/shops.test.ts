@@ -70,8 +70,8 @@ describe('shops over GraphQL', () => {
 
     const invited = await gql(
       t.app,
-      'mutation { inviteBarber(email: "Jose@X.com") { email status } }',
-      {},
+      'mutation ($shopId: ID!) { inviteBarber(shopId: $shopId, email: "Jose@X.com") { email status } }',
+      { shopId: shop.id },
       owner,
     );
     expect(invited.data!.inviteBarber).toEqual({ email: 'jose@x.com', status: 'PENDING' });
@@ -89,13 +89,20 @@ describe('shops over GraphQL', () => {
       barbershop: { name: 'Mega Barbearia SP' },
     });
 
+    const joseProfile = (await gql(t.app, '{ myBarberProfiles { id } }', {}, jose)).data!
+      .myBarberProfiles[0].id as string;
     await gql(
       t.app,
-      `mutation { createService(input: { name: "Corte", priceCents: 5000, durationMinutes: 15 }) { id } }`,
-      {},
+      `mutation ($barberId: ID!) { createService(barberId: $barberId, input: { name: "Corte", priceCents: 5000, durationMinutes: 15 }) { id } }`,
+      { barberId: joseProfile },
       jose,
     );
-    await gql(t.app, 'mutation { becomeBarber { id } }', {}, owner);
+    await gql(
+      t.app,
+      'mutation ($shopId: ID!) { becomeBarber(shopId: $shopId) { id } }',
+      { shopId: shop.id },
+      owner,
+    );
 
     // a stranger, without a token
     const nearby = await gql(
@@ -115,11 +122,10 @@ describe('shops over GraphQL', () => {
     const search = await gql(t.app, '{ searchBarbershops(query: "barbaria") { id } }');
     expect(search.data!.searchBarbershops).toEqual([{ id: shop.id }]);
 
-    const joseBarber = await gql(t.app, '{ myBarberProfile { id } }', {}, jose);
     await gql(
       t.app,
       'mutation ($id: ID!) { removeBarber(id: $id) { id } }',
-      { id: joseBarber.data!.myBarberProfile.id },
+      { id: joseProfile },
       owner,
     );
     const after = await gql(t.app, '{ barbershop(id: "' + shop.id + '") { barbers { name } } }');
@@ -130,19 +136,30 @@ describe('shops over GraphQL', () => {
     const owner = await signUp('Marcos', 'marcos@x.com');
     await createShop(owner);
     const ana = await signUp('Ana', 'ana@x.com');
+    const shopId = (await gql(t.app, '{ myBarbershops { id } }', {}, owner)).data!.myBarbershops[0]
+      .id as string;
 
-    const res = await gql(t.app, 'mutation { inviteBarber(email: "jose@x.com") { id } }', {}, ana);
+    const res = await gql(
+      t.app,
+      'mutation ($shopId: ID!) { inviteBarber(shopId: $shopId, email: "jose@x.com") { id } }',
+      { shopId },
+      ana,
+    );
     expect(errorCode(res)).toBe('NOT_SHOP_OWNER');
 
-    const shopId = (await gql(t.app, '{ myBarbershop { id } }', {}, owner)).data!.myBarbershop.id;
     const invites = await gql(t.app, `{ barbershop(id: "${shopId}") { invites { id } } }`, {}, ana);
     expect(errorCode(invites)).toBe('NOT_SHOP_OWNER');
   });
 
   it('refuses an invite accepted by someone signed in with another email', async () => {
     const owner = await signUp('Marcos', 'marcos@x.com');
-    await createShop(owner);
-    await gql(t.app, 'mutation { inviteBarber(email: "jose@x.com") { id } }', {}, owner);
+    const shopId = (await createShop(owner)).data!.createBarbershop.id as string;
+    await gql(
+      t.app,
+      'mutation ($shopId: ID!) { inviteBarber(shopId: $shopId, email: "jose@x.com") { id } }',
+      { shopId },
+      owner,
+    );
     const ana = await signUp('Ana', 'ana@x.com');
 
     const res = await gql(
@@ -168,12 +185,19 @@ describe('shops over GraphQL', () => {
   it('loads barbers and services in batches, not once per shop', async () => {
     for (const [i, email] of ['a@x.com', 'b@x.com', 'c@x.com'].entries()) {
       const token = await signUp(`Owner ${i}`, email);
-      await createShop(token, `Barbearia ${i}`);
-      await gql(t.app, 'mutation { becomeBarber { id } }', {}, token);
+      const shopId = (await createShop(token, `Barbearia ${i}`)).data!.createBarbershop.id;
+      const barberId = (
+        await gql(
+          t.app,
+          'mutation ($shopId: ID!) { becomeBarber(shopId: $shopId) { id } }',
+          { shopId },
+          token,
+        )
+      ).data!.becomeBarber.id;
       await gql(
         t.app,
-        `mutation { createService(input: { name: "Corte", priceCents: 5000, durationMinutes: 30 }) { id } }`,
-        {},
+        `mutation ($barberId: ID!) { createService(barberId: $barberId, input: { name: "Corte", priceCents: 5000, durationMinutes: 30 }) { id } }`,
+        { barberId },
         token,
       );
     }
@@ -225,15 +249,23 @@ describe('shops review fixes', () => {
 
   it('hides a removed barber from the public barber query', async () => {
     const owner = await token('owner@x.com');
-    await gql(
-      t.app,
-      `mutation { createBarbershop(input: { name: "Mega", foundedYear: 2010, address: "Rua 1",
-        latitude: -23.56, longitude: -46.65 }) { id } }`,
-      {},
-      owner,
-    );
-    const id = (await gql(t.app, 'mutation { becomeBarber { id } }', {}, owner)).data!.becomeBarber
-      .id;
+    const shopId = (
+      await gql(
+        t.app,
+        `mutation { createBarbershop(input: { name: "Mega", foundedYear: 2010, address: "Rua 1",
+          latitude: -23.56, longitude: -46.65 }) { id } }`,
+        {},
+        owner,
+      )
+    ).data!.createBarbershop.id;
+    const id = (
+      await gql(
+        t.app,
+        'mutation ($shopId: ID!) { becomeBarber(shopId: $shopId) { id } }',
+        { shopId },
+        owner,
+      )
+    ).data!.becomeBarber.id;
     await gql(t.app, 'mutation ($id: ID!) { removeBarber(id: $id) { id } }', { id }, owner);
 
     const res = await gql(t.app, 'query ($id: ID!) { barber(id: $id) { id } }', { id });

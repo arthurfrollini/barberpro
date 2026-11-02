@@ -20,6 +20,7 @@ export class BlockedDateRecord {
 export class AppointmentRecord {
   @PrimaryColumn('uuid') id!: string;
   @Column('uuid', { name: 'barber_id' }) barberId!: string;
+  @Column('uuid', { name: 'barber_user_id' }) barberUserId!: string;
   @Column('uuid', { name: 'customer_id' }) customerId!: string;
   @Column('uuid', { name: 'service_id' }) serviceId!: string;
   @Column('varchar', { name: 'service_name', length: 60 }) serviceName!: string;

@@ -17,6 +17,7 @@ describe('handleSchedulingEvents', () => {
     Appointment.book(
       {
         barberId: 'barber-joao',
+        barberUserId: JOAO,
         customerId: ANA,
         service: { id: 's', name: 'Corte', priceCents: 6000, durationMinutes: 30 },
         startsAt: at(startsAt),
@@ -196,6 +197,7 @@ describe('sendReminder', () => {
     const a = Appointment.book(
       {
         barberId: 'barber-joao',
+        barberUserId: JOAO,
         customerId: ANA,
         service: { id: 's', name: 'Corte', priceCents: 6000, durationMinutes: 30 },
         startsAt: at('2026-11-02T17:00:00Z'),

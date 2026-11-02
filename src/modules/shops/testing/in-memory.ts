@@ -40,8 +40,8 @@ export class InMemoryBarbershopRepository implements BarbershopRepository {
   async findByIds(ids: readonly string[]) {
     return ids.flatMap((id) => this.rows.get(id) ?? []);
   }
-  async findByOwner(ownerId: string) {
-    return [...this.rows.values()].find((s) => s.ownerId === ownerId) ?? null;
+  async listByOwner(ownerId: string) {
+    return [...this.rows.values()].filter((s) => s.ownerId === ownerId);
   }
   async findNearby(from: Location, radiusKm: number, limit: number) {
     return [...this.rows.values()]
@@ -69,8 +69,15 @@ export class InMemoryBarberRepository implements BarberRepository {
   async findByIds(ids: readonly string[]) {
     return ids.flatMap((id) => this.rows.get(id) ?? []);
   }
-  async findActiveByUser(userId: string) {
-    return [...this.rows.values()].find((b) => b.userId === userId && b.isActive) ?? null;
+  async listActiveByUser(userId: string) {
+    return [...this.rows.values()].filter((b) => b.userId === userId && b.isActive);
+  }
+  async findActiveInShop(userId: string, shopId: string) {
+    return (
+      [...this.rows.values()].find(
+        (b) => b.userId === userId && b.shopId === shopId && b.isActive,
+      ) ?? null
+    );
   }
   async findActiveByShops(shopIds: readonly string[]) {
     return [...this.rows.values()].filter((b) => shopIds.includes(b.shopId) && b.isActive);

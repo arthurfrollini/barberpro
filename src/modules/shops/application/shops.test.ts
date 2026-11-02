@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { FixedClock } from '../../../shared/testing/fixed-clock.js';
 import { Email } from '../../identity/domain/email.js';
 import { User } from '../../identity/domain/user.js';
+import type { Barbershop } from '../domain/barbershop.js';
 import { inMemoryShopsDeps } from '../testing/in-memory.js';
 import { becomeBarber, removeBarber, updateBarberProfile } from './barbers.js';
 import {
@@ -59,14 +60,16 @@ describe('shops use cases', () => {
   });
 
   describe('barbershops', () => {
-    it('lets a user own one shop', async () => {
+    it('lets a user own many shops', async () => {
       const shop = await createBarbershop(deps, owner.id, shopInput());
+      const second = await createBarbershop(deps, owner.id, shopInput({ name: 'Mega Filial' }));
 
       expect(shop.ownerId).toBe(owner.id);
       expect((await getBarbershop(deps, shop.id)).name).toBe('Mega Barbearia SP');
-      await expect(createBarbershop(deps, owner.id, shopInput())).rejects.toEqual(
-        code('SHOP_ALREADY_OWNED'),
-      );
+      expect((await deps.shops.listByOwner(owner.id)).map((s) => s.id)).toEqual([
+        shop.id,
+        second.id,
+      ]);
     });
 
     it('only accepts a logo the owner uploaded', async () => {
@@ -83,13 +86,16 @@ describe('shops use cases', () => {
       ).rejects.toEqual(code('FILE_NOT_FOUND'));
     });
 
-    it('updates the shop of the signed-in owner only', async () => {
-      await createBarbershop(deps, owner.id, shopInput());
+    it('updates a shop of its owner only, answering the same for an unknown id', async () => {
+      const shop = await createBarbershop(deps, owner.id, shopInput());
 
-      const updated = await updateBarbershop(deps, owner.id, { name: 'Mega Barbearia' });
+      const updated = await updateBarbershop(deps, owner.id, shop.id, { name: 'Mega Barbearia' });
 
       expect(updated.name).toBe('Mega Barbearia');
-      await expect(updateBarbershop(deps, ana.id, { name: 'x' })).rejects.toEqual(
+      await expect(updateBarbershop(deps, ana.id, shop.id, { name: 'x' })).rejects.toEqual(
+        code('NOT_SHOP_OWNER'),
+      );
+      await expect(updateBarbershop(deps, owner.id, 'nope', { name: 'x' })).rejects.toEqual(
         code('NOT_SHOP_OWNER'),
       );
     });
@@ -125,10 +131,13 @@ describe('shops use cases', () => {
   });
 
   describe('invites', () => {
-    beforeEach(() => createBarbershop(deps, owner.id, shopInput()));
+    let shop: Barbershop;
+    beforeEach(async () => {
+      shop = await createBarbershop(deps, owner.id, shopInput());
+    });
 
     const inviteJose = async () => {
-      await inviteBarber(deps, owner.id, 'Jose@X.com');
+      await inviteBarber(deps, owner.id, shop.id, 'Jose@X.com');
       const mail = deps.mailer.sent.at(-1)!;
       return mail.text.match(/code: (\S+)/)![1]!;
     };
@@ -154,7 +163,7 @@ describe('shops use cases', () => {
     });
 
     it('is only for the shop owner', async () => {
-      await expect(inviteBarber(deps, ana.id, 'jose@x.com')).rejects.toEqual(
+      await expect(inviteBarber(deps, ana.id, shop.id, 'jose@x.com')).rejects.toEqual(
         code('NOT_SHOP_OWNER'),
       );
     });
@@ -172,14 +181,14 @@ describe('shops use cases', () => {
       await acceptInvite(deps, jose.id, token);
       await expect(acceptInvite(deps, jose.id, token)).rejects.toEqual(code('INVITE_NOT_FOUND'));
 
-      await inviteBarber(deps, owner.id, 'ana@x.com');
+      await inviteBarber(deps, owner.id, shop.id, 'ana@x.com');
       const anaToken = deps.mailer.sent.at(-1)!.text.match(/code: (\S+)/)![1]!;
       clock.advanceMinutes(7 * DAY_MIN);
       await expect(acceptInvite(deps, ana.id, anaToken)).rejects.toEqual(code('INVITE_EXPIRED'));
     });
 
     it('can be revoked by the owner', async () => {
-      const invite = await inviteBarber(deps, owner.id, 'jose@x.com');
+      const invite = await inviteBarber(deps, owner.id, shop.id, 'jose@x.com');
       const token = deps.mailer.sent.at(-1)!.text.match(/code: (\S+)/)![1]!;
 
       await revokeInvite(deps, owner.id, invite.id);
@@ -189,7 +198,7 @@ describe('shops use cases', () => {
 
     it('does not send a second invite while one is pending, but replaces an expired one', async () => {
       await inviteJose();
-      await expect(inviteBarber(deps, owner.id, 'jose@x.com')).rejects.toEqual(
+      await expect(inviteBarber(deps, owner.id, shop.id, 'jose@x.com')).rejects.toEqual(
         code('INVITE_ALREADY_SENT'),
       );
 
@@ -204,7 +213,7 @@ describe('shops use cases', () => {
       deps.mailer.send = async () => {
         throw new Error('SMTP down');
       };
-      await expect(inviteBarber(deps, owner.id, 'jose@x.com')).rejects.toEqual(
+      await expect(inviteBarber(deps, owner.id, shop.id, 'jose@x.com')).rejects.toEqual(
         code('EMAIL_NOT_SENT'),
       );
 
@@ -214,48 +223,68 @@ describe('shops use cases', () => {
     });
 
     it('revokes an invite whose email the worker could not deliver, so it can be resent', async () => {
-      const invite = await inviteBarber(deps, owner.id, 'jose@x.com');
+      const invite = await inviteBarber(deps, owner.id, shop.id, 'jose@x.com');
       expect(deps.mailer.sent.at(-1)?.inviteId).toBe(invite.id);
 
       await revokeUndeliveredInvite(deps, invite.id);
 
       expect((await deps.invites.findById(invite.id))?.status(clock.now())).toBe('revoked');
-      await inviteBarber(deps, owner.id, 'jose@x.com');
+      await inviteBarber(deps, owner.id, shop.id, 'jose@x.com');
     });
 
     it('refuses to invite someone already barbering in the shop', async () => {
       await acceptInvite(deps, jose.id, await inviteJose());
 
-      await expect(inviteBarber(deps, owner.id, 'jose@x.com')).rejects.toEqual(
+      await expect(inviteBarber(deps, owner.id, shop.id, 'jose@x.com')).rejects.toEqual(
         code('ALREADY_A_BARBER'),
       );
     });
 
-    it('refuses a user who already barbers in another shop', async () => {
-      await createBarbershop(deps, ana.id, shopInput({ name: 'Ana Cortes' }));
-      await becomeBarber(deps, ana.id);
-      await inviteBarber(deps, owner.id, 'ana@x.com');
+    it('lets a barber join a second shop, with a profile for each', async () => {
+      const anaShop = await createBarbershop(deps, ana.id, shopInput({ name: 'Ana Cortes' }));
+      const own = await becomeBarber(deps, ana.id, anaShop.id);
+      await inviteBarber(deps, owner.id, shop.id, 'ana@x.com');
       const token = deps.mailer.sent.at(-1)!.text.match(/code: (\S+)/)![1]!;
 
-      await expect(acceptInvite(deps, ana.id, token)).rejects.toEqual(code('ALREADY_A_BARBER'));
+      const there = await acceptInvite(deps, ana.id, token);
+
+      expect(there.shopId).toBe(shop.id);
+      expect((await deps.barbers.listActiveByUser(ana.id)).map((b) => b.id)).toEqual([
+        own.id,
+        there.id,
+      ]);
+    });
+
+    it('refuses an invite to a shop the user already barbers in', async () => {
+      const token = await inviteJose();
+      await acceptInvite(deps, jose.id, token);
+      // a second invite is refused up front; an old one accepted later is refused too
+      await expect(inviteBarber(deps, owner.id, shop.id, 'jose@x.com')).rejects.toEqual(
+        code('ALREADY_A_BARBER'),
+      );
     });
   });
 
   describe('barbers and services', () => {
-    beforeEach(() => createBarbershop(deps, owner.id, shopInput()));
+    let shop: Barbershop;
+    beforeEach(async () => {
+      shop = await createBarbershop(deps, owner.id, shopInput());
+    });
 
     it('lets the owner barber in their own shop, once', async () => {
-      const barber = await becomeBarber(deps, owner.id);
+      const barber = await becomeBarber(deps, owner.id, shop.id);
 
       expect(barber.userId).toBe(owner.id);
-      await expect(becomeBarber(deps, owner.id)).rejects.toEqual(code('ALREADY_A_BARBER'));
+      await expect(becomeBarber(deps, owner.id, shop.id)).rejects.toEqual(code('ALREADY_A_BARBER'));
+      const second = await createBarbershop(deps, owner.id, shopInput({ name: 'Filial' }));
+      expect((await becomeBarber(deps, owner.id, second.id)).shopId).toBe(second.id);
     });
 
     it('lets a barber edit their profile and services, and nobody else', async () => {
-      await becomeBarber(deps, owner.id);
-      await updateBarberProfile(deps, owner.id, { bio: 'Degradê' });
+      const barber = await becomeBarber(deps, owner.id, shop.id);
+      await updateBarberProfile(deps, owner.id, barber.id, { bio: 'Degradê' });
 
-      const corte = await createService(deps, owner.id, {
+      const corte = await createService(deps, owner.id, barber.id, {
         name: 'Corte',
         description: '',
         priceCents: 5000,
@@ -268,14 +297,14 @@ describe('shops use cases', () => {
         code('NOT_SERVICE_OWNER'),
       );
       await expect(
-        createService(deps, ana.id, {
+        createService(deps, ana.id, barber.id, {
           name: 'X',
           description: '',
           priceCents: 1,
           durationMinutes: 5,
         }),
       ).rejects.toEqual(code('NOT_A_BARBER'));
-      await expect(updateBarberProfile(deps, ana.id, { bio: 'x' })).rejects.toEqual(
+      await expect(updateBarberProfile(deps, ana.id, barber.id, { bio: 'x' })).rejects.toEqual(
         code('NOT_A_BARBER'),
       );
 
@@ -287,13 +316,13 @@ describe('shops use cases', () => {
     });
 
     it('removes a barber, who then cannot manage services', async () => {
-      const barber = await becomeBarber(deps, owner.id);
+      const barber = await becomeBarber(deps, owner.id, shop.id);
 
       await removeBarber(deps, owner.id, barber.id);
 
       expect((await deps.barbers.findById(barber.id))!.isActive).toBe(false);
       await expect(
-        createService(deps, owner.id, {
+        createService(deps, owner.id, barber.id, {
           name: 'X',
           description: '',
           priceCents: 1,
@@ -307,7 +336,7 @@ describe('shops use cases', () => {
       deps.persistRemoval = async (barber) => {
         removed.push(barber.id);
       };
-      const barber = await becomeBarber(deps, owner.id);
+      const barber = await becomeBarber(deps, owner.id, shop.id);
 
       await removeBarber(deps, owner.id, barber.id);
 
@@ -315,8 +344,8 @@ describe('shops use cases', () => {
     });
 
     it('only removes barbers of the owner shop', async () => {
-      await createBarbershop(deps, ana.id, shopInput({ name: 'Ana Cortes' }));
-      const anaBarber = await becomeBarber(deps, ana.id);
+      const anaShop = await createBarbershop(deps, ana.id, shopInput({ name: 'Ana Cortes' }));
+      const anaBarber = await becomeBarber(deps, ana.id, anaShop.id);
 
       await expect(removeBarber(deps, owner.id, anaBarber.id)).rejects.toEqual(
         code('BARBER_NOT_FOUND'),

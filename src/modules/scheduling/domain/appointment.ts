@@ -18,6 +18,8 @@ export type ServiceSnapshot = {
 export type AppointmentProps = {
   id: string;
   barberId: string;
+  /** The person behind the barber profile; one person is never booked twice at once. */
+  barberUserId: string;
   customerId: string;
   serviceId: string;
   serviceName: string;
@@ -46,6 +48,7 @@ export class Appointment {
   static book(
     input: {
       barberId: string;
+      barberUserId: string;
       customerId: string;
       service: ServiceSnapshot;
       startsAt: Date;
@@ -59,6 +62,7 @@ export class Appointment {
     return new Appointment({
       id: randomUUID(),
       barberId: input.barberId,
+      barberUserId: input.barberUserId,
       customerId: input.customerId,
       serviceId: input.service.id,
       serviceName: input.service.name,
@@ -138,6 +142,9 @@ export class Appointment {
   }
   get barberId() {
     return this.props.barberId;
+  }
+  get barberUserId() {
+    return this.props.barberUserId;
   }
   get customerId() {
     return this.props.customerId;

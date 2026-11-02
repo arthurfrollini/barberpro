@@ -73,7 +73,6 @@ describe('scheduling under concurrency', () => {
       transaction: (work) => ds.transaction((m) => work(g.wrap(schedulingRepositories(m)))),
       directory: {
         barber: (id) => shops.barbers.findById(id),
-        barberOfUser: (userId) => shops.barbers.findActiveByUser(userId),
         shop: (id) => shops.shops.findById(id),
         service: (id) => shops.services.findById(id),
       },
@@ -117,7 +116,7 @@ describe('scheduling under concurrency', () => {
     g.arm();
     const booking = book('2026-11-02T17:00:00Z');
     await g.reached;
-    const block = blockDate(deps, jose.user.id, '2026-11-02');
+    const block = blockDate(deps, jose.user.id, jose.barber.id, '2026-11-02');
     await sleep(150);
     g.release();
     await Promise.allSettled([booking, block]);
@@ -164,5 +163,48 @@ describe('scheduling under concurrency', () => {
       );
       await t.close();
     }
+  });
+
+  it('never books one person at two shops at the same time', async () => {
+    const seed = await seedShop(ds);
+    const jose = await seed.addBarber('jose');
+    const otherShop = await seed.addShop('Filial');
+    const joseThere = await seed.addBarber('jose', { existing: jose.user, shopId: otherShop.id });
+    const hours = WeeklySchedule.of([{ weekday: 1, startMinute: 8 * 60, endMinute: 20 * 60 }]);
+    const schedules = schedulingRepositories(ds.manager).schedules;
+    await schedules.replaceWeekly(jose.barber.id, hours);
+    await schedules.replaceWeekly(joseThere.barber.id, hours);
+    const [ana, bia] = [await seed.user('ana'), await seed.user('bia')];
+    const shops = shopsRepositories(ds.manager);
+    const deps: SchedulingDeps = {
+      ...schedulingRepositories(ds.manager),
+      transaction: (work) => ds.transaction((m) => work(schedulingRepositories(m))),
+      directory: {
+        barber: (id) => shops.barbers.findById(id),
+        shop: (id) => shops.shops.findById(id),
+        service: (id) => shops.services.findById(id),
+      },
+      events: new RecordingEvents(),
+      clock,
+    };
+
+    const results = await Promise.allSettled([
+      bookAppointment(deps, ana.id, {
+        barberId: jose.barber.id,
+        serviceId: jose.service.id,
+        startsAt: at('2026-11-02T17:00:00Z'),
+        reminderLeadMinutes: null,
+      }),
+      bookAppointment(deps, bia.id, {
+        barberId: joseThere.barber.id,
+        serviceId: joseThere.service.id,
+        startsAt: at('2026-11-02T17:15:00Z'),
+        reminderLeadMinutes: null,
+      }),
+    ]);
+
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    const failed = results.find((r) => r.status === 'rejected') as PromiseRejectedResult;
+    expect(failed.reason).toMatchObject({ code: 'SLOT_UNAVAILABLE' });
   });
 });

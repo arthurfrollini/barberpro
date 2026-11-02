@@ -28,25 +28,27 @@ export function schedulingGraphQL(deps: SchedulingDeps): GraphQLModule {
       availableSlots: (_, args) => availableSlots(deps, args),
       myAppointments: (_, { upcoming }, ctx) =>
         myAppointments(deps, requireUser(ctx), { upcoming: upcoming ?? true }),
-      barberAgenda: (_, { date }, ctx) => barberAgenda(deps, requireUser(ctx), date),
-      mySchedule: (_, __, ctx) => mySchedule(deps, requireUser(ctx)),
+      barberAgenda: (_, { barberId, date }, ctx) =>
+        barberAgenda(deps, requireUser(ctx), barberId, date),
+      mySchedule: (_, { barberId }, ctx) => mySchedule(deps, requireUser(ctx), barberId),
       rescheduleSlots: (_, { appointmentId, date }, ctx) =>
         rescheduleSlots(deps, requireUser(ctx), { appointmentId, date }),
     },
     Mutation: {
-      setWeeklySchedule: (_, { intervals }, ctx) =>
+      setWeeklySchedule: (_, { barberId, intervals }, ctx) =>
         setWeeklySchedule(
           deps,
           requireUser(ctx),
+          barberId,
           intervals.map((i) => ({
             weekday: i.weekday,
             startMinute: parseClockTime(i.startTime),
             endMinute: parseClockTime(i.endTime),
           })),
         ),
-      blockDate: (_, { date }, ctx) => blockDate(deps, requireUser(ctx), date),
-      unblockDate: async (_, { date }, ctx) => {
-        await unblockDate(deps, requireUser(ctx), date);
+      blockDate: (_, { barberId, date }, ctx) => blockDate(deps, requireUser(ctx), barberId, date),
+      unblockDate: async (_, { barberId, date }, ctx) => {
+        await unblockDate(deps, requireUser(ctx), barberId, date);
         return true;
       },
       bookAppointment: (_, { input }, ctx) =>

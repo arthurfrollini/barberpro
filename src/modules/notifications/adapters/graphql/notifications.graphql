@@ -43,6 +43,6 @@ type Mutation {
 }
 
 type Subscription {
-  "The signed-in barber's agenda as it changes: bookings, cancellations, reschedules. Errors: UNAUTHENTICATED, NOT_A_BARBER."
-  agendaChanged: AgendaChange!
+  "One of the signed-in user's barber profiles, as its agenda changes: bookings, cancellations, reschedules. Errors: UNAUTHENTICATED, NOT_A_BARBER."
+  agendaChanged(barberId: ID!): AgendaChange!
 }

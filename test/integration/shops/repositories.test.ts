@@ -60,7 +60,7 @@ describe('shops repositories', () => {
     expect(found?.name).toBe('Mega Barbearia SP');
     expect(found?.location.latitude).toBeCloseTo(-23.5614, 6);
     expect(found?.location.longitude).toBeCloseTo(-46.6559, 6);
-    expect((await repos.shops.findByOwner(s.ownerId))?.id).toBe(s.id);
+    expect((await repos.shops.listByOwner(s.ownerId)).map((x) => x.id)).toEqual([s.id]);
   });
 
   it('finds shops within the radius, nearest first', async () => {
@@ -89,7 +89,7 @@ describe('shops repositories', () => {
     expect(await repos.shops.search('xyz', 20, 0)).toEqual([]);
   });
 
-  it('keeps one active barber row per user', async () => {
+  it('keeps one active barber row per user and shop', async () => {
     const s = await shop('Mega', paulista);
     const jose = await user('jose@x.com');
     const first = Barber.create({ shopId: s.id, userId: jose.id }, now);
@@ -103,6 +103,15 @@ describe('shops repositories', () => {
     await repos.barbers.save(first);
     await repos.barbers.save(Barber.create({ shopId: s.id, userId: jose.id }, now));
     expect((await repos.barbers.findActiveByShops([s.id])).map((b) => b.userId)).toEqual([jose.id]);
+
+    // another shop is fine: one profile per shop
+    const other = await shop('Filial', pinheiros);
+    await repos.barbers.save(Barber.create({ shopId: other.id, userId: jose.id }, now));
+    expect((await repos.barbers.listActiveByUser(jose.id)).map((b) => b.shopId)).toEqual([
+      s.id,
+      other.id,
+    ]);
+    expect((await repos.barbers.findActiveInShop(jose.id, other.id))?.shopId).toBe(other.id);
   });
 
   it('stores invites and finds the open one by email', async () => {

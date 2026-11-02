@@ -49,9 +49,13 @@ export class TypeOrmBarbershopRepository implements BarbershopRepository {
     return rows.map(barbershopMapper.toDomain);
   }
 
-  async findByOwner(ownerId: string) {
-    const r = await this.manager.findOneBy(BarbershopRecord, { ownerId });
-    return r ? barbershopMapper.toDomain(r) : null;
+  async listByOwner(ownerId: string) {
+    if (!isUuid(ownerId)) return [];
+    const rows = await this.manager.find(BarbershopRecord, {
+      where: { ownerId },
+      order: { createdAt: 'ASC', id: 'ASC' },
+    });
+    return rows.map(barbershopMapper.toDomain);
   }
 
   async findNearby(from: Location, radiusKm: number, limit: number) {
@@ -109,8 +113,18 @@ export class TypeOrmBarberRepository implements BarberRepository {
     return (await this.manager.findBy(BarberRecord, { id: In(valid) })).map(barberMapper.toDomain);
   }
 
-  async findActiveByUser(userId: string) {
-    const r = await this.manager.findOneBy(BarberRecord, { userId, removedAt: IsNull() });
+  async listActiveByUser(userId: string) {
+    if (!isUuid(userId)) return [];
+    const rows = await this.manager.find(BarberRecord, {
+      where: { userId, removedAt: IsNull() },
+      order: { createdAt: 'ASC', id: 'ASC' },
+    });
+    return rows.map(barberMapper.toDomain);
+  }
+
+  async findActiveInShop(userId: string, shopId: string) {
+    if (!isUuid(userId) || !isUuid(shopId)) return null;
+    const r = await this.manager.findOneBy(BarberRecord, { userId, shopId, removedAt: IsNull() });
     return r ? barberMapper.toDomain(r) : null;
   }
 
@@ -137,8 +151,8 @@ export class TypeOrmBarberRepository implements BarberRepository {
     );
     await guardUnique(
       write,
-      'barbers_active_user_idx',
-      () => new DomainError('ALREADY_A_BARBER', 'This person is already a barber in a shop.'),
+      'barbers_active_user_shop_idx',
+      () => new DomainError('ALREADY_A_BARBER', 'This person is already a barber in this shop.'),
     );
   }
 }

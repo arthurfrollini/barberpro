@@ -26,11 +26,17 @@ export interface AppointmentRepository {
   /** `forUpdate` locks the row until the transaction ends. */
   findById(id: string, options?: { forUpdate?: boolean }): Promise<Appointment | null>;
   findByIds(ids: readonly string[]): Promise<Appointment[]>;
-  /** Throws SLOT_UNAVAILABLE or CUSTOMER_BUSY when the database refuses an overlap. */
+  /**
+   * Throws SLOT_UNAVAILABLE (the barber, at this or another shop, is taken) or CUSTOMER_BUSY
+   * when the database refuses an overlap.
+   */
   insert(appointment: Appointment): Promise<void>;
   update(appointment: Appointment): Promise<void>;
-  /** Booked time of the barber overlapping [from, to), optionally ignoring one appointment. */
-  busyFor(barberId: string, from: Date, to: Date, excludeId?: string): Promise<TimeRange[]>;
+  /**
+   * Booked time of a person overlapping [from, to), across every shop they barber in,
+   * optionally ignoring one appointment.
+   */
+  busyFor(barberUserId: string, from: Date, to: Date, excludeId?: string): Promise<TimeRange[]>;
   /** Booked appointments of the barber starting at or after `from`. */
   bookedFrom(barberId: string, from: Date): Promise<Appointment[]>;
   /** From `from` on in time order; without `from`, the latest 100 newest first. */
@@ -58,7 +64,6 @@ export interface SchedulingEvents {
 /** What scheduling needs to know from the shops module. */
 export interface ShopDirectory {
   barber(id: string): Promise<Barber | null>;
-  barberOfUser(userId: string): Promise<Barber | null>;
   shop(id: string): Promise<Barbershop | null>;
   service(id: string): Promise<Service | null>;
 }
