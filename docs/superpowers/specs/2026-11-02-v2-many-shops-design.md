@@ -69,7 +69,7 @@ Migration: drop the unique owner on `barbershops` (keep an index); replace the o
 
 ## Delivery
 
-Two PRs: the API (migration, rules, schema, tests) and the dashboard (workspaces, switcher, every feature on ids, e2e), plus the docs with them. Each gets an independent review before merge.
+One PR (#9): the API change is breaking and the dashboard is its only client, so both move together (CI runs the dashboard's codegen against the new schema). It gets an independent review before merge.
 
 ## Non-goals
 

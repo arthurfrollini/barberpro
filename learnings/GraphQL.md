@@ -73,7 +73,7 @@ O resolver confere a posse: `ownBarber(userId, barberId)` devolve `NOT_A_BARBER`
 
 A dashboard consome o mesmo schema, sem Apollo:
 
-- **Documentos tipados.** Cada operação é escrita com `graphql(\`...\`)`em`features/_/api/_.ts`. O client preset do GraphQL Code Generator gera um `TypedDocumentString<Resultado, Variáveis>`: o cliente manda a string e o TypeScript sabe o formato da resposta e das variáveis.
+- **Documentos tipados.** Cada operação é escrita com ``graphql(`...`)`` num arquivo `api/` da feature (por exemplo `features/agenda/api/agenda.ts`). O client preset do GraphQL Code Generator gera um `TypedDocumentString<Resultado, Variáveis>`: o cliente manda a string e o TypeScript sabe o formato da resposta e das variáveis.
 - **Fragments.** `fragment AgendaAppointment on Appointment { ... }` é usado pela query do dia, pelas mutations de cancelar e remarcar e pela subscription, então todas devolvem a mesma forma e o cache pode trocar uma pela outra.
 - **Erros.** O cliente lê `extensions.code` e lança `ApiError(code)`; a tela traduz o código para português (`shared/lib/error-messages.ts`). A mensagem em inglês da API nunca aparece.
 - **Subscriptions.** `agendaChanged(barberId)` vai por SSE com `graphql-sse`, com as variáveis no corpo, como uma query.

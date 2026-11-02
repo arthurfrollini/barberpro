@@ -51,14 +51,15 @@ Antes, "a minha barbearia" e "o meu perfil" eram implícitos. Agora toda operaç
 | `barberAgenda(date)`         | `barberAgenda(barberId, date)`   |
 | `subscription agendaChanged` | `agendaChanged(barberId)`        |
 
-O servidor confere se o id é do usuário: barbearia de outra pessoa responde `NOT_SHOP_OWNER`, perfil de outra pessoa `NOT_A_BARBER`, **exista o id ou não**. Responder "não existe" para um e "não é seu" para outro deixaria alguém descobrir ids válidos testando.
+O servidor confere se o id é do usuário: barbearia de outra pessoa responde `NOT_SHOP_OWNER`, perfil de outra pessoa `NOT_A_BARBER`, **exista o id ou não**. Assim cada operação tem uma resposta só para "isso não é seu", e o cliente não precisa tratar dois casos que para ele são o mesmo.
 
 ## Na dashboard: workspaces e o seletor
 
 Cada barbearia em que a pessoa é dona ou atende é um **workspace**: a barbearia, se ela é dona, e o perfil de barbeiro dela ali (se houver). A lista sai de uma query (`myBarbershops` + `myBarberProfiles`) e é montada por uma função pura, `buildWorkspaces`, testada sem React.
 
 - **O seletor** fica no canto inferior esquerdo da barra lateral (e no menu do celular). Mostra a barbearia ativa e, ao abrir, todas as outras com o papel ("Dono", "Barbeiro", "Dono e barbeiro"), mais "Nova barbearia" e "Aceitar convite".
-- **A escolha fica no navegador** (`localStorage`), compartilhada entre abas. Se a barbearia escolhida sumir (a pessoa saiu da equipe), cai na primeira em que ela atende, depois na primeira de que é dona.
+- **A escolha é por aba e por usuário.** Cada aba guarda a sua (`sessionStorage`), então dá para ter a Mega numa aba e o Centro na outra sem uma puxar a outra. A última escolha também fica no `localStorage`, por usuário, e é o ponto de partida da próxima aba. Se a barbearia escolhida sumir (a pessoa saiu da equipe), cai na primeira em que ela atende, depois na primeira de que é dona.
+- **Com mais de uma barbearia, o sino diz de qual** é cada notificação.
 - **Cada tela age sobre a ativa.** Agenda, horários, serviços e perfil usam o perfil de barbeiro dali; Barbearia e Equipe usam a barbearia. A navegação mostra só o que o papel naquela barbearia permite.
 - **Sem mistura.** As chaves de cache levam o id (`['agenda', barberId, dia]`), e a página remonta ao trocar (`<Outlet key={shopId} />`). Uma tela nunca mostra dados da barbearia anterior por um instante.
 - **Criar ou entrar troca a ativa.** Nova barbearia criada, convite aceito: ela vira a ativa e a tela já abre nela.

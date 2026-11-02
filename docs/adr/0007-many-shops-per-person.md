@@ -12,7 +12,7 @@ v1 allowed one shop per owner and one active barber profile per person. Arthur a
 - Every barber or owner operation names the profile or shop it acts on (`barberId`, `shopId`). The API checks it belongs to the signed-in user and answers `NOT_A_BARBER` or `NOT_SHOP_OWNER` the same way for someone else's id and for an unknown one.
 - A person cannot be booked in two places at once. Appointments keep `barber_user_id` (a copy, like the service snapshot); availability subtracts the person's bookings at all their shops; and an exclusion constraint on `(barber_user_id, period)` for booked appointments is the final guard under concurrency.
 - Hours and days off stay per profile: blocking a day at one shop does not block it at another.
-- The dashboard keeps the active shop in the browser, not on the server.
+- The dashboard keeps the active shop in the browser, per tab and per user, not on the server.
 
 ## Alternatives
 

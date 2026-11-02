@@ -35,6 +35,6 @@ Uma API GraphQL de agendamento de barbearia: o cliente acha barbearias perto del
 ## Números (V2, novembro de 2026)
 
 - API: 241 testes (165 unitários, 35 de integração, 41 end to end), 4 módulos (`identity`, `shops`, `scheduling`, `notifications`), 7 ADRs, 6 migrations, 2 processos (API e worker).
-- Dashboard: 181 testes de componente e unidade (Vitest) e 7 cenários ponta a ponta (Playwright) contra a API real.
+- Dashboard: 186 testes de componente e unidade (Vitest) e 7 cenários ponta a ponta (Playwright) contra a API real.
 - Entregas: API em 4 fases (PRs #1 a #4), dashboard em 4 (#5 a #8), V2 com várias barbearias por pessoa.
 - Próximo passo: o app do cliente.
