@@ -18,6 +18,7 @@ export class TypeOrmNotificationRepository implements NotificationRepository {
         title: n.title,
         body: n.body,
         appointmentId: n.appointmentId,
+        appointmentStartsAt: n.appointmentStartsAt,
         readAt: n.readAt,
         createdAt: n.createdAt,
       })),

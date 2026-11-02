@@ -48,6 +48,7 @@ describe('handleSchedulingEvents', () => {
         title: 'New booking',
         body: 'Ana booked Corte on Mon, Nov 2 at 14:00.',
         appointmentId: a.id,
+        appointmentStartsAt: at('2026-11-02T17:00:00Z'),
       }),
     ]);
     expect(deps.mail).toEqual([
@@ -122,6 +123,8 @@ describe('handleSchedulingEvents', () => {
     expect(deps.saved[0]!.body).toBe(
       'Your Corte with João moved from Mon, Nov 2 at 14:00 to Mon, Nov 2 at 16:00.',
     );
+    // the time this notification is about stays fixed, whatever happens to the appointment later
+    expect(deps.saved[0]!.appointmentStartsAt).toEqual(at('2026-11-02T19:00:00Z'));
     expect(deps.reminderJobs.get(a.id)).toEqual(at('2026-11-02T18:45:00Z'));
   });
 
@@ -213,6 +216,7 @@ describe('sendReminder', () => {
     expect(deps.saved.map((n) => [n.userId, n.type, n.body])).toEqual([
       [ANA, 'appointment_reminder', 'Corte with João at 14:00, in 15 minutes.'],
     ]);
+    expect(deps.saved[0]!.appointmentStartsAt).toEqual(a.startsAt);
     expect(deps.mail[0]).toMatchObject({ to: 'ana@x.com', subject: 'Reminder: Corte at 14:00' });
   });
 

@@ -9,6 +9,8 @@ export class NotificationRecord {
   @Column('varchar', { length: 120 }) title!: string;
   @Column('varchar', { length: 500 }) body!: string;
   @Column('uuid', { name: 'appointment_id', nullable: true }) appointmentId!: string | null;
+  @Column('timestamptz', { name: 'appointment_starts_at', nullable: true })
+  appointmentStartsAt!: Date | null;
   @Column('timestamptz', { name: 'read_at', nullable: true }) readAt!: Date | null;
   @Column('timestamptz', { name: 'created_at' }) createdAt!: Date;
 }

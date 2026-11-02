@@ -24,7 +24,14 @@ export async function sendReminder(deps: NotifyDeps, appointmentId: string): Pro
   const body = `${a.serviceName} with ${barberUser.name} at ${time}, in ${a.reminderLeadMinutes} minutes.`;
   await deps.notifications.insert([
     Notification.create(
-      { userId: a.customerId, type: 'appointment_reminder', title, body, appointmentId: a.id },
+      {
+        userId: a.customerId,
+        type: 'appointment_reminder',
+        title,
+        body,
+        appointmentId: a.id,
+        appointmentStartsAt: a.startsAt,
+      },
       deps.clock.now(),
     ),
   ]);

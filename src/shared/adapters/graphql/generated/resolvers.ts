@@ -329,6 +329,8 @@ export type NearbyBarbershop = {
 export type Notification = {
   __typename?: 'Notification';
   appointment?: Maybe<Appointment>;
+  /** When the appointment started as this notification describes it. A later reschedule changes the appointment, not this. */
+  appointmentStartsAt?: Maybe<Scalars['DateTime']['output']>;
   body: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
@@ -367,6 +369,8 @@ export type Query = {
   mySchedule: BarberSchedule;
   /** Newest first; limit up to 50. */
   notifications: Array<Notification>;
+  /** Free start times for moving an appointment to a date (YYYY-MM-DD in the shop's zone), using its own duration and ignoring its current slot. Errors: APPOINTMENT_NOT_FOUND, APPOINTMENT_CANCELED, CANCELLATION_WINDOW_CLOSED, INVALID_DATE, BARBER_NOT_FOUND. */
+  rescheduleSlots: Array<Scalars['DateTime']['output']>;
   /** Matches names with typos. Errors: INVALID_SEARCH (fewer than 2 characters). */
   searchBarbershops: Array<Barbershop>;
   unreadNotificationCount: Scalars['Int']['output'];
@@ -411,6 +415,12 @@ export type QueryMyAppointmentsArgs = {
 export type QueryNotificationsArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryRescheduleSlotsArgs = {
+  appointmentId: Scalars['ID']['input'];
+  date: Scalars['String']['input'];
 };
 
 
@@ -765,6 +775,7 @@ export type NearbyBarbershopResolvers<ContextType = GraphQLContext, ParentType e
 
 export type NotificationResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Notification'] = ResolversParentTypes['Notification']> = {
   appointment?: Resolver<Maybe<ResolversTypes['Appointment']>, ParentType, ContextType>;
+  appointmentStartsAt?: Resolver<Maybe<ResolversTypes['DateTime']>, ParentType, ContextType>;
   body?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -786,6 +797,7 @@ export type QueryResolvers<ContextType = GraphQLContext, ParentType extends Reso
   myBarbershop?: Resolver<Maybe<ResolversTypes['Barbershop']>, ParentType, ContextType>;
   mySchedule?: Resolver<ResolversTypes['BarberSchedule'], ParentType, ContextType>;
   notifications?: Resolver<Array<ResolversTypes['Notification']>, ParentType, ContextType, RequireFields<QueryNotificationsArgs, 'limit' | 'offset'>>;
+  rescheduleSlots?: Resolver<Array<ResolversTypes['DateTime']>, ParentType, ContextType, RequireFields<QueryRescheduleSlotsArgs, 'appointmentId' | 'date'>>;
   searchBarbershops?: Resolver<Array<ResolversTypes['Barbershop']>, ParentType, ContextType, RequireFields<QuerySearchBarbershopsArgs, 'limit' | 'offset' | 'query'>>;
   unreadNotificationCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };

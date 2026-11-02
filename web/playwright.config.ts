@@ -1,12 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
+import { API, API_PORT, WEB_PORT } from './e2e/support/env';
 
 // The real stack: the API and the dashboard start here, against the test database and the
-// Redis and Mailpit from Docker Compose (service containers in CI). Ports differ from dev,
-// so a running dev server does not get in the way.
-const API_PORT = 4100;
-const WEB_PORT = 5181;
-
-export const API_URL = `http://localhost:${API_PORT}`;
+// Redis and Mailpit from Docker Compose (service containers in CI).
+const API_URL = API.url;
 
 const apiEnv = {
   NODE_ENV: 'test',

@@ -80,6 +80,31 @@ export async function availableSlots(
 }
 
 /**
+ * Free start times for moving an appointment: its own (snapshot) duration, and its current
+ * slot counts as free, so it can shift by 15 minutes. Only its customer and barber may ask.
+ */
+export async function rescheduleSlots(
+  deps: SchedulingDeps,
+  actorId: string,
+  input: { appointmentId: string; date: string },
+): Promise<Date[]> {
+  const appointment = await deps.appointments.findById(input.appointmentId);
+  const barber = appointment ? await deps.directory.barber(appointment.barberId) : null;
+  if (!appointment || (appointment.customerId !== actorId && barber?.userId !== actorId)) {
+    throw new DomainError('APPOINTMENT_NOT_FOUND', 'Appointment not found.');
+  }
+  appointment.assertChangeable(deps.clock.now());
+  const { shop } = await bookableBarber(deps, appointment.barberId);
+  return startsOn(deps, {
+    barberId: appointment.barberId,
+    shop,
+    date: input.date,
+    durationMinutes: appointment.durationMinutes,
+    excludeId: appointment.id,
+  });
+}
+
+/**
  * Checks and inserts in one transaction holding the barber's row shared, so a blocked day,
  * new hours or a removal committed meanwhile is seen here, never slipped past.
  */
