@@ -4,3 +4,4 @@ process.env.DATABASE_URL ??= 'postgres://barberpro:barberpro@localhost:5442/barb
 process.env.REDIS_URL ??= 'redis://localhost:6390';
 process.env.SMTP_URL ??= 'smtp://localhost:1025';
 process.env.JWT_SECRET ??= 'test-secret-test-secret-test-secret-42';
+process.env.UPLOAD_DIR ??= `${(await import('node:os')).tmpdir()}/barberpro-test-uploads`;

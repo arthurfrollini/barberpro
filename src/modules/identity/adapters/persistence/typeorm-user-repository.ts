@@ -1,6 +1,7 @@
-import type { EntityManager } from 'typeorm';
+import { type EntityManager, In } from 'typeorm';
 import { isUniqueViolation } from '../../../../shared/adapters/database/unique-violation.js';
 import { DomainError } from '../../../../shared/domain/domain-error.js';
+import { isUuid } from '../../../../shared/domain/uuid.js';
 import type { UserRepository } from '../../application/ports.js';
 import type { Email } from '../../domain/email.js';
 import type { User } from '../../domain/user.js';
@@ -11,8 +12,16 @@ export class TypeOrmUserRepository implements UserRepository {
   constructor(private readonly manager: EntityManager) {}
 
   async findById(id: string): Promise<User | null> {
+    if (!isUuid(id)) return null;
     const record = await this.manager.findOneBy(UserRecord, { id });
     return record ? userMapper.toDomain(record) : null;
+  }
+
+  async findByIds(ids: readonly string[]): Promise<User[]> {
+    const valid = ids.filter(isUuid);
+    if (valid.length === 0) return [];
+    const records = await this.manager.findBy(UserRecord, { id: In(valid) });
+    return records.map(userMapper.toDomain);
   }
 
   async findByEmail(email: Email): Promise<User | null> {

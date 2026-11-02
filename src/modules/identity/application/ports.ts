@@ -4,6 +4,7 @@ import type { User } from '../domain/user.js';
 
 export interface UserRepository {
   findById(id: string): Promise<User | null>;
+  findByIds(ids: readonly string[]): Promise<User[]>;
   findByEmail(email: Email): Promise<User | null>;
   save(user: User): Promise<void>;
 }

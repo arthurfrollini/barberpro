@@ -1,6 +1,6 @@
 # 4. The database is the final guard against double booking
 
-Date: 2026-10-30. Status: accepted, implemented in phase 3.
+Date: 2026-10-30. Status: accepted and implemented (phase 3).
 
 ## Context
 

@@ -7,9 +7,19 @@ import { Argon2PasswordHasher } from './modules/identity/adapters/security/argon
 import { JoseAccessTokens } from './modules/identity/adapters/security/jose-access-tokens.js';
 import { nodeSecrets } from './modules/identity/adapters/security/node-secrets.js';
 import type { IdentityDeps } from './modules/identity/application/ports.js';
+import { shopsRepositories } from './modules/shops/adapters/persistence/repositories.js';
+import { schedulingRepositories } from './modules/scheduling/adapters/persistence/repositories.js';
+import type { SchedulingDeps, SchedulingEvents } from './modules/scheduling/application/ports.js';
+import { cancelFutureWithin, publishCanceled } from './modules/scheduling/application/schedule.js';
+import type { Mailer, ShopsDeps } from './modules/shops/application/ports.js';
 import { createDataSource } from './shared/adapters/database/data-source.js';
+import { detectImageType } from './shared/adapters/files/detect-image-type.js';
+import { DiskFileStorage } from './shared/adapters/files/disk-file-storage.js';
+import { SmtpMailer } from './shared/adapters/mail/smtp-mailer.js';
+import { TypeOrmFileRepository } from './shared/adapters/files/typeorm-file-repository.js';
 import type { HealthChecks } from './shared/adapters/http/health.js';
 import { type Clock, systemClock } from './shared/application/clock.js';
+import type { FileDeps } from './shared/application/files.js';
 
 /**
  * The composition root: the one place that knows which adapter implements which port.
@@ -22,12 +32,19 @@ export type Container = {
   redis: Redis;
   healthChecks: HealthChecks;
   identity: IdentityDeps;
+  files: FileDeps;
+  shops: ShopsDeps;
+  scheduling: SchedulingDeps;
   close(): Promise<void>;
 };
 
 export type ContainerOptions = {
   /** Tests pass a FixedClock to control "now". */
   clock?: Clock;
+  /** Tests pass a fake to read the emails the API sends. */
+  mailer?: Mailer;
+  /** Tests pass a recorder to see what scheduling published. */
+  events?: SchedulingEvents;
 };
 
 export async function createContainer(
@@ -53,6 +70,48 @@ export async function createContainer(
     refreshTokenTtlDays: config.refreshTokenTtlDays,
   };
 
+  const files: FileDeps = {
+    files: new TypeOrmFileRepository(dataSource.manager),
+    storage: new DiskFileStorage(config.uploadDir),
+    clock,
+    detectType: detectImageType,
+  };
+
+  const shops: ShopsDeps = {
+    ...shopsRepositories(dataSource.manager),
+    transaction: (work) => dataSource.transaction((manager) => work(shopsRepositories(manager))),
+    files: files.files,
+    users: identity.users,
+    mailer: options.mailer ?? new SmtpMailer(config.smtpUrl, config.mailFrom),
+    secrets: nodeSecrets,
+    clock,
+    // rule 7: the removal and the cancellations share one transaction
+    persistRemoval: async (barber, byUserId) => {
+      const canceled = await dataSource.transaction(async (manager) => {
+        const tx = schedulingRepositories(manager);
+        const future = await cancelFutureWithin(tx, barber.id, byUserId, clock.now());
+        await shopsRepositories(manager).barbers.save(barber);
+        return future;
+      });
+      await publishCanceled(scheduling, canceled, byUserId);
+    },
+  };
+
+  const scheduling: SchedulingDeps = {
+    ...schedulingRepositories(dataSource.manager),
+    transaction: (work) =>
+      dataSource.transaction((manager) => work(schedulingRepositories(manager))),
+    directory: {
+      barber: (id) => shops.barbers.findById(id),
+      barberOfUser: (userId) => shops.barbers.findActiveByUser(userId),
+      shop: (id) => shops.shops.findById(id),
+      service: (id) => shops.services.findById(id),
+    },
+    // phase 4 plugs notifications and the live agenda in here
+    events: options.events ?? { publish: async () => {} },
+    clock,
+  };
+
   return {
     config,
     clock,
@@ -63,6 +122,9 @@ export async function createContainer(
       redis: () => redis.ping(),
     },
     identity,
+    files,
+    shops,
+    scheduling,
     async close() {
       redis.disconnect();
       await dataSource.destroy();

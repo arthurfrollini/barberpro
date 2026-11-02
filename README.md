@@ -10,12 +10,12 @@ This is a rewrite of a 2021 Express project (kept under the [`v2021`](https://gi
 
 ## Status
 
-| Phase | Scope                                                                    | State   |
-| ----- | ------------------------------------------------------------------------ | ------- |
-| 1     | Skeleton, Docker Compose, CI, auth (sign up, sign in, refresh, me)       | done    |
-| 2     | Barbershops (nearby, search), uploads, invites, barbers, services        | next    |
-| 3     | Weekly schedules, days off, available slots, booking, cancel, reschedule | planned |
-| 4     | Notifications: email queue, reminders, live agenda subscription          | planned |
+| Phase | Scope                                                                    | State |
+| ----- | ------------------------------------------------------------------------ | ----- |
+| 1     | Skeleton, Docker Compose, CI, auth (sign up, sign in, refresh, me)       | done  |
+| 2     | Barbershops (nearby, search), uploads, invites, barbers, services        | done  |
+| 3     | Weekly schedules, days off, available slots, booking, cancel, reschedule | done  |
+| 4     | Notifications: email queue, reminders, live agenda subscription          | next  |
 
 The design is in [`docs/superpowers/specs`](docs/superpowers/specs/2026-10-30-barberpro-api-design.md) and each phase has its plan in [`docs/superpowers/plans`](docs/superpowers/plans).
 
@@ -75,21 +75,71 @@ Then send `Authorization: Bearer <accessToken>`:
 }
 ```
 
+Anyone can browse, without a token:
+
+```graphql
+{
+  barbershopsNearby(latitude: -23.5614, longitude: -46.6559, radiusKm: 5) {
+    distanceKm
+    barbershop {
+      name
+      yearsActive
+      barbers {
+        name
+        services {
+          name
+          priceCents
+          durationMinutes
+        }
+      }
+    }
+  }
+}
+```
+
+An owner creates the shop and invites barbers by email; the invite email carries a code for `acceptInvite`. Logos and avatars go to `POST /uploads` (multipart, JPEG/PNG/WebP up to 2 MB), which returns the id to pass as `logoFileId` or `avatarFileId`.
+
+Booking takes one of the times `availableSlots` returns (every 15 minutes, in UTC):
+
+```graphql
+{
+  availableSlots(barberId: "…", serviceId: "…", date: "2026-11-02")
+}
+
+mutation {
+  bookAppointment(
+    input: {
+      barberId: "…"
+      serviceId: "…"
+      startsAt: "2026-11-02T14:00:00-03:00"
+      reminderLeadMinutes: 15
+    }
+  ) {
+    id
+    startsAt
+    endsAt
+    priceCents
+  }
+}
+```
+
+Customers and barbers can cancel or reschedule up to 2 hours before. Barbers set weekly hours (`setWeeklySchedule`, `HH:MM` in the shop's time zone) and block days (`blockDate`). Both cancel the booked appointments 2 or more hours away that no longer fit, and return them.
+
 Errors carry a stable code in `extensions.code` (`EMAIL_TAKEN`, `INVALID_CREDENTIALS`, `UNAUTHENTICATED`, ...). The codes each operation can return are listed in its SDL description.
 
 ## Architecture
 
 ```
- GraphQL (Yoga) · REST (/health)          driving adapters
+ GraphQL (Yoga) · REST (/health, uploads)  driving adapters
               │
    application: use cases + ports          signUp, refreshSession, ...
               │
-   domain: entities, value objects          User, Email; no framework imports
+   domain: entities, value objects          Appointment, WeeklySchedule; no framework imports
               ▲
    driven adapters implement the ports      TypeORM repositories, argon2, jose, clock
 ```
 
-Code is grouped by module (`src/modules/identity`, later `shops`, `scheduling`, `notifications`), each with `domain/`, `application/` and `adapters/`. ESLint fails the build if domain or application code imports Fastify, GraphQL, TypeORM or an adapter. TypeORM decorators live only on the `*Record` classes in `adapters/persistence`, and a mapper turns each record into its domain class. `src/container.ts` wires every adapter by hand.
+Code is grouped by module (`src/modules/identity`, `shops`, `scheduling`, later `notifications`), each with `domain/`, `application/` and `adapters/`. ESLint fails the build if domain or application code imports Fastify, GraphQL, TypeORM or an adapter. TypeORM decorators live only on the `*Record` classes in `adapters/persistence`, and a mapper turns each record into its domain class. `src/container.ts` wires every adapter by hand.
 
 The reasons behind the main choices are in [`docs/adr`](docs/adr).
 
