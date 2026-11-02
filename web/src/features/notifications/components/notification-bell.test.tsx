@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ME, workspaces } from '@/test/fixtures';
+import { BARBER, ME, workspaces } from '@/test/fixtures';
 import { api, gqlData } from '@/test/graphql';
 import { renderRoutes, signIn } from '@/test/render';
 import { server } from '@/test/server';
@@ -25,18 +25,22 @@ const notification = (overrides: Record<string, unknown>) => ({
     barber: {
       id: 'barber-1',
       name: 'José',
-      barbershop: { id: 'shop-1', timezone: 'America/Sao_Paulo' },
+      barbershop: { id: 'shop-1', name: 'Mega Barbearia SP', timezone: 'America/Sao_Paulo' },
     },
   },
   ...overrides,
 });
 
-function setup(unread: number, list: ReturnType<typeof notification>[]) {
+function setup(
+  unread: number,
+  list: ReturnType<typeof notification>[],
+  shops: unknown = workspaces({ barber: true }),
+) {
   signIn();
   const marked: string[] = [];
   let count = unread;
   server.use(
-    api.query('Workspaces', () => gqlData(workspaces({ barber: true }))),
+    api.query('Workspaces', () => gqlData(shops as Record<string, unknown>)),
     api.query('Me', () => gqlData({ me: ME })),
     api.query('UnreadNotificationCount', () => gqlData({ unreadNotificationCount: count })),
     api.query('Notifications', () => gqlData({ notifications: list })),
@@ -118,5 +122,27 @@ describe('notification bell', () => {
     const { user } = setup(0, []);
     await user.click(await screen.findByRole('button', { name: 'Notificações' }));
     expect(await screen.findByText('Nada por aqui ainda.')).toBeInTheDocument();
+  });
+
+  it('names the shop when the user works in more than one', async () => {
+    const other = {
+      id: 'shop-2',
+      name: 'Barbearia do Centro',
+      timezone: 'America/Sao_Paulo',
+      logoUrl: null,
+    };
+    const { user } = setup(1, [notification({})], {
+      myBarbershops: [],
+      myBarberProfiles: [BARBER, { ...BARBER, id: 'barber-2', barbershop: other }],
+    });
+    await user.click(await screen.findByRole('button', { name: 'Notificações, 1 não lida' }));
+    expect(await screen.findByText('Mega Barbearia SP')).toBeInTheDocument();
+  });
+
+  it('leaves the shop out when there is only one', async () => {
+    const { user } = setup(1, [notification({})]);
+    await user.click(await screen.findByRole('button', { name: 'Notificações, 1 não lida' }));
+    await screen.findByText('Novo agendamento');
+    expect(screen.queryByText('Mega Barbearia SP')).not.toBeInTheDocument();
   });
 });

@@ -93,6 +93,12 @@ export function NotificationBell() {
                         {title}
                       </span>
                       <span className="line-clamp-2">{body}</span>
+                      {/* with several shops, say which one this is about */}
+                      {workspaces.length > 1 && n.appointment && (
+                        <span className="text-xs text-muted-foreground">
+                          {n.appointment.barber.barbershop.name}
+                        </span>
+                      )}
                       <span className="text-xs text-muted-foreground">
                         {formatRelative(n.createdAt)}
                       </span>

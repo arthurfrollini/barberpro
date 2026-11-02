@@ -177,7 +177,7 @@ export type NotificationsQueryVariables = Exact<{
 }>;
 
 
-export type NotificationsQuery = { notifications: Array<{ id: string, type: NotificationType, title: string, body: string, read: boolean, createdAt: string, appointmentStartsAt: string | null, appointment: { id: string, startsAt: string, serviceName: string, cancelReason: CancelReason | null, customer: { id: string, name: string }, barber: { id: string, name: string, barbershop: { id: string, timezone: string } } } | null }> };
+export type NotificationsQuery = { notifications: Array<{ id: string, type: NotificationType, title: string, body: string, read: boolean, createdAt: string, appointmentStartsAt: string | null, appointment: { id: string, startsAt: string, serviceName: string, cancelReason: CancelReason | null, customer: { id: string, name: string }, barber: { id: string, name: string, barbershop: { id: string, name: string, timezone: string } } } | null }> };
 
 export type MarkNotificationReadMutationVariables = Exact<{
   id: string | number;
@@ -562,6 +562,7 @@ export const NotificationsDocument = new TypedDocumentString(`
         name
         barbershop {
           id
+          name
           timezone
         }
       }
