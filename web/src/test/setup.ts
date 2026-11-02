@@ -21,5 +21,6 @@ afterEach(() => {
   toast.dismiss();
   server.resetHandlers();
   localStorage.clear();
+  sessionStorage.clear();
 });
 afterAll(() => server.close());

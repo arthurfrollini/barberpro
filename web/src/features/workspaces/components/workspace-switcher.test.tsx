@@ -71,6 +71,6 @@ describe('workspace switcher', () => {
     expect(await within(nav).findByRole('link', { name: 'Equipe' })).toBeInTheDocument();
     await screen.findByText('Nenhum agendamento neste dia');
     expect(agendaFor).toContain('barber-1');
-    expect(localStorage.getItem('barberpro.workspace')).toBe('shop-1');
+    expect(sessionStorage.getItem('barberpro.workspace.user-1')).toBe('shop-1');
   });
 });

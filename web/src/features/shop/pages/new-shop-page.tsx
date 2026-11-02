@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router';
-import { choose } from '@/features/workspaces/lib/choice';
+import { useActiveWorkspace } from '@/features/workspaces/hooks/use-workspaces';
 import { Button } from '@/shared/ui/button';
 import { PageHeader } from '@/shared/ui/page-header';
 import { ShopForm } from '../components/shop-form';
@@ -7,6 +7,7 @@ import { ShopForm } from '../components/shop-form';
 /** From the switcher: one more shop. Once created, it becomes the active one. */
 export function NewShopPage() {
   const navigate = useNavigate();
+  const { select } = useActiveWorkspace();
   return (
     <>
       <PageHeader
@@ -15,7 +16,7 @@ export function NewShopPage() {
       />
       <ShopForm
         onCreated={(shopId) => {
-          choose(shopId);
+          select(shopId);
           navigate('/barbearia', { replace: true });
         }}
       />

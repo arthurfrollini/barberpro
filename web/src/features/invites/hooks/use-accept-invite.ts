@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { workspacesKey } from '@/features/workspaces/hooks/use-workspaces';
-import { choose } from '@/features/workspaces/lib/choice';
+import { useActiveWorkspace, workspacesKey } from '@/features/workspaces/hooks/use-workspaces';
 import { acceptInvite } from '../api/invites';
 
 /**
@@ -9,11 +8,12 @@ import { acceptInvite } from '../api/invites';
  */
 export function useAcceptInvite() {
   const queryClient = useQueryClient();
+  const { select } = useActiveWorkspace();
   return useMutation({
     mutationFn: acceptInvite,
     onSuccess: async (barber) => {
       await queryClient.invalidateQueries({ queryKey: workspacesKey });
-      choose(barber.barbershop.id);
+      select(barber.barbershop.id);
     },
   });
 }

@@ -2,7 +2,6 @@ import { Mail, Store } from 'lucide-react';
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router';
 import { useActiveWorkspace } from '@/features/workspaces/hooks/use-workspaces';
-import { choose } from '@/features/workspaces/lib/choice';
 import { landingPath } from '@/features/workspaces/lib/workspaces';
 import { ShopForm } from '@/features/shop/components/shop-form';
 import { Button } from '@/shared/ui/button';
@@ -13,7 +12,7 @@ const choice =
 
 /** For someone signed in who neither owns a shop nor barbers anywhere yet. */
 export function StartPage() {
-  const { active } = useActiveWorkspace();
+  const { active, select } = useActiveWorkspace();
   const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
 
@@ -32,7 +31,7 @@ export function StartPage() {
           </h2>
           <ShopForm
             onCreated={(shopId) => {
-              choose(shopId);
+              select(shopId);
               navigate('/barbearia', { replace: true });
             }}
           />
