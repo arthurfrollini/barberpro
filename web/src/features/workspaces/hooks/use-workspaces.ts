@@ -14,14 +14,22 @@ export function useWorkspaces() {
 /** The workspaces and the one the screens act on in this tab; `select` switches it. */
 export function useActiveWorkspace() {
   const query = useWorkspaces();
-  // the choice is per user: someone else signing in on this browser starts fresh
-  const userId = useMe().data?.id ?? '';
+  // the choice is per user: someone else signing in on this browser starts fresh. Until the
+  // user is known the choice cannot be read, so the workspaces count as still loading;
+  // otherwise the screens open on the default shop for a moment and fetch its data
+  const me = useMe();
+  const userId = me.data?.id ?? '';
   const chosen = useSyncExternalStore(subscribeChoice, () => readChoice(userId));
   const select = useCallback((shopId: string) => choose(userId, shopId), [userId]);
+  const known = query.data && me.data;
   return {
     ...query,
+    isPending: query.isPending || me.isPending,
+    isError: query.isError || me.isError,
+    error: query.error ?? me.error,
+    refetch: () => Promise.all([query.refetch(), me.refetch()]),
     workspaces: query.data ?? [],
-    active: query.data ? pickActive(query.data, chosen) : null,
+    active: known ? pickActive(query.data, chosen) : null,
     select,
   };
 }

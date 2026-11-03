@@ -73,4 +73,26 @@ describe('workspace switcher', () => {
     expect(agendaFor).toContain('barber-1');
     expect(sessionStorage.getItem('barberpro.workspace.user-1')).toBe('shop-1');
   });
+
+  it('opens on the remembered shop without passing through another while the user loads', async () => {
+    sessionStorage.setItem('barberpro.workspace.user-1', 'shop-1');
+    const { agendaFor } = setup();
+    let releaseMe!: () => void;
+    const meLoaded = new Promise<void>((resolve) => (releaseMe = resolve));
+    server.use(
+      api.query('Me', async () => {
+        await meLoaded;
+        return gqlData({ me: ME });
+      }),
+    );
+    // let the workspaces arrive first
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    releaseMe();
+
+    expect(
+      await screen.findByRole('button', { name: /Barbearia atual: Mega Barbearia SP/ }),
+    ).toBeInTheDocument();
+    await screen.findByText('Nenhum agendamento neste dia');
+    expect(agendaFor).toEqual(['barber-1']);
+  });
 });
