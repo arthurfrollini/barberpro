@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 import { TypedDocumentString } from '@/gql/graphql';
 import { api, gqlData, gqlError } from '@/test/graphql';
@@ -16,12 +16,12 @@ const session = (token: string): Session => ({
   refreshToken: `r-${token}`,
 });
 
-function setup(stored: Session | null = session('t1')) {
+function setup(stored: Session | null = session('t1'), timeoutMs?: number) {
   if (stored) localStorage.setItem(SESSION_KEY, JSON.stringify(stored));
   const refresh = vi.fn(async () => session('t2'));
   const store = createSessionStore({ storage: localStorage, refresh });
   const onSessionExpired = vi.fn();
-  const client = createApiClient({ session: store, onSessionExpired });
+  const client = createApiClient({ session: store, onSessionExpired, timeoutMs });
   return { client, store, refresh, onSessionExpired };
 }
 
@@ -68,6 +68,17 @@ describe('api client', () => {
     await expect(client.request(MeQuery)).rejects.toMatchObject({ code: 'NETWORK_ERROR' });
     server.use(api.query('ClientTestMe', () => new Response('Bad gateway', { status: 502 })));
     await expect(client.request(MeQuery)).rejects.toMatchObject({ code: 'NETWORK_ERROR' });
+  });
+
+  it('gives up with TIMEOUT when the API does not answer in time', async () => {
+    server.use(
+      api.query('ClientTestMe', async () => {
+        await delay('infinite');
+        return gqlData({});
+      }),
+    );
+    const { client } = setup(session('t1'), 50);
+    await expect(client.request(MeQuery)).rejects.toMatchObject({ code: 'TIMEOUT' });
   });
 
   it('refreshes once and retries when the API says UNAUTHENTICATED', async () => {

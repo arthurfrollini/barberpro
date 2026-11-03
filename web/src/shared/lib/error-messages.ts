@@ -3,6 +3,8 @@ export const GENERIC_ERROR = 'Algo deu errado. Tente de novo.';
 // The API's messages are English; the dashboard speaks Portuguese, keyed by the stable code.
 const MESSAGES: Record<string, string> = {
   NETWORK_ERROR: 'Não foi possível falar com o servidor. Verifique sua conexão.',
+  TIMEOUT:
+    'O servidor demorou demais para responder. Se era uma alteração, confira se ela foi salva antes de tentar de novo.',
   UNAUTHENTICATED: 'Sua sessão expirou. Entre de novo.',
   INVALID_CREDENTIALS: 'Email ou senha incorretos.',
   INVALID_REFRESH_TOKEN: 'Sua sessão expirou. Entre de novo.',

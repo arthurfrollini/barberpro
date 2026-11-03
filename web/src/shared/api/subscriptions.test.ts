@@ -35,11 +35,21 @@ function setup({ signedIn = true } = {}) {
     get: vi.fn(() => (signedIn ? stored : null)),
     accessToken: vi.fn(async (_options?: { force?: boolean }) => 't' as string | null),
   };
-  const subscribe = createSubscriber({ client: () => fake.client, session, backoff: () => 1000 });
+  const wakeListeners = new Set<() => void>();
+  const wake = () => wakeListeners.forEach((listener) => listener());
+  const subscribe = createSubscriber({
+    client: () => fake.client,
+    session,
+    backoff: () => 1000,
+    onWake: (listener) => {
+      wakeListeners.add(listener);
+      return () => wakeListeners.delete(listener);
+    },
+  });
   const next = vi.fn();
   const reconnected = vi.fn();
   const stop = subscribe(Doc, {}, { next, reconnected });
-  return { ...fake, session, next, reconnected, stop };
+  return { ...fake, session, next, reconnected, stop, wake, wakeListeners };
 }
 
 describe('subscribe', () => {
@@ -78,6 +88,27 @@ describe('subscribe', () => {
     expect(session.accessToken).toHaveBeenCalledWith({ force: true });
     await vi.advanceTimersByTimeAsync(1000);
     expect(streams).toHaveLength(2);
+  });
+
+  it('swaps the stream for a fresh one when the device wakes or comes back online', () => {
+    // a stream that died while the laptop slept can look open for minutes
+    const { streams, last, reconnected, wake } = setup();
+    last().on?.connected?.(false);
+    wake();
+    expect(streams).toHaveLength(2);
+    expect(streams[0]!.disposed).toBe(true);
+    last().on?.connected?.(false);
+    expect(reconnected).toHaveBeenCalledTimes(1);
+    // closing the old stream does not schedule yet another one
+    vi.advanceTimersByTime(5000);
+    expect(streams).toHaveLength(2);
+  });
+
+  it('stops listening for wake-ups once stopped', () => {
+    const { stop, wakeListeners } = setup();
+    expect(wakeListeners.size).toBe(1);
+    stop();
+    expect(wakeListeners.size).toBe(0);
   });
 
   it('stays closed once stopped, and after a sign-out', () => {

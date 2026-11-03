@@ -117,7 +117,7 @@ O **estado do servidor**: busca, cache, revalidação, retry. Cada query tem uma
 
 O **client preset** lê os `.graphql` da API e os documentos escritos em `features/*/api/*.ts` e gera, para cada operação, uma string tipada (`TypedDocumentString<Resultado, Variáveis>`). Um cliente `fetch` de ~100 linhas manda essa string; o resultado já vem tipado. Sem Apollo: menos bundle, cache simples por chave.
 
-**graphql-sse** é o cliente das subscriptions por server-sent events, o protocolo que o Yoga fala. Envolvido por uma camada que reabre o stream quando ele termina sem a tela pedir (token velho depois de dormir, Wi-Fi caindo).
+**graphql-sse** é o cliente das subscriptions por server-sent events, o protocolo que o Yoga fala. Envolvido por uma camada que reabre o stream quando ele termina sem a tela pedir (token velho depois de dormir, Wi-Fi caindo) e que o troca por um novo quando a rede volta ou o aparelho acorda, porque um stream morto pode parecer aberto.
 
 ### React Hook Form e zod
 
@@ -164,4 +164,4 @@ O CI em cada PR: na API, codegen sem diferença, lint, tipos, formatação, test
 ## Perguntas prováveis
 
 - **Por que tanta coisa para um app de agenda?** Cada peça resolve um problema concreto do domínio: exclusion constraint para dois agendamentos no mesmo horário, fila para email não travar a reserva, pub/sub para a agenda ao vivo com mais de uma instância. O que não resolvia nada ficou de fora: microserviços, CQRS, Redux, Apollo.
-- **O que você trocaria primeiro se fosse para produção?** O refresh token num cookie httpOnly (ADR 6), timeouts nas requisições da dashboard, e observabilidade (logs estruturados já existem; faltam métricas e tracing).
+- **O que você trocaria primeiro se fosse para produção?** O refresh token num cookie httpOnly (ADR 6) e observabilidade (logs estruturados já existem; faltam métricas e tracing).

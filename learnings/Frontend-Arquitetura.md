@@ -51,10 +51,11 @@ Detalhes no [ADR 6](../docs/adr/0006-session-in-local-storage.md). O essencial:
 - Quando a sessão acaba, por qualquer motivo e em qualquer aba, o cache do TanStack Query é apagado. Num computador do balcão, a próxima pessoa não vê nada do usuário anterior.
 - Se outra aba sair enquanto esta renovava o token, o token novo é descartado: a sessão não volta sozinha.
 - Sair de propósito não guarda "voltar para"; sessão expirada guarda (`/entrar?voltar=/servicos`).
+- Toda requisição tem prazo: 15 segundos (upload, 60). Estourou, o erro é `TIMEOUT`, separado de `NETWORK_ERROR` porque uma mutation que demorou pode ter sido aplicada; a mensagem pede para conferir antes de repetir. Queries tentam de novo, como em erro de rede.
 
 ## Rotas e papéis
 
-Papel vem dos dados, como na API: `myBarbershops` e `myBarberProfiles` numa query só, transformada em **workspaces** (uma entrada por barbearia, com o papel da pessoa ali). O seletor no canto inferior esquerdo escolhe a barbearia ativa, e é sobre ela que as rotas e os guards decidem (`useActiveWorkspace`). Detalhes em [Várias barbearias](Multiplas-Barbearias.md).
+Papel vem dos dados, como na API: `myBarbershops` e `myBarberProfiles` numa query só, transformada em **workspaces** (uma entrada por barbearia, com o papel da pessoa ali). O seletor no canto inferior esquerdo escolhe a barbearia ativa, e é sobre ela que as rotas e os guards decidem (`useActiveWorkspace`). A escolha fica guardada por usuário, então a barbearia ativa só existe depois que `me` chega; antes disso a tela segue carregando, em vez de abrir por um instante na barbearia padrão e já buscar os dados dela. Detalhes em [Várias barbearias](Multiplas-Barbearias.md).
 
 - `/` não tem tela: na barbearia ativa, manda quem atende para `/agenda`, quem só é dono para `/barbearia`; quem não tem nenhuma vai para `/comecar`.
 - `RequireAuth` protege tudo que precisa de login. `RequireRole` protege páginas de barbeiro e de dono e redireciona quem não tem o papel.
