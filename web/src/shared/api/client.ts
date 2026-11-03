@@ -7,10 +7,20 @@ type GraphQLResponse<R> = {
   errors?: { message: string; extensions?: { code?: string } }[];
 };
 
-type Transport = { baseUrl: string; fetch: typeof fetch };
+/** `timeoutMs` bounds a GraphQL call, body included; an upload gets four times as long. */
+type Transport = { baseUrl: string; fetch: typeof fetch; timeoutMs: number };
+
+/** Long enough for a slow phone connection, short enough that a hung request ends. */
+export const REQUEST_TIMEOUT_MS = 15_000;
 
 const networkError = () =>
   new ApiError('NETWORK_ERROR', 'Could not reach the API or it failed to answer.');
+
+// a timeout is told apart: a mutation that timed out may still have been applied. Checked by
+// name, since the DOMException class differs between realms (jsdom, Node's fetch)
+const isTimeout = (error: unknown) => error instanceof Error && error.name === 'TimeoutError';
+const failure = (error: unknown) =>
+  isTimeout(error) ? new ApiError('TIMEOUT', 'The API did not answer in time.') : networkError();
 
 /** One POST to /graphql. Throws NETWORK_ERROR when there is no usable GraphQL answer. */
 export async function postGraphQL<R, V>(
@@ -19,10 +29,12 @@ export async function postGraphQL<R, V>(
   variables: V | undefined,
   token: string | null,
 ): Promise<GraphQLResponse<R>> {
+  const signal = AbortSignal.timeout(transport.timeoutMs);
   let response: Response;
   try {
     response = await transport.fetch(`${transport.baseUrl}/graphql`, {
       method: 'POST',
+      signal,
       headers: {
         'content-type': 'application/json',
         accept: 'application/graphql-response+json, application/json',
@@ -30,14 +42,14 @@ export async function postGraphQL<R, V>(
       },
       body: JSON.stringify({ query: document.toString(), variables }),
     });
-  } catch {
-    throw networkError();
+  } catch (error) {
+    throw failure(error);
   }
   if (response.status >= 500) throw networkError();
   try {
     return (await response.json()) as GraphQLResponse<R>;
-  } catch {
-    throw networkError();
+  } catch (error) {
+    throw failure(error);
   }
 }
 
@@ -51,17 +63,22 @@ async function postUpload(
   const body = new FormData();
   body.append('file', file);
   let response: Response;
+  let json: UploadBody | null;
   try {
     response = await transport.fetch(`${transport.baseUrl}/uploads`, {
       method: 'POST',
+      signal: AbortSignal.timeout(transport.timeoutMs * 4),
       headers: token ? { authorization: `Bearer ${token}` } : {},
       body,
     });
-  } catch {
-    throw networkError();
+    if (response.status >= 500) throw networkError();
+    json = (await response.json().catch((error: unknown) => {
+      if (isTimeout(error)) throw error;
+      return null;
+    })) as UploadBody | null;
+  } catch (error) {
+    throw error instanceof ApiError ? error : failure(error);
   }
-  if (response.status >= 500) throw networkError();
-  const json = (await response.json().catch(() => null)) as UploadBody | null;
   if (!json) throw networkError();
   return { status: response.status, body: json };
 }
@@ -85,11 +102,13 @@ export function createApiClient(options: {
   onSessionExpired?: () => void;
   baseUrl?: string;
   fetch?: typeof fetch;
+  timeoutMs?: number;
 }) {
   const { session, onSessionExpired } = options;
   const transport: Transport = {
     baseUrl: options.baseUrl ?? window.location.origin,
     fetch: options.fetch ?? ((...args) => fetch(...args)),
+    timeoutMs: options.timeoutMs ?? REQUEST_TIMEOUT_MS,
   };
   const expire = () => {
     session.clear();

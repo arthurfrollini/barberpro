@@ -138,7 +138,13 @@ export function WeeklyHoursForm({
     resolver: zodResolver(weekSchema),
     defaultValues: toForm(schedule.weekly),
   });
-  const { isDirty, errors } = form.formState;
+  const { errors, defaultValues } = form.formState;
+  // what would be sent, not which fields were touched: a day switched on and back off keeps the
+  // interval it gained, so the form is dirty but the schedule is the same
+  const values = useWatch({ control: form.control });
+  const changed =
+    JSON.stringify(fromForm(values as WeekForm)) !==
+    JSON.stringify(fromForm(defaultValues as WeekForm));
 
   const copyFrom = (source: number) => {
     const intervals = form.getValues(`days.${source}.intervals`);
@@ -184,7 +190,7 @@ export function WeeklyHoursForm({
           clientes recebem um aviso.
         </p>
         <div>
-          <Button type="submit" disabled={!isDirty || save.isPending}>
+          <Button type="submit" disabled={!changed || save.isPending}>
             Salvar horários
           </Button>
         </div>

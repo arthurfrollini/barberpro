@@ -40,6 +40,7 @@ Para remarcar, a API ganhou `rescheduleSlots(appointmentId, date)`. O `available
 A API publica `agendaChanged` por SSE (server-sent events). No front:
 
 - `shared/api/subscriptions.ts` usa o cliente `graphql-sse` no modo "distinct connections" (o que o Yoga fala). O token é lido a cada (re)conexão, então uma conexão reaberta depois de o notebook dormir vai com token novo.
+- Um stream pode morrer sem nenhum lado perceber (notebook dormiu, Wi-Fi trocou) e parecer aberto por minutos. Quando a rede volta (`online`) ou a aba volta a ficar visível depois de um minuto ou mais escondida, a camada troca o stream por um novo e avisa a tela, que recarrega a agenda: o que chegou no meio não se perde.
 - O `graphql-sse` só tenta de novo em falha de rede. Um stream também pode terminar sozinho: a API responde `UNAUTHENTICATED` (token velho depois de uma soneca longa) e encerra, ou a renovação do token falha porque o Wi-Fi ainda não voltou. Por isso há uma camada em volta (`createSubscriber`) que abre um stream novo sempre que um termina sem a tela ter pedido, esperando até 30 s entre tentativas e renovando o token antes quando a API recusou. Para quando a tela fecha ou o usuário sai.
 - `useAgendaLive` trata o evento como aviso de "olhe de novo": invalida a agenda e as notificações e mostra um toast. Não aplica o evento no cache na mão; o servidor continua sendo a fonte da verdade.
 - Ao reconectar, invalida uma vez, sem toast (o que aconteceu offline aparece na agenda, não numa enxurrada de avisos).

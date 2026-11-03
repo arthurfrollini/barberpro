@@ -17,5 +17,12 @@ export default defineConfig({
     setupFiles: ['src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
     restoreMocks: true,
+    // `npm run test:coverage`; codegen output and test helpers are not measured
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/gql/**', 'src/test/**', 'src/**/*.d.ts'],
+      reporter: ['text-summary', 'text', 'html'],
+    },
   },
 });

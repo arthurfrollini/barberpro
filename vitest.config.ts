@@ -9,6 +9,13 @@ export default defineConfig({
     alias: [{ find: /^graphql$/, replacement: createRequire(import.meta.url).resolve('graphql') }],
   },
   test: {
+    // `npm run test:coverage`: all three projects, measured over the source that ships
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.test.ts', 'src/**/generated/**', 'src/**/migrations/**'],
+      reporter: ['text-summary', 'text', 'html'],
+    },
     projects: [
       {
         test: { name: 'unit', include: ['src/**/*.test.ts'] },

@@ -46,6 +46,18 @@ describe('weekly hours', () => {
     expect(screen.getByRole('button', { name: 'Salvar horários' })).toBeDisabled();
   });
 
+  it('has nothing to save after a day is switched on and back off', async () => {
+    const { user } = setup(NINE_TO_SIX([1, 2, 3, 4, 5]));
+    const save = await screen.findByRole('button', { name: 'Salvar horários' });
+    const sunday = within(await day('Domingo')).getByRole('switch', { name: 'Domingo: trabalha' });
+
+    await user.click(sunday);
+    expect(save).toBeEnabled();
+    await user.click(sunday);
+
+    expect(save).toBeDisabled();
+  });
+
   it("copies one day's hours to every working day", async () => {
     const { user, sent } = setup(NINE_TO_SIX([1, 2, 3]));
     const monday = await day('Segunda');
