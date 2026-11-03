@@ -45,7 +45,7 @@ Regras que olham mais de um campo (intervalos que se sobrepõem) ficam num `supe
 
 ## Só o que mudou
 
-- `formState.isDirty` desabilita "Salvar" quando nada mudou.
+- `formState.isDirty` desabilita "Salvar" quando nada mudou. Em Horários isso não basta: ligar e desligar um dia deixa nele o intervalo que ganhou, então o form fica "sujo" sem nada para salvar. Lá o botão compara o que seria enviado à API (`fromForm`) com o que veio dela.
 - Editar um serviço manda só os campos alterados (`changes(service, values)`), o que deixa claro no log e na API o que a pessoa mudou.
 - A foto do perfil tem três estados: não mexeu (não manda nada), trocou (manda o id do arquivo novo), removeu (manda `null`). O upload acontece quando a pessoa escolhe a imagem; o formulário só carrega o id.
 
