@@ -8,7 +8,9 @@
 | `integration` | `test/integration/` | repositórios TypeORM e migrations | Postgres de verdade (`barberpro_test`) |
 | `e2e`         | `test/e2e/`         | operações GraphQL pelo HTTP       | Postgres e Redis de verdade            |
 
-Comandos: `npm run test:unit`, `test:integration`, `test:e2e`, ou `npm test` para tudo.
+Comandos: `npm run test:unit`, `test:integration`, `test:e2e`, ou `npm test` para tudo. `npm run test:coverage` roda tudo medindo cobertura (relatório HTML em `coverage/`).
+
+Cobertura em 03/11/2026, por linhas: API 94% (241 testes), dashboard 91% (193). O que fica de fora é esperado: `main.ts` e `worker.ts` só sobem processos e são exercitados pelo Playwright, não pelo Vitest; na dashboard, partes de componentes do shadcn que nenhuma tela usa e `new-shop-page.tsx`, coberta pelo Playwright. Cobertura mostra o que nenhum teste executou; não prova que o executado está certo.
 
 ## Ferramentas de teste
 

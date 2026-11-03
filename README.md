@@ -207,6 +207,7 @@ cd web
 npm install
 npm run dev        # http://localhost:5180, proxying the API on :4000
 npm run check      # lint, typecheck, format, unit and component tests
+npm run test:coverage  # the same tests with coverage; HTML report in web/coverage
 npm run test:e2e   # Playwright; needs Postgres, Redis and Mailpit from docker compose,
                    # npm install in the repo root and npx playwright install chromium
 npm run codegen    # after changing an operation or the API's schema
@@ -236,6 +237,7 @@ npm run test:unit         # domain and use cases, in-memory adapters, fixed cloc
 npm run test:integration  # repositories and migrations against Postgres
 npm run test:e2e          # GraphQL operations through the HTTP app
 npm test                  # all three
+npm run test:coverage     # all three with coverage; HTML report in coverage/
 ```
 
 Integration and e2e tests use the `barberpro_test` database that Docker Compose creates.

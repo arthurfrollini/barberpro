@@ -40,6 +40,7 @@ Job `web`: codegen sem diff, lint, typecheck, prettier, testes, build. Job `web-
 ```bash
 cd web
 npm test            # unit + componentes
+npm run test:coverage  # os mesmos, com cobertura (relatório HTML em web/coverage)
 npm run test:e2e    # Playwright (precisa de docker compose up -d postgres redis mailpit)
 ```
 
