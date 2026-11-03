@@ -24,7 +24,7 @@ O teste do Playwright faz exatamente isso, com dois navegadores e o email lido d
 
 ## Localização
 
-A API não faz geocoding (precisaria de serviço pago). O formulário pede latitude e longitude e oferece "Usar minha localização" (`navigator.geolocation`). Se o navegador negar, a mensagem diz para preencher à mão; os campos continuam editáveis. Aceita vírgula ou ponto.
+A API não faz geocoding (precisaria de serviço pago). O formulário pede latitude e longitude e oferece "Usar minha localização" (`navigator.geolocation`). Se falhar, a mensagem diz o motivo (o navegador bloqueou, o aparelho não achou a posição, ou demorou demais) e o que fazer; os campos continuam editáveis. Aceita vírgula ou ponto.
 
 ## Fuso horário
 

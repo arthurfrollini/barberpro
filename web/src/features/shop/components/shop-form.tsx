@@ -23,6 +23,13 @@ import {
   type ShopFormOutput,
 } from '../lib/shop-form';
 
+/** GeolocationPositionError codes: 1 permission denied, 2 position unavailable, 3 timeout. */
+const LOCATION_ERRORS: Record<number, string> = {
+  1: 'O navegador bloqueou a localização. Libere nas permissões do site ou preencha à mão.',
+  2: 'O aparelho não conseguiu achar sua localização. Preencha à mão.',
+  3: 'A localização demorou demais. Tente de novo ou preencha à mão.',
+};
+
 const selectClass =
   'h-9 w-full rounded-md border border-input bg-input px-3 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
@@ -64,9 +71,9 @@ export function ShopForm({
         form.setValue('latitude', coords.latitude.toFixed(6), options);
         form.setValue('longitude', coords.longitude.toFixed(6), options);
       },
-      () => {
+      ({ code }) => {
         setLocating(false);
-        setLocationError('Não foi possível pegar sua localização. Preencha à mão.');
+        setLocationError(LOCATION_ERRORS[code] ?? LOCATION_ERRORS[2]!);
       },
       { enableHighAccuracy: true, timeout: 10_000 },
     );

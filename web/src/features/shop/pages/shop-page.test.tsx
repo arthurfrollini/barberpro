@@ -93,20 +93,22 @@ describe('shop page', () => {
     expect(within(shop).getByLabelText('Longitude')).toHaveValue('-46.765432');
   });
 
-  it('says so when the browser will not share the location', async () => {
+  it.each([
+    [1, 'O navegador bloqueou a localização. Libere nas permissões do site ou preencha à mão.'],
+    [2, 'O aparelho não conseguiu achar sua localização. Preencha à mão.'],
+    [3, 'A localização demorou demais. Tente de novo ou preencha à mão.'],
+  ])('says why the location failed (code %i)', async (code, message) => {
     vi.stubGlobal('navigator', {
       ...navigator,
       geolocation: {
         getCurrentPosition: (_ok: PositionCallback, fail: PositionErrorCallback) =>
-          fail({ code: 1 } as GeolocationPositionError),
+          fail({ code } as GeolocationPositionError),
       },
     });
     const { user } = setup();
     const shop = await form();
     await user.click(within(shop).getByRole('button', { name: 'Usar minha localização' }));
-    expect(
-      await within(shop).findByText('Não foi possível pegar sua localização. Preencha à mão.'),
-    ).toBeInTheDocument();
+    expect(await within(shop).findByText(message)).toBeInTheDocument();
   });
 
   it('lets an owner join as a barber', async () => {
