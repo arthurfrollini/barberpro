@@ -1,10 +1,3 @@
-import { Screen } from '@/shared/ui/screen';
-import { Text } from '@/shared/ui/text';
+import { NotificationsScreen } from '@/features/notifications/screens/notifications-screen';
 
-export default function AvisosTab() {
-  return (
-    <Screen>
-      <Text variant="title">Avisos</Text>
-    </Screen>
-  );
-}
+export default NotificationsScreen;

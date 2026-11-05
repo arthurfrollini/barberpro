@@ -35,7 +35,10 @@ const past = appointment(
 );
 
 const lists: Record<string, FakeHandler> = {
-  MyAppointments: (vars) => ({ myAppointments: vars.upcoming === false ? [past] : [upcoming] }),
+  // like the API: without `upcoming`, the latest of any date
+  MyAppointments: (vars) => ({
+    myAppointments: vars.upcoming === false ? [upcoming, past] : [upcoming],
+  }),
 };
 
 describe('appointments list', () => {
@@ -54,6 +57,7 @@ describe('appointments list', () => {
     expect(screen.getByText('Navalha de Ouro')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Anteriores' }));
     expect(await screen.findByText('Cancelado')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: new RegExp(when) })).toBeNull();
     expect(server.variablesOf('MyAppointments')).toEqual([{ upcoming: true }, { upcoming: false }]);
   });
 

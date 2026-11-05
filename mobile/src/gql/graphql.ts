@@ -24,6 +24,12 @@ export type CancelReason =
   | 'DAY_BLOCKED'
   | 'SCHEDULE_CHANGED';
 
+export type NotificationType =
+  | 'APPOINTMENT_BOOKED'
+  | 'APPOINTMENT_CANCELED'
+  | 'APPOINTMENT_REMINDER'
+  | 'APPOINTMENT_RESCHEDULED';
+
 export type SignInInput = {
   email: string;
   password: string;
@@ -126,6 +132,25 @@ export type SearchBarbershopsQueryVariables = Exact<{
 
 
 export type SearchBarbershopsQuery = { searchBarbershops: Array<{ id: string, name: string, address: string, logoUrl: string | null }> };
+
+export type UnreadNotificationCountQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type UnreadNotificationCountQuery = { unreadNotificationCount: number };
+
+export type NotificationsQueryVariables = Exact<{
+  limit?: number | null | undefined;
+}>;
+
+
+export type NotificationsQuery = { notifications: Array<{ id: string, type: NotificationType, title: string, body: string, read: boolean, createdAt: string, appointmentStartsAt: string | null, appointment: { id: string, startsAt: string, serviceName: string, cancelReason: CancelReason | null, customer: { id: string, name: string }, barber: { id: string, name: string, barbershop: { id: string, name: string, timezone: string } } } | null }> };
+
+export type MarkNotificationReadMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type MarkNotificationReadMutation = { markNotificationRead: boolean };
 
 export type BarbershopQueryVariables = Exact<{
   id: string | number;
@@ -305,6 +330,48 @@ export const SearchBarbershopsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<SearchBarbershopsQuery, SearchBarbershopsQueryVariables>;
+export const UnreadNotificationCountDocument = new TypedDocumentString(`
+    query UnreadNotificationCount {
+  unreadNotificationCount
+}
+    `) as unknown as TypedDocumentString<UnreadNotificationCountQuery, UnreadNotificationCountQueryVariables>;
+export const NotificationsDocument = new TypedDocumentString(`
+    query Notifications($limit: Int) {
+  notifications(limit: $limit) {
+    id
+    type
+    title
+    body
+    read
+    createdAt
+    appointmentStartsAt
+    appointment {
+      id
+      startsAt
+      serviceName
+      cancelReason
+      customer {
+        id
+        name
+      }
+      barber {
+        id
+        name
+        barbershop {
+          id
+          name
+          timezone
+        }
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<NotificationsQuery, NotificationsQueryVariables>;
+export const MarkNotificationReadDocument = new TypedDocumentString(`
+    mutation MarkNotificationRead($id: ID!) {
+  markNotificationRead(id: $id)
+}
+    `) as unknown as TypedDocumentString<MarkNotificationReadMutation, MarkNotificationReadMutationVariables>;
 export const BarbershopDocument = new TypedDocumentString(`
     query Barbershop($id: ID!) {
   barbershop(id: $id) {

@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
 import type { ColorValue } from 'react-native';
+import { useUnreadCount } from '@/features/notifications/hooks/use-notifications';
 import { colors, fonts } from '@/shared/ui/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -13,6 +14,8 @@ const icon =
   );
 
 export default function TabsLayout() {
+  const unread = useUnreadCount();
+  const badge = unread.data ? (unread.data > 9 ? '9+' : unread.data) : undefined;
   return (
     <Tabs
       screenOptions={{
@@ -35,7 +38,12 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="avisos"
-        options={{ title: 'Avisos', tabBarIcon: icon('notifications-outline') }}
+        options={{
+          title: 'Avisos',
+          tabBarIcon: icon('notifications-outline'),
+          tabBarBadge: badge,
+          tabBarBadgeStyle: { backgroundColor: colors.accent, color: colors.onAccent },
+        }}
       />
       <Tabs.Screen
         name="conta"

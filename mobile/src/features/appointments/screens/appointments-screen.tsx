@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { SignedOut } from '@/features/auth/components/signed-out';
 import { useIsSignedIn } from '@/features/auth/hooks/use-auth';
+import { useNow } from '@/shared/hooks/use-now';
 import { LinkButton } from '@/shared/ui/button';
 import { Screen } from '@/shared/ui/screen';
 import { Segmented } from '@/shared/ui/segmented';
@@ -35,6 +36,10 @@ export function AppointmentsScreen() {
 function Appointments() {
   const [view, setView] = useState<View_>('upcoming');
   const list = useMyAppointments(view === 'upcoming');
+  const now = useNow();
+  // without `upcoming` the API returns the latest 100 of any date: past ones are filtered here
+  const items =
+    view === 'upcoming' ? list.data : list.data?.filter((a) => Date.parse(a.startsAt) < now);
 
   return (
     <Screen
@@ -48,7 +53,7 @@ function Appointments() {
         <LoadingState />
       ) : list.isError ? (
         <ErrorState error={list.error} onRetry={() => void list.refetch()} />
-      ) : list.data.length === 0 ? (
+      ) : !items || items.length === 0 ? (
         view === 'upcoming' ? (
           <EmptyState
             title="Nenhum agendamento marcado"
@@ -63,7 +68,7 @@ function Appointments() {
         )
       ) : (
         <View>
-          {list.data.map((appointment) => (
+          {items.map((appointment) => (
             <AppointmentRow key={appointment.id} appointment={appointment} />
           ))}
         </View>

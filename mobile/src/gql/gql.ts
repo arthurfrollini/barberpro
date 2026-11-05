@@ -27,6 +27,9 @@ type Documents = {
     "\n  mutation BookAppointment($input: BookAppointmentInput!) {\n    bookAppointment(input: $input) {\n      id\n    }\n  }\n": typeof types.BookAppointmentDocument,
     "\n  query NearbyBarbershops($latitude: Float!, $longitude: Float!) {\n    barbershopsNearby(latitude: $latitude, longitude: $longitude, radiusKm: 10, limit: 30) {\n      distanceKm\n      barbershop {\n        id\n        name\n        address\n        logoUrl\n      }\n    }\n  }\n": typeof types.NearbyBarbershopsDocument,
     "\n  query SearchBarbershops($query: String!) {\n    searchBarbershops(query: $query, limit: 30) {\n      id\n      name\n      address\n      logoUrl\n    }\n  }\n": typeof types.SearchBarbershopsDocument,
+    "\n  query UnreadNotificationCount {\n    unreadNotificationCount\n  }\n": typeof types.UnreadNotificationCountDocument,
+    "\n  query Notifications($limit: Int) {\n    notifications(limit: $limit) {\n      id\n      type\n      title\n      body\n      read\n      createdAt\n      appointmentStartsAt\n      appointment {\n        id\n        startsAt\n        serviceName\n        cancelReason\n        customer {\n          id\n          name\n        }\n        barber {\n          id\n          name\n          barbershop {\n            id\n            name\n            timezone\n          }\n        }\n      }\n    }\n  }\n": typeof types.NotificationsDocument,
+    "\n  mutation MarkNotificationRead($id: ID!) {\n    markNotificationRead(id: $id)\n  }\n": typeof types.MarkNotificationReadDocument,
     "\n  query Barbershop($id: ID!) {\n    barbershop(id: $id) {\n      id\n      name\n      description\n      yearsActive\n      logoUrl\n      address\n      latitude\n      longitude\n      timezone\n      barbers {\n        id\n        name\n        bio\n        avatarUrl\n      }\n    }\n  }\n": typeof types.BarbershopDocument,
     "\n  query Barber($id: ID!) {\n    barber(id: $id) {\n      id\n      name\n      bio\n      avatarUrl\n      barbershop {\n        id\n        name\n        address\n        timezone\n      }\n      services {\n        id\n        name\n        description\n        priceCents\n        durationMinutes\n      }\n    }\n  }\n": typeof types.BarberDocument,
     "\n  mutation RefreshToken($token: String!) {\n    refreshToken(token: $token) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n    }\n  }\n": typeof types.RefreshTokenDocument,
@@ -44,6 +47,9 @@ const documents: Documents = {
     "\n  mutation BookAppointment($input: BookAppointmentInput!) {\n    bookAppointment(input: $input) {\n      id\n    }\n  }\n": types.BookAppointmentDocument,
     "\n  query NearbyBarbershops($latitude: Float!, $longitude: Float!) {\n    barbershopsNearby(latitude: $latitude, longitude: $longitude, radiusKm: 10, limit: 30) {\n      distanceKm\n      barbershop {\n        id\n        name\n        address\n        logoUrl\n      }\n    }\n  }\n": types.NearbyBarbershopsDocument,
     "\n  query SearchBarbershops($query: String!) {\n    searchBarbershops(query: $query, limit: 30) {\n      id\n      name\n      address\n      logoUrl\n    }\n  }\n": types.SearchBarbershopsDocument,
+    "\n  query UnreadNotificationCount {\n    unreadNotificationCount\n  }\n": types.UnreadNotificationCountDocument,
+    "\n  query Notifications($limit: Int) {\n    notifications(limit: $limit) {\n      id\n      type\n      title\n      body\n      read\n      createdAt\n      appointmentStartsAt\n      appointment {\n        id\n        startsAt\n        serviceName\n        cancelReason\n        customer {\n          id\n          name\n        }\n        barber {\n          id\n          name\n          barbershop {\n            id\n            name\n            timezone\n          }\n        }\n      }\n    }\n  }\n": types.NotificationsDocument,
+    "\n  mutation MarkNotificationRead($id: ID!) {\n    markNotificationRead(id: $id)\n  }\n": types.MarkNotificationReadDocument,
     "\n  query Barbershop($id: ID!) {\n    barbershop(id: $id) {\n      id\n      name\n      description\n      yearsActive\n      logoUrl\n      address\n      latitude\n      longitude\n      timezone\n      barbers {\n        id\n        name\n        bio\n        avatarUrl\n      }\n    }\n  }\n": types.BarbershopDocument,
     "\n  query Barber($id: ID!) {\n    barber(id: $id) {\n      id\n      name\n      bio\n      avatarUrl\n      barbershop {\n        id\n        name\n        address\n        timezone\n      }\n      services {\n        id\n        name\n        description\n        priceCents\n        durationMinutes\n      }\n    }\n  }\n": types.BarberDocument,
     "\n  mutation RefreshToken($token: String!) {\n    refreshToken(token: $token) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n    }\n  }\n": types.RefreshTokenDocument,
@@ -97,6 +103,18 @@ export function graphql(source: "\n  query NearbyBarbershops($latitude: Float!, 
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query SearchBarbershops($query: String!) {\n    searchBarbershops(query: $query, limit: 30) {\n      id\n      name\n      address\n      logoUrl\n    }\n  }\n"): typeof import('./graphql').SearchBarbershopsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query UnreadNotificationCount {\n    unreadNotificationCount\n  }\n"): typeof import('./graphql').UnreadNotificationCountDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query Notifications($limit: Int) {\n    notifications(limit: $limit) {\n      id\n      type\n      title\n      body\n      read\n      createdAt\n      appointmentStartsAt\n      appointment {\n        id\n        startsAt\n        serviceName\n        cancelReason\n        customer {\n          id\n          name\n        }\n        barber {\n          id\n          name\n          barbershop {\n            id\n            name\n            timezone\n          }\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').NotificationsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation MarkNotificationRead($id: ID!) {\n    markNotificationRead(id: $id)\n  }\n"): typeof import('./graphql').MarkNotificationReadDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
