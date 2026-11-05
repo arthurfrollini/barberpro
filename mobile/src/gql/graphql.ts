@@ -4,6 +4,15 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 /** Internal type. DO NOT USE DIRECTLY. */
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 import type { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
+export type BookAppointmentInput = {
+  barberId: string | number;
+  /** 5 to 60 in steps of 5; leave out for no reminder. */
+  reminderLeadMinutes?: number | null | undefined;
+  serviceId: string | number;
+  /** One of the times availableSlots returned. */
+  startsAt: string;
+};
+
 export type SignInInput = {
   email: string;
   password: string;
@@ -45,6 +54,22 @@ export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type MeQuery = { me: { id: string, name: string, email: string } };
+
+export type AvailableSlotsQueryVariables = Exact<{
+  barberId: string | number;
+  serviceId: string | number;
+  date: string;
+}>;
+
+
+export type AvailableSlotsQuery = { availableSlots: Array<string> };
+
+export type BookAppointmentMutationVariables = Exact<{
+  input: BookAppointmentInput;
+}>;
+
+
+export type BookAppointmentMutation = { bookAppointment: { id: string } };
 
 export type NearbyBarbershopsQueryVariables = Exact<{
   latitude: number;
@@ -147,6 +172,18 @@ export const MeDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<MeQuery, MeQueryVariables>;
+export const AvailableSlotsDocument = new TypedDocumentString(`
+    query AvailableSlots($barberId: ID!, $serviceId: ID!, $date: String!) {
+  availableSlots(barberId: $barberId, serviceId: $serviceId, date: $date)
+}
+    `) as unknown as TypedDocumentString<AvailableSlotsQuery, AvailableSlotsQueryVariables>;
+export const BookAppointmentDocument = new TypedDocumentString(`
+    mutation BookAppointment($input: BookAppointmentInput!) {
+  bookAppointment(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<BookAppointmentMutation, BookAppointmentMutationVariables>;
 export const NearbyBarbershopsDocument = new TypedDocumentString(`
     query NearbyBarbershops($latitude: Float!, $longitude: Float!) {
   barbershopsNearby(
