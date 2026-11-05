@@ -1,4 +1,4 @@
-import { Link, type Href } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, View, type PressableProps } from 'react-native';
 import { Text } from './text';
 import { colors, fonts, radius, space } from './theme';
@@ -56,16 +56,16 @@ export function LinkButton({
   variant?: Variant;
   replace?: boolean;
 }) {
+  const router = useRouter();
   return (
-    <Link href={href} replace={replace} asChild>
-      <Pressable
-        accessibilityRole="link"
-        accessibilityLabel={label}
-        style={({ pressed }) => [styles.base, styles[variant], pressed && styles.pressed]}
-      >
-        <Text style={[styles.label, labelStyles[variant]]}>{label}</Text>
-      </Pressable>
-    </Link>
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={label}
+      onPress={() => (replace ? router.replace(href) : router.push(href))}
+      style={({ pressed }) => [styles.base, styles[variant], pressed && styles.pressed]}
+    >
+      <Text style={[styles.label, labelStyles[variant]]}>{label}</Text>
+    </Pressable>
   );
 }
 

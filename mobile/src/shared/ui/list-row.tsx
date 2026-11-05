@@ -1,5 +1,4 @@
-import type { Href } from 'expo-router';
-import { Link } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { colors, hairline, space } from './theme';
@@ -18,18 +17,19 @@ export function LinkRow({
   children: ReactNode;
   trailing?: ReactNode;
 }) {
+  // a Pressable that navigates, not Link asChild: Link drops a style function on its child
+  const router = useRouter();
   return (
-    <Link href={href} asChild>
-      <Pressable
-        accessibilityRole="link"
-        accessibilityLabel={label}
-        style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-      >
-        {leading}
-        <View style={styles.body}>{children}</View>
-        {trailing}
-      </Pressable>
-    </Link>
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={label}
+      onPress={() => router.push(href)}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+    >
+      {leading}
+      <View style={styles.body}>{children}</View>
+      {trailing}
+    </Pressable>
   );
 }
 

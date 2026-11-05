@@ -75,15 +75,19 @@ export function isIsoDate(value: string | null | undefined): value is string {
   return addDays(value, 0) === value;
 }
 
-const relative = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' });
+const plural = (n: number, one: string, many: string) => `há ${n} ${n === 1 ? one : many}`;
 
-/** "agora", "há 5 minutos", "há 2 horas", "ontem", "há 3 dias", then the date. */
+/**
+ * "agora", "há 5 minutos", "há 2 horas", "ontem", "há 3 dias", then the date. Written by hand:
+ * Hermes, React Native's engine, has no Intl.RelativeTimeFormat.
+ */
 export function formatRelative(iso: string, now: Date = new Date()): string {
   const seconds = Math.round((now.getTime() - Date.parse(iso)) / 1000);
   if (seconds < 60) return 'agora';
-  if (seconds < 3600) return relative.format(-Math.floor(seconds / 60), 'minute');
-  if (seconds < 86_400) return relative.format(-Math.floor(seconds / 3600), 'hour');
+  if (seconds < 3600) return plural(Math.floor(seconds / 60), 'minuto', 'minutos');
+  if (seconds < 86_400) return plural(Math.floor(seconds / 3600), 'hora', 'horas');
   const days = Math.floor(seconds / 86_400);
-  if (days < 7) return relative.format(-days, 'day');
+  if (days === 1) return 'ontem';
+  if (days < 7) return plural(days, 'dia', 'dias');
   return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(new Date(iso));
 }

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import {
   addDays,
   formatLongDate,
@@ -14,6 +15,11 @@ import {
 const SP = 'America/Sao_Paulo';
 
 describe('time helpers', () => {
+  it('uses no Intl API that Hermes lacks', () => {
+    const source = readFileSync(`${__dirname}/time.ts`, 'utf8');
+    expect(source).not.toMatch(/new Intl\.RelativeTimeFormat/);
+  });
+
   it('todayIn gives the local date in the zone', () => {
     expect(todayIn(SP, new Date('2026-11-02T02:30:00Z'))).toBe('2026-11-01');
     expect(todayIn(SP, new Date('2026-11-02T03:30:00Z'))).toBe('2026-11-02');
@@ -55,6 +61,8 @@ describe('time helpers', () => {
     const now = new Date('2026-11-05T12:00:00Z');
     expect(formatRelative('2026-11-05T11:59:30Z', now)).toBe('agora');
     expect(formatRelative('2026-11-05T11:55:00Z', now)).toBe('há 5 minutos');
+    expect(formatRelative('2026-11-05T11:00:00Z', now)).toBe('há 1 hora');
     expect(formatRelative('2026-11-04T11:00:00Z', now)).toBe('ontem');
+    expect(formatRelative('2026-11-02T11:00:00Z', now)).toBe('há 3 dias');
   });
 });

@@ -5,8 +5,10 @@
     "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,
     "types": ["jest", "node"],
-    "paths": { "@/*": ["./src/*"] }
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "dist-web"]
 }

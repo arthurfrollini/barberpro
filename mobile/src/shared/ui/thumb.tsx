@@ -3,10 +3,13 @@ import { StyleSheet, View } from 'react-native';
 import { Text } from './text';
 import { colors, radius } from './theme';
 
-const initials = (name: string) =>
+// "Navalha de Ouro" → "NO": connectors do not make initials
+const CONNECTORS = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
+
+export const initials = (name: string) =>
   name
     .split(/\s+/)
-    .filter(Boolean)
+    .filter((word) => word && !CONNECTORS.has(word.toLowerCase()))
     .slice(0, 2)
     .map((word) => word[0]!.toUpperCase())
     .join('');
@@ -40,7 +43,10 @@ export function Thumb({
       style={[styles.box, styles.fallback, shape]}
       importantForAccessibility="no-hide-descendants"
     >
-      <Text variant="heading" style={{ fontSize: size * 0.36, color: colors.accent }}>
+      <Text
+        variant="heading"
+        style={{ fontSize: size * 0.36, lineHeight: size * 0.46, color: colors.accent }}
+      >
         {initials(name)}
       </Text>
     </View>
