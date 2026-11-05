@@ -4,6 +4,10 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 /** Internal type. DO NOT USE DIRECTLY. */
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 import type { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
+export type AppointmentStatus =
+  | 'BOOKED'
+  | 'CANCELED';
+
 export type BookAppointmentInput = {
   barberId: string | number;
   /** 5 to 60 in steps of 5; leave out for no reminder. */
@@ -12,6 +16,13 @@ export type BookAppointmentInput = {
   /** One of the times availableSlots returned. */
   startsAt: string;
 };
+
+export type CancelReason =
+  | 'BARBER'
+  | 'BARBER_REMOVED'
+  | 'CUSTOMER'
+  | 'DAY_BLOCKED'
+  | 'SCHEDULE_CHANGED';
 
 export type SignInInput = {
   email: string;
@@ -35,6 +46,36 @@ export type UpdateProfileMutationVariables = Exact<{
 
 
 export type UpdateProfileMutation = { updateProfile: { id: string, name: string, email: string } };
+
+export type MyAppointmentsQueryVariables = Exact<{
+  upcoming: boolean;
+}>;
+
+
+export type MyAppointmentsQuery = { myAppointments: Array<{ id: string, startsAt: string, endsAt: string, status: AppointmentStatus, serviceName: string, priceCents: number, durationMinutes: number, reminderLeadMinutes: number | null, cancelReason: CancelReason | null, canceledAt: string | null, barber: { id: string, name: string, avatarUrl: string | null, barbershop: { id: string, name: string, address: string, timezone: string, latitude: number, longitude: number } } }> };
+
+export type CancelAppointmentMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type CancelAppointmentMutation = { cancelAppointment: { id: string, status: AppointmentStatus, cancelReason: CancelReason | null, canceledAt: string | null } };
+
+export type RescheduleSlotsQueryVariables = Exact<{
+  appointmentId: string | number;
+  date: string;
+}>;
+
+
+export type RescheduleSlotsQuery = { rescheduleSlots: Array<string> };
+
+export type RescheduleAppointmentMutationVariables = Exact<{
+  id: string | number;
+  startsAt: string;
+}>;
+
+
+export type RescheduleAppointmentMutation = { rescheduleAppointment: { id: string, startsAt: string } };
 
 export type SignInMutationVariables = Exact<{
   input: SignInInput;
@@ -135,6 +176,58 @@ export const UpdateProfileDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<UpdateProfileMutation, UpdateProfileMutationVariables>;
+export const MyAppointmentsDocument = new TypedDocumentString(`
+    query MyAppointments($upcoming: Boolean!) {
+  myAppointments(upcoming: $upcoming) {
+    id
+    startsAt
+    endsAt
+    status
+    serviceName
+    priceCents
+    durationMinutes
+    reminderLeadMinutes
+    cancelReason
+    canceledAt
+    barber {
+      id
+      name
+      avatarUrl
+      barbershop {
+        id
+        name
+        address
+        timezone
+        latitude
+        longitude
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<MyAppointmentsQuery, MyAppointmentsQueryVariables>;
+export const CancelAppointmentDocument = new TypedDocumentString(`
+    mutation CancelAppointment($id: ID!) {
+  cancelAppointment(id: $id) {
+    id
+    status
+    cancelReason
+    canceledAt
+  }
+}
+    `) as unknown as TypedDocumentString<CancelAppointmentMutation, CancelAppointmentMutationVariables>;
+export const RescheduleSlotsDocument = new TypedDocumentString(`
+    query RescheduleSlots($appointmentId: ID!, $date: String!) {
+  rescheduleSlots(appointmentId: $appointmentId, date: $date)
+}
+    `) as unknown as TypedDocumentString<RescheduleSlotsQuery, RescheduleSlotsQueryVariables>;
+export const RescheduleAppointmentDocument = new TypedDocumentString(`
+    mutation RescheduleAppointment($id: ID!, $startsAt: DateTime!) {
+  rescheduleAppointment(id: $id, startsAt: $startsAt) {
+    id
+    startsAt
+  }
+}
+    `) as unknown as TypedDocumentString<RescheduleAppointmentMutation, RescheduleAppointmentMutationVariables>;
 export const SignInDocument = new TypedDocumentString(`
     mutation SignIn($input: SignInInput!) {
   signIn(input: $input) {

@@ -1,4 +1,4 @@
-import { bookingDates, dayLabel } from './dates';
+import { bookingDates, dayLabel } from './booking-dates';
 
 const SP = 'America/Sao_Paulo';
 

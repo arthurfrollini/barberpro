@@ -16,6 +16,10 @@ import * as types from './graphql';
  */
 type Documents = {
     "\n  mutation UpdateProfile($input: UpdateProfileInput!) {\n    updateProfile(input: $input) {\n      id\n      name\n      email\n    }\n  }\n": typeof types.UpdateProfileDocument,
+    "\n  query MyAppointments($upcoming: Boolean!) {\n    myAppointments(upcoming: $upcoming) {\n      id\n      startsAt\n      endsAt\n      status\n      serviceName\n      priceCents\n      durationMinutes\n      reminderLeadMinutes\n      cancelReason\n      canceledAt\n      barber {\n        id\n        name\n        avatarUrl\n        barbershop {\n          id\n          name\n          address\n          timezone\n          latitude\n          longitude\n        }\n      }\n    }\n  }\n": typeof types.MyAppointmentsDocument,
+    "\n  mutation CancelAppointment($id: ID!) {\n    cancelAppointment(id: $id) {\n      id\n      status\n      cancelReason\n      canceledAt\n    }\n  }\n": typeof types.CancelAppointmentDocument,
+    "\n  query RescheduleSlots($appointmentId: ID!, $date: String!) {\n    rescheduleSlots(appointmentId: $appointmentId, date: $date)\n  }\n": typeof types.RescheduleSlotsDocument,
+    "\n  mutation RescheduleAppointment($id: ID!, $startsAt: DateTime!) {\n    rescheduleAppointment(id: $id, startsAt: $startsAt) {\n      id\n      startsAt\n    }\n  }\n": typeof types.RescheduleAppointmentDocument,
     "\n  mutation SignIn($input: SignInInput!) {\n    signIn(input: $input) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n      user {\n        id\n        name\n        email\n      }\n    }\n  }\n": typeof types.SignInDocument,
     "\n  mutation SignUp($input: SignUpInput!) {\n    signUp(input: $input) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n      user {\n        id\n        name\n        email\n      }\n    }\n  }\n": typeof types.SignUpDocument,
     "\n  query Me {\n    me {\n      id\n      name\n      email\n    }\n  }\n": typeof types.MeDocument,
@@ -29,6 +33,10 @@ type Documents = {
 };
 const documents: Documents = {
     "\n  mutation UpdateProfile($input: UpdateProfileInput!) {\n    updateProfile(input: $input) {\n      id\n      name\n      email\n    }\n  }\n": types.UpdateProfileDocument,
+    "\n  query MyAppointments($upcoming: Boolean!) {\n    myAppointments(upcoming: $upcoming) {\n      id\n      startsAt\n      endsAt\n      status\n      serviceName\n      priceCents\n      durationMinutes\n      reminderLeadMinutes\n      cancelReason\n      canceledAt\n      barber {\n        id\n        name\n        avatarUrl\n        barbershop {\n          id\n          name\n          address\n          timezone\n          latitude\n          longitude\n        }\n      }\n    }\n  }\n": types.MyAppointmentsDocument,
+    "\n  mutation CancelAppointment($id: ID!) {\n    cancelAppointment(id: $id) {\n      id\n      status\n      cancelReason\n      canceledAt\n    }\n  }\n": types.CancelAppointmentDocument,
+    "\n  query RescheduleSlots($appointmentId: ID!, $date: String!) {\n    rescheduleSlots(appointmentId: $appointmentId, date: $date)\n  }\n": types.RescheduleSlotsDocument,
+    "\n  mutation RescheduleAppointment($id: ID!, $startsAt: DateTime!) {\n    rescheduleAppointment(id: $id, startsAt: $startsAt) {\n      id\n      startsAt\n    }\n  }\n": types.RescheduleAppointmentDocument,
     "\n  mutation SignIn($input: SignInInput!) {\n    signIn(input: $input) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n      user {\n        id\n        name\n        email\n      }\n    }\n  }\n": types.SignInDocument,
     "\n  mutation SignUp($input: SignUpInput!) {\n    signUp(input: $input) {\n      accessToken\n      accessTokenExpiresAt\n      refreshToken\n      user {\n        id\n        name\n        email\n      }\n    }\n  }\n": types.SignUpDocument,
     "\n  query Me {\n    me {\n      id\n      name\n      email\n    }\n  }\n": types.MeDocument,
@@ -45,6 +53,22 @@ const documents: Documents = {
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation UpdateProfile($input: UpdateProfileInput!) {\n    updateProfile(input: $input) {\n      id\n      name\n      email\n    }\n  }\n"): typeof import('./graphql').UpdateProfileDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query MyAppointments($upcoming: Boolean!) {\n    myAppointments(upcoming: $upcoming) {\n      id\n      startsAt\n      endsAt\n      status\n      serviceName\n      priceCents\n      durationMinutes\n      reminderLeadMinutes\n      cancelReason\n      canceledAt\n      barber {\n        id\n        name\n        avatarUrl\n        barbershop {\n          id\n          name\n          address\n          timezone\n          latitude\n          longitude\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').MyAppointmentsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation CancelAppointment($id: ID!) {\n    cancelAppointment(id: $id) {\n      id\n      status\n      cancelReason\n      canceledAt\n    }\n  }\n"): typeof import('./graphql').CancelAppointmentDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query RescheduleSlots($appointmentId: ID!, $date: String!) {\n    rescheduleSlots(appointmentId: $appointmentId, date: $date)\n  }\n"): typeof import('./graphql').RescheduleSlotsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation RescheduleAppointment($id: ID!, $startsAt: DateTime!) {\n    rescheduleAppointment(id: $id, startsAt: $startsAt) {\n      id\n      startsAt\n    }\n  }\n"): typeof import('./graphql').RescheduleAppointmentDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

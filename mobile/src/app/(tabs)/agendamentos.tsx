@@ -1,10 +1,3 @@
-import { Screen } from '@/shared/ui/screen';
-import { Text } from '@/shared/ui/text';
+import { AppointmentsScreen } from '@/features/appointments/screens/appointments-screen';
 
-export default function AgendamentosTab() {
-  return (
-    <Screen>
-      <Text variant="title">Agendamentos</Text>
-    </Screen>
-  );
-}
+export default AppointmentsScreen;

@@ -1,9 +1,9 @@
 import { useEffect, useRef, type ComponentRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { formatLongDate } from '@/shared/lib/time';
-import { Text } from '@/shared/ui/text';
-import { colors, fonts, radius, space } from '@/shared/ui/theme';
-import { dayLabel } from '../lib/dates';
+import { Text } from './text';
+import { colors, fonts, radius, space } from './theme';
+import { dayLabel } from '@/shared/lib/booking-dates';
 
 const CELL = 64;
 

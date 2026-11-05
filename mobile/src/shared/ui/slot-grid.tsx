@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { formatTime } from '@/shared/lib/time';
-import { Text } from '@/shared/ui/text';
-import { colors, fonts, radius, space } from '@/shared/ui/theme';
+import { Text } from './text';
+import { colors, fonts, radius, space } from './theme';
 
 /** Free start times as big slab numerals, four to a row; the chosen one filled orange. */
 export function SlotGrid({
