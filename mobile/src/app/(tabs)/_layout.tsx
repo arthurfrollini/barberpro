@@ -16,9 +16,8 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.bar },
-        headerTitleStyle: { fontFamily: fonts.slab, color: colors.text },
-        headerShadowVisible: false,
+        // each tab draws its own large title under the status bar
+        headerShown: false,
         tabBarStyle: { backgroundColor: colors.bar, borderTopColor: colors.bar },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.muted,

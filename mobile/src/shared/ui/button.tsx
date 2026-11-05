@@ -1,3 +1,4 @@
+import { Link, type Href } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, View, type PressableProps } from 'react-native';
 import { Text } from './text';
 import { colors, fonts, radius, space } from './theme';
@@ -40,6 +41,31 @@ export function Button({
         <Text style={[styles.label, labelStyles[variant]]}>{label}</Text>
       </View>
     </Pressable>
+  );
+}
+
+/** A link that looks like a button: navigation, not an action. */
+export function LinkButton({
+  href,
+  label,
+  variant = 'primary',
+  replace,
+}: {
+  href: Href;
+  label: string;
+  variant?: Variant;
+  replace?: boolean;
+}) {
+  return (
+    <Link href={href} replace={replace} asChild>
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={label}
+        style={({ pressed }) => [styles.base, styles[variant], pressed && styles.pressed]}
+      >
+        <Text style={[styles.label, labelStyles[variant]]}>{label}</Text>
+      </Pressable>
+    </Link>
   );
 }
 

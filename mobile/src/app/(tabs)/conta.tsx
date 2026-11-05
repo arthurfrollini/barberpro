@@ -1,10 +1,3 @@
-import { Screen } from '@/shared/ui/screen';
-import { Text } from '@/shared/ui/text';
+import { AccountScreen } from '@/features/account/screens/account-screen';
 
-export default function ContaTab() {
-  return (
-    <Screen>
-      <Text variant="title">Conta</Text>
-    </Screen>
-  );
-}
+export default AccountScreen;
