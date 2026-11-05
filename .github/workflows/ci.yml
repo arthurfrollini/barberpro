@@ -69,6 +69,28 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - name: Generated GraphQL types are up to date
+        run: npm run codegen && git diff --exit-code src/gql
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run format:check
+      - run: npm test
+      - name: Web build
+        run: npm run export:web
+
   web-e2e:
     runs-on: ubuntu-latest
     services:

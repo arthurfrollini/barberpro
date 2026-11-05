@@ -1,0 +1,7 @@
+node_modules
+dist
+dist-web
+src/gql
+playwright-report
+test-results
+.expo
