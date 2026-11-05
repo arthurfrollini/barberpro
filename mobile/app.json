@@ -30,7 +30,9 @@
       "expo-font",
       [
         "expo-location",
-        { "locationWhenInUsePermission": "Para mostrar as barbearias perto de você." }
+        {
+          "locationWhenInUsePermission": "Para mostrar as barbearias perto de você."
+        }
       ],
       [
         "expo-splash-screen",
@@ -40,9 +42,6 @@
           "imageWidth": 160
         }
       ]
-    ],
-    "experiments": {
-      "typedRoutes": true
-    }
+    ]
   }
 }

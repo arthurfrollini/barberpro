@@ -36,9 +36,17 @@ export default tseslint.config(
     files: ['src/app/**', 'src/features/*/components/**', 'src/features/*/screens/**'],
     ignores: ['src/**/*.test.{ts,tsx}'],
     rules: {
-      'no-restricted-imports': [
+      '@typescript-eslint/no-restricted-imports': [
         'error',
-        { patterns: [{ group: ['**/api/*', '!@/shared/api'], message: 'Use a hook.' }] },
+        {
+          patterns: [
+            {
+              group: ['**/api/*', '!@/shared/api'],
+              message: 'Use a hook.',
+              allowTypeImports: true,
+            },
+          ],
+        },
       ],
     },
   },

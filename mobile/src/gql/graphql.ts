@@ -46,6 +46,35 @@ export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type MeQuery = { me: { id: string, name: string, email: string } };
 
+export type NearbyBarbershopsQueryVariables = Exact<{
+  latitude: number;
+  longitude: number;
+}>;
+
+
+export type NearbyBarbershopsQuery = { barbershopsNearby: Array<{ distanceKm: number, barbershop: { id: string, name: string, address: string, logoUrl: string | null } }> };
+
+export type SearchBarbershopsQueryVariables = Exact<{
+  query: string;
+}>;
+
+
+export type SearchBarbershopsQuery = { searchBarbershops: Array<{ id: string, name: string, address: string, logoUrl: string | null }> };
+
+export type BarbershopQueryVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type BarbershopQuery = { barbershop: { id: string, name: string, description: string, yearsActive: number, logoUrl: string | null, address: string, latitude: number, longitude: number, timezone: string, barbers: Array<{ id: string, name: string, bio: string, avatarUrl: string | null }> } | null };
+
+export type BarberQueryVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type BarberQuery = { barber: { id: string, name: string, bio: string, avatarUrl: string | null, barbershop: { id: string, name: string, address: string, timezone: string }, services: Array<{ id: string, name: string, description: string, priceCents: number, durationMinutes: number }> } | null };
+
 export type RefreshTokenMutationVariables = Exact<{
   token: string;
 }>;
@@ -118,6 +147,78 @@ export const MeDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<MeQuery, MeQueryVariables>;
+export const NearbyBarbershopsDocument = new TypedDocumentString(`
+    query NearbyBarbershops($latitude: Float!, $longitude: Float!) {
+  barbershopsNearby(
+    latitude: $latitude
+    longitude: $longitude
+    radiusKm: 10
+    limit: 30
+  ) {
+    distanceKm
+    barbershop {
+      id
+      name
+      address
+      logoUrl
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<NearbyBarbershopsQuery, NearbyBarbershopsQueryVariables>;
+export const SearchBarbershopsDocument = new TypedDocumentString(`
+    query SearchBarbershops($query: String!) {
+  searchBarbershops(query: $query, limit: 30) {
+    id
+    name
+    address
+    logoUrl
+  }
+}
+    `) as unknown as TypedDocumentString<SearchBarbershopsQuery, SearchBarbershopsQueryVariables>;
+export const BarbershopDocument = new TypedDocumentString(`
+    query Barbershop($id: ID!) {
+  barbershop(id: $id) {
+    id
+    name
+    description
+    yearsActive
+    logoUrl
+    address
+    latitude
+    longitude
+    timezone
+    barbers {
+      id
+      name
+      bio
+      avatarUrl
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<BarbershopQuery, BarbershopQueryVariables>;
+export const BarberDocument = new TypedDocumentString(`
+    query Barber($id: ID!) {
+  barber(id: $id) {
+    id
+    name
+    bio
+    avatarUrl
+    barbershop {
+      id
+      name
+      address
+      timezone
+    }
+    services {
+      id
+      name
+      description
+      priceCents
+      durationMinutes
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<BarberQuery, BarberQueryVariables>;
 export const RefreshTokenDocument = new TypedDocumentString(`
     mutation RefreshToken($token: String!) {
   refreshToken(token: $token) {

@@ -1,10 +1,3 @@
-import { Screen } from '@/shared/ui/screen';
-import { Text } from '@/shared/ui/text';
+import { ExploreScreen } from '@/features/explore/screens/explore-screen';
 
-export default function ExplorarTab() {
-  return (
-    <Screen>
-      <Text variant="title">Explorar</Text>
-    </Screen>
-  );
-}
+export default ExploreScreen;
