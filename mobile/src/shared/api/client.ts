@@ -20,7 +20,7 @@ const timeoutError = () => new ApiError('TIMEOUT', 'The API did not answer in ti
 /**
  * One POST to /graphql. Throws NETWORK_ERROR when there is no usable GraphQL answer, TIMEOUT
  * when none came in time (a mutation that timed out may still have been applied). The timer
- * is our own: `AbortSignal.timeout` is missing from some React Native runtimes.
+ * is a plain setTimeout, so the same code runs on Hermes, in Node (tests) and in a browser.
  */
 export async function postGraphQL<R, V>(
   transport: Transport,

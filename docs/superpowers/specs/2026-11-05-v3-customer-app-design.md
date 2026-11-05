@@ -23,6 +23,7 @@ Success: a person who has never used BarberPro opens the app, sees the shops aro
 - **Tests**: Jest with `jest-expo` and React Native Testing Library, the runner Expo documents. Network in component tests is a fake `fetch` injected into the real API client that answers by operation name (MSW 3 is ESM-only and fights the React Native Jest transform). Screens with navigation are tested with `expo-router/testing-library`'s `renderRouter`.
 - **End to end**: Playwright drives the app's web build (Chromium, phone-sized viewport, geolocation granted) against the real API, worker, Postgres and Redis, like the dashboard's suite. The flows set up a shop through the API and then book, cancel and reschedule as a customer in the UI.
 - **Native check**: the app runs in Expo Go on the iOS simulator; each screen gets checked there by hand with screenshots before the PR.
+- **Typed routes off**: Expo Router only generates the route types while the dev server runs, so `tsc` would pass in CI and fail locally, or the reverse. Wrong paths are caught by the screen tests and the end-to-end suite instead.
 - **Language**: interface in pt-BR, code in English. Paths in Portuguese, as in the dashboard (`/barbearia/[id]`, `/agendar`).
 
 ## Screens
@@ -47,7 +48,7 @@ Every query screen has loading, empty and error states with a retry. Every mutat
 
 ## Visual direction
 
-The brand carries over from the dashboard: plum-grey `#312E38` ground, `#28262E` for bars, `#3E3B47` for raised surfaces and inputs, `#FF9000` as the only accent, `#F4EDE8` text and `#999591` secondary text. Dark only. Roboto Slab for headings and for numerals that matter (times, prices); Archivo for the interface, both from `@expo-google-fonts`.
+The brand carries over from the dashboard: plum-grey `#312E38` ground, `#28262E` for bars, `#3E3B47` for raised surfaces and inputs, `#FF9000` as the only accent, `#F4EDE8` text and `#B3AEA9` secondary text (lighter than the dashboard's `#999591`, which falls under 4.5:1 on the raised surface). Dark only. Roboto Slab for headings and for numerals that matter (times, prices); Archivo for the interface, both from `@expo-google-fonts`.
 
 The memorable element is booking: the free times as a grid of large slab numerals, the chosen one filled orange, and the date strip above it with the weekday small and the day number big. The confirmation reads like a ticket: shop, barber, service and the time in big slab type. Everything else stays quiet: lists with hairline separators, one radius scale, no gradients, no shadows beyond the system's.
 

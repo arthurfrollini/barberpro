@@ -23,8 +23,9 @@ This is a rewrite of a 2021 Express project (kept under the [`v2021`](https://gi
 | Web 3 | Barber setup: weekly hours, days off, services, profile                  | done  |
 | Web 4 | Owner: getting started, shop page, team, invites                         | done  |
 | V2    | Many shops per owner and per barber, shop switcher in the dashboard      | done  |
+| V3    | Customer app (Expo): find shops, book, cancel, reschedule, notifications | done  |
 
-The designs are in [`docs/superpowers/specs`](docs/superpowers/specs) (API, dashboard, V2) and each phase has its plan in [`docs/superpowers/plans`](docs/superpowers/plans). Study notes in Portuguese, including a walk through [every piece of the stack](learnings/Stack.md), are in [`learnings/`](learnings/README.md).
+The designs are in [`docs/superpowers/specs`](docs/superpowers/specs) (API, dashboard, V2, V3) and each phase has its plan in [`docs/superpowers/plans`](docs/superpowers/plans). Study notes in Portuguese, including a walk through [every piece of the stack](learnings/Stack.md), are in [`learnings/`](learnings/README.md).
 
 ## Stack
 
@@ -212,6 +213,34 @@ npm run test:e2e   # Playwright; needs Postgres, Redis and Mailpit from docker c
                    # npm install in the repo root and npx playwright install chromium
 npm run codegen    # after changing an operation or the API's schema
 npm run seed:demo  # with the API up: a barber with bookings today; prints the login
+```
+
+## Customer app
+
+`mobile/` is the customers' app, built with Expo and Expo Router, in Portuguese. Like the dashboard, it types every operation from the API's SDL files, so a breaking schema change fails its CI in the same PR ([ADR 8](docs/adr/0008-customer-app-with-expo.md)). It needed no API change.
+
+What it does:
+
+- **Explorar:** shops within 10 km of the phone, nearest first, or search by name (typos allowed). Without location, search still works.
+- **Barbearia, Barbeiro:** the shop's page with its barbers and a link to the phone's maps app; each barber's services with price and length.
+- **Agendar:** a strip of the next 60 days, the free times as a grid in the shop's time zone, and a reminder. Browsing needs no account; confirming does, and the chosen day and time survive signing in or up.
+- **Agendamentos:** upcoming and past bookings. Each opens as a ticket, with cancel and reschedule until 2 hours before.
+- **Avisos:** cancellations by the barber, reschedules and reminders, with the unread count on the tab.
+
+- Expo SDK 58, React Native 0.88, React 19, TanStack Query, React Hook Form with zod
+- The same shape as the dashboard: feature folders, request functions as the only network code, hooks over TanStack Query, GraphQL Code Generator's client preset with a small `fetch` client
+- The session in the Keychain or Keystore (`expo-secure-store`), `localStorage` on web, with one refresh at a time because refresh tokens are single use
+- Jest with jest-expo and React Native Testing Library, over the real API client and a fake `fetch`; Playwright drives the web build against the real API
+
+```bash
+cd mobile
+npm install
+cp .env.example .env   # EXPO_PUBLIC_API_URL, the API the app talks to
+npm start              # then i for the iOS simulator, a for Android, or scan the QR code with Expo Go
+npm run check          # lint, typecheck, format, unit and component tests
+npm run test:e2e       # Playwright on the web build; needs Postgres, Redis and Mailpit from
+                       # docker compose, npm install in the repo root and npx playwright install chromium
+npm run codegen        # after changing an operation or the API's schema
 ```
 
 ## Architecture
