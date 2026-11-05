@@ -143,3 +143,56 @@ jobs:
           name: playwright-report
           path: web/playwright-report
           retention-days: 7
+
+  mobile-e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: imresamu/postgis:17-3.5-alpine
+        env:
+          POSTGRES_USER: barberpro
+          POSTGRES_PASSWORD: barberpro
+          POSTGRES_DB: barberpro_test
+        ports:
+          - 5442:5432
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U barberpro -d barberpro_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6390:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mailpit:
+        image: axllent/mailpit:latest
+        ports:
+          - 8025:8025
+          - 1025:1025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mobile/package-lock.json
+      - run: npm ci
+      - run: npm ci
+        working-directory: mobile
+      - run: npx playwright install --with-deps chromium
+        working-directory: mobile
+      - run: npm run test:e2e
+        working-directory: mobile
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: mobile-playwright-report
+          path: mobile/playwright-report
+          retention-days: 7

@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { testRouter } from 'expo-router/testing-library';
 import { Text } from 'react-native';
 import { gqlError } from '@/test/fake-api';
 import { renderAppRouter } from '@/test/render';
@@ -66,6 +67,20 @@ describe('sign in', () => {
     await fireEvent.press(screen.getByRole('link', { name: 'Criar conta' }));
     await waitFor(() => expect(screen).toHavePathname('/criar-conta'));
     expect(screen).toHaveSearchParams({ voltar: '/agendar' });
+  });
+
+  it('goes back to the screen under it, instead of opening a second copy', async () => {
+    await renderAppRouter(routes, {
+      initialUrl: '/agendar',
+      signedIn: false,
+      handlers: { SignIn: () => ({ signIn: payload('Ana', 'ana@example.com') }) },
+    });
+    await testRouter.push(`/entrar?voltar=${encodeURIComponent('/agendar')}`);
+    await fireEvent.changeText(await screen.findByLabelText('Email'), 'ana@example.com');
+    await fireEvent.changeText(screen.getByLabelText('Senha'), 'correct horse');
+    await fireEvent.press(screen.getByRole('button', { name: 'Entrar' }));
+    await waitFor(() => expect(screen).toHavePathname('/agendar'));
+    expect(testRouter.canGoBack()).toBe(false);
   });
 });
 

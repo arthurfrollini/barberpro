@@ -49,7 +49,8 @@ function Reschedule({ appointment: a }: { appointment: Appointment }) {
     setError(undefined);
     try {
       await reschedule.mutateAsync({ id: a.id, startsAt: selected });
-      router.replace(`/agendamento/${a.id}?remarcado=1` as Href);
+      // back to the detail this came from, not a second copy of it on top
+      router.dismissTo(`/agendamento/${a.id}?remarcado=1` as Href);
     } catch (failure) {
       const code = isApiError(failure) ? failure.code : undefined;
       setError(messageFor(code));
