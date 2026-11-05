@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Alert, Text } from 'react-native';
-import { formatShortDateTime, formatTime, todayIn, addDays } from '@/shared/lib/time';
+import { addDays, formatShortDateTime, formatTime, localDateOf, todayIn } from '@/shared/lib/time';
 import { gqlError, type FakeHandler } from '@/test/fake-api';
 import { appointment } from '@/test/fixtures';
 import { renderAppRouter } from '@/test/render';
@@ -145,6 +145,17 @@ describe('appointment detail', () => {
 });
 
 describe('reschedule', () => {
+  it('opens on the day the appointment is on', async () => {
+    const { server } = await renderAppRouter(routes, {
+      initialUrl: '/remarcar/appt-1',
+      handlers: { ...lists, RescheduleSlots: () => ({ rescheduleSlots: [] }) },
+    });
+    expect(await screen.findByText('Nenhum horário livre neste dia')).toBeTruthy();
+    expect(server.variablesOf('RescheduleSlots')).toEqual([
+      { appointmentId: 'appt-1', date: localDateOf(upcoming.startsAt, SP) },
+    ]);
+  });
+
   it('moves the appointment to a new time', async () => {
     const tomorrow = addDays(todayIn(SP), 1);
     const { server } = await renderAppRouter(routes, {

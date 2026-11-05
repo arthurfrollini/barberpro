@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { isApiError } from '@/shared/api';
 import { bookingDates } from '@/shared/lib/booking-dates';
 import { messageFor } from '@/shared/lib/error-messages';
-import { formatLongDate, formatShortDateTime } from '@/shared/lib/time';
+import { formatLongDate, formatShortDateTime, localDateOf } from '@/shared/lib/time';
 import { Button } from '@/shared/ui/button';
 import { DateStrip } from '@/shared/ui/date-strip';
 import { FormError } from '@/shared/ui/form-error';
@@ -37,7 +37,11 @@ function Reschedule({ appointment: a }: { appointment: Appointment }) {
   const router = useRouter();
   const timeZone = a.barber.barbershop.timezone;
   const dates = useMemo(() => bookingDates(timeZone), [timeZone]);
-  const [date, setDate] = useState(dates[0]!);
+  // starts on the appointment's own day: moving it an hour is the common case
+  const [date, setDate] = useState(() => {
+    const current = localDateOf(a.startsAt, timeZone);
+    return dates.includes(current) ? current : dates[0]!;
+  });
   const [chosen, setChosen] = useState<string | null>(null);
   const [error, setError] = useState<string>();
   const slots = useRescheduleSlots(a.id, date);
