@@ -42,6 +42,9 @@ export default function TabsLayout() {
           title: 'Avisos',
           tabBarIcon: icon('notifications-outline'),
           tabBarBadge: badge,
+          tabBarAccessibilityLabel: unread.data
+            ? `Avisos, ${unread.data} ${unread.data === 1 ? 'não lido' : 'não lidos'}`
+            : undefined,
           tabBarBadgeStyle: { backgroundColor: colors.accent, color: colors.onAccent },
         }}
       />

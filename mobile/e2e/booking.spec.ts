@@ -17,7 +17,7 @@ test('a new customer finds a shop, signs up on the way and books', async ({ page
 
   await page.getByRole('button', { name: /^amanhã/ }).click();
   await page.getByLabel('Horários livres').getByRole('button', { name: '10:00' }).click();
-  await page.getByRole('button', { name: '1 h', exact: true }).click();
+  await page.getByRole('radio', { name: '1 h', exact: true }).click();
   await page.getByRole('button', { name: 'Entrar para agendar' }).click();
 
   // no account yet: sign up, and come back to the same choice

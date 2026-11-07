@@ -78,6 +78,27 @@ describe('session store', () => {
     expect(store.get()?.accessToken).toBe('a');
   });
 
+  it('signs out when the refresh times out: the rotation may have committed', async () => {
+    const refresh = jest.fn(async () => {
+      throw new ApiError('TIMEOUT', 'slow');
+    });
+    const { store } = await storeWith(session('a', 0), refresh);
+    await expect(store.accessToken()).resolves.toBeNull();
+    expect(store.get()).toBeNull();
+  });
+
+  it('gives no token when someone else signed in while the refresh ran', async () => {
+    let finish: (s: Session) => void = () => {};
+    const refresh = jest.fn(() => new Promise<Session>((resolve) => (finish = resolve)));
+    const { store } = await storeWith(session('a', 0), refresh);
+    const pending = store.accessToken({ force: true });
+    store.set(session('other-user', 15));
+    finish(session('b', 15));
+    // the caller retries its request with this token: it must not run as the other user
+    await expect(pending).resolves.toBeNull();
+    expect(store.get()?.accessToken).toBe('other-user');
+  });
+
   it('signs out when the refresh token is rejected', async () => {
     const refresh = jest.fn(async () => {
       throw new ApiError('INVALID_REFRESH_TOKEN', 'reused');

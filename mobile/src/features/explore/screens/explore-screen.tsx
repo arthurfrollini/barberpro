@@ -12,6 +12,8 @@ import { useLocation, type LocationState } from '../lib/location';
 export function ExploreScreen() {
   const [text, setText] = useState('');
   const typed = text.trim();
+  // asked here, not in Nearby: Nearby unmounts while the user types
+  const location = useLocation();
 
   return (
     <Screen edges={['top', 'left', 'right']}>
@@ -29,7 +31,7 @@ export function ExploreScreen() {
         clearButtonMode="while-editing"
       />
       {typed.length === 0 ? (
-        <Nearby />
+        <Nearby location={location} />
       ) : typed.length < MIN_SEARCH ? (
         <Text variant="muted">Digite pelo menos 2 letras.</Text>
       ) : (
@@ -39,8 +41,7 @@ export function ExploreScreen() {
   );
 }
 
-function Nearby() {
-  const location = useLocation();
+function Nearby({ location }: { location: LocationState }) {
   const coords = location.status === 'granted' ? location.coords : null;
   const nearby = useNearby(coords);
 

@@ -59,7 +59,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "jest",
+    "test": "TZ=UTC jest",
     "codegen": "graphql-codegen --config codegen.ts",
     "export:web": "expo export --platform web --output-dir dist-web",
     "test:e2e": "playwright test",

@@ -42,6 +42,7 @@ export function Thumb({
     <View
       style={[styles.box, styles.fallback, shape]}
       importantForAccessibility="no-hide-descendants"
+      accessibilityElementsHidden
     >
       <Text
         variant="heading"

@@ -24,7 +24,7 @@ export function SignUpForm({ onSignedUp }: { onSignedUp: () => void }) {
     resolver: zodResolver(signUpSchema),
     defaultValues: { name: '', email: '', password: '' },
   });
-  const { errors } = form.formState;
+  const { errors, isSubmitting } = form.formState;
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
@@ -35,6 +35,11 @@ export function SignUpForm({ onSignedUp }: { onSignedUp: () => void }) {
       form.setError((code && FIELD_OF[code]) || 'root', { message: messageFor(code) });
     }
   });
+
+  // the keyboard's return key and the button both submit: only one at a time
+  const submit = () => {
+    if (!isSubmitting && !signUp.isPending) void onSubmit();
+  };
 
   return (
     <View style={{ gap: space.lg }}>
@@ -84,11 +89,11 @@ export function SignUpForm({ onSignedUp }: { onSignedUp: () => void }) {
             secureTextEntry
             autoComplete="new-password"
             textContentType="newPassword"
-            onSubmitEditing={() => void onSubmit()}
+            onSubmitEditing={submit}
           />
         )}
       />
-      <Button label="Criar conta" loading={signUp.isPending} onPress={() => void onSubmit()} />
+      <Button label="Criar conta" loading={signUp.isPending} onPress={submit} />
     </View>
   );
 }

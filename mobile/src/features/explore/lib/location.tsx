@@ -42,6 +42,21 @@ export type LocationState =
   | { status: 'unavailable' }
   | { status: 'granted'; coords: Coords };
 
+/** A position that takes longer than this counts as unavailable. */
+export const LOCATION_TIMEOUT_MS = 10_000;
+
+async function withDeadline<T>(work: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('no position in time')), LOCATION_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([work, deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Asks once, when the screen opens; a refusal or a failure leaves search to the user. */
 export function useLocation(): LocationState {
   const source = use(LocationContext);
@@ -52,7 +67,7 @@ export function useLocation(): LocationState {
       let next: LocationState;
       try {
         next = (await source.request())
-          ? { status: 'granted', coords: await source.current() }
+          ? { status: 'granted', coords: await withDeadline(source.current()) }
           : { status: 'denied' };
       } catch {
         next = { status: 'unavailable' };

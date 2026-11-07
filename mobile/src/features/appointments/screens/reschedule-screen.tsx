@@ -1,6 +1,8 @@
 import { Stack, useRouter, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { SignedOut } from '@/features/auth/components/signed-out';
+import { useIsSignedIn } from '@/features/auth/hooks/use-auth';
 import { isApiError } from '@/shared/api';
 import { bookingDates } from '@/shared/lib/booking-dates';
 import { messageFor } from '@/shared/lib/error-messages';
@@ -17,6 +19,22 @@ import type { Appointment } from '../api/appointments';
 import { useAppointment, useReschedule, useRescheduleSlots } from '../hooks/use-appointments';
 
 export function RescheduleScreen({ id }: { id: string }) {
+  const signedIn = useIsSignedIn();
+  if (!signedIn)
+    return (
+      <Screen>
+        <Stack.Screen options={{ title: 'Remarcar' }} />
+        <SignedOut
+          title="Entre para ver este agendamento"
+          body="Os agendamentos ficam na sua conta."
+          back={`/remarcar/${id}`}
+        />
+      </Screen>
+    );
+  return <RescheduleLoader id={id} />;
+}
+
+function RescheduleLoader({ id }: { id: string }) {
   const { appointment, isPending, error, refetch } = useAppointment(id);
   if (appointment) return <Reschedule appointment={appointment} />;
   return (

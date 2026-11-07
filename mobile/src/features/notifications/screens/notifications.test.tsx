@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import TabsLayout from '@/app/(tabs)/_layout';
 import { renderAppRouter } from '@/test/render';
@@ -54,7 +54,7 @@ describe('notifications', () => {
     expect(await screen.findByText('Marcos cancelou Corte de sex 6/11 às 14:00.')).toBeTruthy();
     expect(screen.getAllByText('há 5 minutos')).toHaveLength(2);
     expect(screen.getByRole('link', { name: /^Não lido, Agendamento cancelado/ })).toBeTruthy();
-    expect(await within(screen.getByLabelText(/^Avisos, tab/)).findByText('1')).toBeTruthy();
+    expect(await screen.findByLabelText(/^Avisos, 1 não lido/)).toBeTruthy();
   });
 
   it('marks one read and opens its appointment', async () => {

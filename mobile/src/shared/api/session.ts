@@ -82,15 +82,17 @@ export function createSessionStore(options: {
         try {
           const next = await refresh(start.refreshToken);
           // signed out (or in as someone else) while this waited: the new tokens belong to a
-          // session that no longer exists here
-          if (current?.refreshToken !== start.refreshToken) return current?.accessToken ?? null;
+          // session that no longer exists here, and the caller's request must not be retried
+          // as whoever is signed in now
+          if (current?.refreshToken !== start.refreshToken) return null;
           store.set(next);
           return next.accessToken;
         } catch (error) {
           // offline is not signed out: keep the session for the next try. Any other failure
-          // ends it: retrying an old refresh token would look like reuse and revoke every
-          // session of the user.
-          if (isApiError(error, 'NETWORK_ERROR') || isApiError(error, 'TIMEOUT')) throw error;
+          // ends it, a timeout included (the rotation may have committed before the answer was
+          // lost): retrying an old refresh token would look like reuse and revoke every session
+          // of the user, on every device.
+          if (isApiError(error, 'NETWORK_ERROR')) throw error;
           if (current?.refreshToken === start.refreshToken) store.clear();
           return null;
         }

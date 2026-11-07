@@ -16,7 +16,7 @@ export function SignInForm({ onSignedIn }: { onSignedIn: () => void }) {
     resolver: zodResolver(signInSchema),
     defaultValues: { email: '', password: '' },
   });
-  const { errors } = form.formState;
+  const { errors, isSubmitting } = form.formState;
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
@@ -26,6 +26,11 @@ export function SignInForm({ onSignedIn }: { onSignedIn: () => void }) {
       form.setError('root', { message: messageFor(isApiError(error) ? error.code : undefined) });
     }
   });
+
+  // the keyboard's return key and the button both submit: only one at a time
+  const submit = () => {
+    if (!isSubmitting && !signIn.isPending) void onSubmit();
+  };
 
   return (
     <View style={{ gap: space.lg }}>
@@ -60,11 +65,11 @@ export function SignInForm({ onSignedIn }: { onSignedIn: () => void }) {
             secureTextEntry
             autoComplete="current-password"
             textContentType="password"
-            onSubmitEditing={() => void onSubmit()}
+            onSubmitEditing={submit}
           />
         )}
       />
-      <Button label="Entrar" loading={signIn.isPending} onPress={() => void onSubmit()} />
+      <Button label="Entrar" loading={signIn.isPending} onPress={submit} />
     </View>
   );
 }

@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { testRouter } from 'expo-router/testing-library';
 import { Text } from 'react-native';
 import { todayIn, addDays } from '@/shared/lib/time';
 import { gqlError } from '@/test/fake-api';
@@ -62,7 +63,7 @@ describe('booking', () => {
       expect(server.variablesOf('AvailableSlots').at(-1)).toMatchObject({ date: tomorrow }),
     );
     await fireEvent.press(await within(await slotsGrid()).findByRole('button', { name: '09:15' }));
-    await fireEvent.press(screen.getByRole('button', { name: '1 h' }));
+    await fireEvent.press(screen.getByRole('radio', { name: '1 h' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Confirmar agendamento' }));
     await waitFor(() => expect(screen).toHavePathname('/agendamento/appt-9'));
     expect(screen).toHaveSearchParams({ id: 'appt-9', novo: '1' });
@@ -98,6 +99,17 @@ describe('booking', () => {
     expect(screen.getByRole('button', { name: 'Confirmar agendamento' })).toBeDisabled();
   });
 
+  it('a double tap on sign in opens it once', async () => {
+    await open({ signedIn: false });
+    await fireEvent.press(await within(await slotsGrid()).findByRole('button', { name: '09:00' }));
+    const button = screen.getByRole('button', { name: 'Entrar para agendar' });
+    await fireEvent.press(button);
+    await fireEvent.press(button);
+    await screen.findByText(/^entrar /);
+    await testRouter.back();
+    expect(screen).toHavePathname('/agendar');
+  });
+
   it('says when the day has no free time', async () => {
     await open(undefined, { AvailableSlots: () => ({ availableSlots: [] }) });
     expect(await screen.findByText('Nenhum horário livre neste dia')).toBeTruthy();
@@ -106,7 +118,7 @@ describe('booking', () => {
   it('signed out, keeps the choice through sign in', async () => {
     await open({ signedIn: false });
     await fireEvent.press(await within(await slotsGrid()).findByRole('button', { name: '09:15' }));
-    await fireEvent.press(screen.getByRole('button', { name: '30 min' }));
+    await fireEvent.press(screen.getByRole('radio', { name: '30 min' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Entrar para agendar' }));
     const shown = await screen.findByText(/^entrar /);
     const voltar = String(shown.props.children).replace(/^entrar /, '');
@@ -119,6 +131,11 @@ describe('booking', () => {
       hora: at(today, '12:15'),
       lembrete: '30',
     });
+  });
+
+  it('says so when the link has no barber, instead of loading forever', async () => {
+    await open({ query: 'servico=service-1' });
+    expect(await screen.findByText('Barbeiro não encontrado')).toBeTruthy();
   });
 
   it('says when the service is no longer offered', async () => {

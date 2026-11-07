@@ -3,6 +3,8 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import { mapsUrl } from '@/features/shops/lib/maps';
+import { SignedOut } from '@/features/auth/components/signed-out';
+import { useIsSignedIn } from '@/features/auth/hooks/use-auth';
 import { isApiError } from '@/shared/api';
 import { useNow } from '@/shared/hooks/use-now';
 import { messageFor } from '@/shared/lib/error-messages';
@@ -24,6 +26,22 @@ export type Notice = 'booked' | 'moved';
 const NOTICES: Record<Notice, string> = { booked: 'Agendado', moved: 'Agendamento remarcado' };
 
 export function AppointmentScreen({ id, notice }: { id: string; notice?: Notice }) {
+  const signedIn = useIsSignedIn();
+  if (!signedIn)
+    return (
+      <Screen>
+        <Stack.Screen options={{ title: 'Agendamento' }} />
+        <SignedOut
+          title="Entre para ver este agendamento"
+          body="Os agendamentos ficam na sua conta."
+          back={`/agendamento/${id}`}
+        />
+      </Screen>
+    );
+  return <AppointmentLoader id={id} notice={notice} />;
+}
+
+function AppointmentLoader({ id, notice }: { id: string; notice?: Notice }) {
   const { appointment, isPending, error, refetch } = useAppointment(id);
   return (
     <Screen>
@@ -103,7 +121,7 @@ function Details({ appointment: a, notice }: { appointment: Appointment; notice?
       ) : null}
       <FormError message={error} />
 
-      {booked && upcoming ? (
+      {booked && upcoming && !cancel.isSuccess ? (
         <View style={styles.block}>
           {!changeable ? (
             <Text variant="muted">

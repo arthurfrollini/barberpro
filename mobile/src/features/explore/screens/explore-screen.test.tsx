@@ -84,6 +84,26 @@ describe('explore', () => {
     expect(await screen.findByText('Não deu para achar sua localização')).toBeTruthy();
   });
 
+  it('asks for the location once, not again after a search is cleared', async () => {
+    const request = jest.fn(async () => true);
+    await open({ request, current: granted.current });
+    await screen.findByText('Navalha de Ouro');
+    await fireEvent.changeText(screen.getByLabelText('Buscar barbearia'), 'n');
+    await fireEvent.changeText(screen.getByLabelText('Buscar barbearia'), '');
+    expect(await screen.findByText('Navalha de Ouro')).toBeTruthy();
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives up on a position that never comes', async () => {
+    jest.useFakeTimers();
+    await open({ request: async () => true, current: () => new Promise(() => {}) });
+    await act(async () => {
+      jest.advanceTimersByTime(15_000);
+    });
+    jest.useRealTimers();
+    expect(await screen.findByText('Não deu para achar sua localização')).toBeTruthy();
+  });
+
   it('asks for 2 letters before searching', async () => {
     const { server } = await open(granted);
     await fireEvent.changeText(screen.getByLabelText('Buscar barbearia'), 'n');

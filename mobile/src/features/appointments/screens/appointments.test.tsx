@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Alert, Text } from 'react-native';
 import { addDays, formatShortDateTime, formatTime, localDateOf, todayIn } from '@/shared/lib/time';
@@ -104,6 +104,8 @@ describe('appointment detail', () => {
     });
     await fireEvent.press(await screen.findByRole('button', { name: 'Cancelar agendamento' }));
     expect(await screen.findByText('Agendamento cancelado.')).toBeTruthy();
+    // no second cancel while the lists catch up
+    expect(screen.queryByRole('button', { name: 'Cancelar agendamento' })).toBeNull();
     expect(server.variablesOf('CancelAppointment')).toEqual([{ id: 'appt-1' }]);
     expect(alert).toHaveBeenCalledTimes(1);
     alert.mockRestore();
@@ -135,6 +137,33 @@ describe('appointment detail', () => {
     expect(screen.getByRole('button', { name: 'Remarcar' })).toBeDisabled();
   });
 
+  it('signed out, asks to sign in instead of loading forever', async () => {
+    await renderAppRouter(routes, { initialUrl: '/agendamento/appt-1', signedIn: false });
+    expect(await screen.findByText('Entre para ver este agendamento')).toBeTruthy();
+  });
+
+  it('while the lists refetch, loads instead of saying not found', async () => {
+    let release: () => void = () => {};
+    const { server, queryClient } = await renderAppRouter(routes, {
+      initialUrl: '/agendamento/appt-1',
+      handlers: { MyAppointments: () => ({ myAppointments: [] }) },
+    });
+    expect(await screen.findByText('Agendamento não encontrado')).toBeTruthy();
+    // a booking just landed: the lists are stale until the refetch answers
+    server.use({
+      MyAppointments: () =>
+        new Promise((resolve) => {
+          release = () => resolve({ myAppointments: [upcoming] });
+        }),
+    });
+    await act(async () => {
+      void queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    });
+    await waitFor(() => expect(screen.queryByText('Agendamento não encontrado')).toBeNull());
+    release();
+    expect(await screen.findByText('30 min antes')).toBeTruthy();
+  });
+
   it('says when the appointment is not found', async () => {
     await renderAppRouter(routes, {
       initialUrl: '/agendamento/nope',
@@ -145,6 +174,11 @@ describe('appointment detail', () => {
 });
 
 describe('reschedule', () => {
+  it('signed out, asks to sign in', async () => {
+    await renderAppRouter(routes, { initialUrl: '/remarcar/appt-1', signedIn: false });
+    expect(await screen.findByText('Entre para ver este agendamento')).toBeTruthy();
+  });
+
   it('opens on the day the appointment is on', async () => {
     const { server } = await renderAppRouter(routes, {
       initialUrl: '/remarcar/appt-1',

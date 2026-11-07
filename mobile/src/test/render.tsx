@@ -40,6 +40,12 @@ export function createTestApp({ handlers = {}, signedIn = true }: Options = {}) 
   if (signedIn) session.set(TEST_SESSION);
   const api = createApiClient({ session, baseUrl: 'http://api.test', fetch: server.fetch });
   const queryClient = createQueryClient({ retries: 0 });
+  // no garbage-collection timers: they would outlive the test and hold the Jest worker
+  const defaults = queryClient.getDefaultOptions();
+  queryClient.setDefaultOptions({
+    ...defaults,
+    queries: { ...defaults.queries, gcTime: Infinity },
+  });
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <ApiProvider api={api} session={session} queryClient={queryClient}>
       {children}

@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useIsSignedIn } from '@/features/auth/hooks/use-auth';
 import { returnPathWith } from '@/features/auth/lib/return-path';
@@ -28,6 +28,12 @@ export function BookScreen() {
   const { barbeiro } = useLocalSearchParams<{ barbeiro?: string }>();
   const barber = useBarber(barbeiro);
 
+  if (!barbeiro)
+    return (
+      <Frame>
+        <EmptyState title="Barbeiro não encontrado" body="Escolha um barbeiro em Explorar." />
+      </Frame>
+    );
   if (barber.isPending)
     return (
       <Frame>
@@ -71,6 +77,8 @@ function Booking({ barber }: { barber: Barber }) {
   const slots = useSlots(barber.id, draft.serviceId, draft.date, Boolean(service));
   const book = useBook();
   const [error, setError] = useState<string>();
+  // a double tap would push sign in twice, and coming back would land on the second copy
+  const leaving = useRef(false);
 
   // a time is chosen only while it is still on the list for that day
   const chosen = draft.startsAt && slots.data?.includes(draft.startsAt) ? draft.startsAt : null;
@@ -103,6 +111,9 @@ function Booking({ barber }: { barber: Barber }) {
   const confirm = async () => {
     if (!chosen) return;
     if (!signedIn) {
+      if (leaving.current) return;
+      leaving.current = true;
+      setTimeout(() => (leaving.current = false), 1000);
       const here = `/agendar?${new URLSearchParams(draftParams({ ...draft, startsAt: chosen }))}`;
       router.push(returnPathWith('/entrar', here) as Href);
       return;

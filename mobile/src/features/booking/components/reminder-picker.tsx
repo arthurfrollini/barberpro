@@ -18,9 +18,9 @@ export function ReminderPicker({
         return (
           <Pressable
             key={option.param}
-            accessibilityRole="button"
+            accessibilityRole="radio"
             accessibilityLabel={option.label}
-            accessibilityState={{ selected }}
+            accessibilityState={{ checked: selected }}
             onPress={() => onChange(option.value)}
             style={[styles.option, selected && styles.selected]}
           >

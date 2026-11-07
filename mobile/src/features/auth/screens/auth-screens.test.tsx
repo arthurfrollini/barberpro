@@ -99,6 +99,22 @@ describe('sign up', () => {
     expect(server.calls).toHaveLength(0);
   });
 
+  it('sends once when the keyboard and the button both submit', async () => {
+    const { server } = await renderAppRouter(routes, {
+      initialUrl: '/criar-conta',
+      signedIn: false,
+      handlers: { SignUp: () => new Promise(() => {}) },
+    });
+    await fireEvent.changeText(screen.getByLabelText('Nome'), 'Ana Souza');
+    await fireEvent.changeText(screen.getByLabelText('Email'), 'ana@example.com');
+    await fireEvent.changeText(screen.getByLabelText('Senha'), 'correct horse');
+    await fireEvent(screen.getByLabelText('Senha'), 'submitEditing');
+    await waitFor(() => expect(server.variablesOf('SignUp')).toHaveLength(1));
+    await fireEvent(screen.getByLabelText('Senha'), 'submitEditing');
+    await fireEvent.press(screen.getByRole('button', { name: 'Criar conta' }));
+    expect(server.variablesOf('SignUp')).toHaveLength(1);
+  });
+
   it('maps a taken email', async () => {
     await renderAppRouter(routes, {
       initialUrl: '/criar-conta',

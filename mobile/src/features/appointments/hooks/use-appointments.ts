@@ -29,7 +29,12 @@ export function useAppointment(id: string) {
   const inUpcoming = upcoming.data?.find((a) => a.id === id);
   const past = useMyAppointments(false, upcoming.isSuccess && !inUpcoming);
   const found = inUpcoming ?? past.data?.find((a) => a.id === id);
-  const pending = upcoming.isPending || (!inUpcoming && past.isPending && upcoming.isSuccess);
+  // a list being refetched may be stale (an appointment booked a moment ago): not found yet is
+  // not "not found"
+  const pending =
+    upcoming.isPending ||
+    upcoming.isFetching ||
+    (!inUpcoming && (past.isFetching || (past.isPending && upcoming.isSuccess)));
   const error = upcoming.error ?? (inUpcoming ? null : past.error);
   return {
     appointment: found ?? null,
