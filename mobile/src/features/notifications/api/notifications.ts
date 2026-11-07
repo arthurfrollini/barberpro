@@ -1,0 +1,59 @@
+import { graphql } from '@/gql';
+import type { ApiClient } from '@/shared/api';
+
+const UnreadCountQuery = graphql(`
+  query UnreadNotificationCount {
+    unreadNotificationCount
+  }
+`);
+
+const NotificationsQuery = graphql(`
+  query Notifications($limit: Int) {
+    notifications(limit: $limit) {
+      id
+      type
+      title
+      body
+      read
+      createdAt
+      appointmentStartsAt
+      appointment {
+        id
+        startsAt
+        serviceName
+        cancelReason
+        customer {
+          id
+          name
+        }
+        barber {
+          id
+          name
+          barbershop {
+            id
+            name
+            timezone
+          }
+        }
+      }
+    }
+  }
+`);
+
+const MarkReadMutation = graphql(`
+  mutation MarkNotificationRead($id: ID!) {
+    markNotificationRead(id: $id)
+  }
+`);
+
+export const fetchUnreadCount = async (api: ApiClient) =>
+  (await api.request(UnreadCountQuery)).unreadNotificationCount;
+
+export const fetchNotifications = async (api: ApiClient, limit = 50) =>
+  (await api.request(NotificationsQuery, { limit })).notifications;
+
+export const markNotificationRead = async (api: ApiClient, id: string) => {
+  await api.request(MarkReadMutation, { id });
+};
+
+export type Notification = Awaited<ReturnType<typeof fetchNotifications>>[number];

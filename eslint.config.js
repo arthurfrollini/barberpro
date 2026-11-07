@@ -4,7 +4,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'src/shared/adapters/graphql/generated', 'web'] },
+  { ignores: ['dist', 'coverage', 'src/shared/adapters/graphql/generated', 'web', 'mobile'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

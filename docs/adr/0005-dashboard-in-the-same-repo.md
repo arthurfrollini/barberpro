@@ -15,4 +15,4 @@ The dashboard lives in `web/`, with its own `package.json`, lockfile and tooling
 - A PR that changes the schema runs the dashboard's codegen, typecheck and tests in the same CI run, so a breaking change shows up before merge.
 - No workspace tooling (npm workspaces, Turborepo): two independent packages are enough for two apps, and each keeps the versions it needs.
 - With no server of its own, the dashboard is static files. In development Vite proxies `/graphql`, `/uploads` and `/files` to the API, so the browser sees one origin and the API needs no CORS; a deploy would do the same with a reverse proxy.
-- The mobile app for customers will live elsewhere or in its own folder; it does not change this choice.
+- The mobile app for customers will live elsewhere or in its own folder; it does not change this choice. (It went to `mobile/`, in [ADR 8](0008-customer-app-with-expo.md).)

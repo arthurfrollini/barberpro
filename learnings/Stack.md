@@ -2,7 +2,7 @@
 
 Para cada tecnologia: o que ela é, o que faz aqui e por que foi escolhida no lugar da alternativa óbvia. A ideia é conseguir explicar qualquer linha do `package.json` numa entrevista.
 
-O repositório tem dois pacotes: a **API** na raiz (`src/`) e a **dashboard** em `web/`. Eles conversam só por HTTP: GraphQL em `/graphql`, uploads em `/uploads`, imagens em `/files/:id`.
+O repositório tem três pacotes: a **API** na raiz (`src/`), a **dashboard** em `web/` e o **app do cliente** em `mobile/`. Eles conversam só por HTTP: GraphQL em `/graphql`, uploads em `/uploads`, imagens em `/files/:id`.
 
 ```
 navegador ── dashboard (React, Vite) ── HTTP / SSE ── API (Fastify + GraphQL Yoga)
@@ -149,6 +149,30 @@ Testes ponta a ponta num Chromium de verdade, contra a API de verdade: o Playwri
 
 ---
 
+## App do cliente (mobile)
+
+### Expo e Expo Router
+
+**Expo** é o jeito padrão de fazer app React Native hoje: sem pastas `ios/` e `android/` para manter, com módulos prontos (localização, armazenamento seguro, fontes) e o **Expo Go**, que roda o app no celular ou no simulador sem compilar nada nativo. O app só usa módulos que vêm no Expo Go de propósito. **Expo Router** faz as rotas por arquivo em `src/app/`, como o Next.js, com abas (`(tabs)/`) e pilha. Detalhes em [App do cliente](App-Mobile.md) e no ADR 8.
+
+### React Native e Hermes
+
+React Native desenha componentes nativos (`View`, `Text`, `Pressable`) em vez de HTML. O JavaScript roda no **Hermes**, o motor do React Native, que não é o Node: falta `Intl.RelativeTimeFormat`, por exemplo, e foi isso que quebrou o app na primeira vez no simulador.
+
+### expo-secure-store e expo-location
+
+**SecureStore** guarda a sessão no Keychain (iOS) ou no Keystore (Android), não em texto puro. **expo-location** pede a permissão e lê a posição para "barbearias perto de você".
+
+### O que vem do dashboard
+
+TanStack Query, React Hook Form com zod, GraphQL Code Generator (client preset) e o mesmo jeito de organizar features. A diferença está na base: `StyleSheet` com tokens da marca em `shared/ui/theme.ts` em vez de Tailwind, e `@expo-google-fonts` em vez de Fontsource.
+
+### Jest, React Native Testing Library e Playwright
+
+**Jest com jest-expo** é o que a Expo documenta para testar React Native. **React Native Testing Library** acha elementos pelo rótulo e pelo papel, como a do web. A rede é um `fetch` falso injetado no cliente real. O **Playwright** testa o build web do app contra a API de verdade.
+
+---
+
 ## Infra de desenvolvimento
 
 ### Docker Compose
@@ -157,7 +181,7 @@ Testes ponta a ponta num Chromium de verdade, contra a API de verdade: o Playwri
 
 ### GitHub Actions
 
-O CI em cada PR: na API, codegen sem diferença, lint, tipos, formatação, testes unitários, de integração e e2e (com Postgres e Redis como serviços) e build; na web, o mesmo mais o Playwright com Postgres, Redis e Mailpit.
+O CI em cada PR: na API, codegen sem diferença, lint, tipos, formatação, testes unitários, de integração e e2e (com Postgres e Redis como serviços) e build; na web, o mesmo mais o Playwright com Postgres, Redis e Mailpit; no app, codegen, lint, tipos, formatação, testes, build web e o Playwright no build web.
 
 ---
 

@@ -1,6 +1,6 @@
 # Learnings — BarberPro
 
-Material de estudo do BarberPro (API e dashboard): como o sistema funciona, por que ele é assim e o que dizer numa entrevista. O código e o README ficam em inglês; aqui é tudo em português.
+Material de estudo do BarberPro (API, dashboard e app do cliente): como o sistema funciona, por que ele é assim e o que dizer numa entrevista. O código e o README ficam em inglês; aqui é tudo em português.
 
 ## Por onde começar
 
@@ -28,13 +28,18 @@ Material de estudo do BarberPro (API e dashboard): como o sistema funciona, por 
 
 16. [Várias barbearias](Multiplas-Barbearias.md): dono de várias, barbeiro em várias, ninguém em dois lugares ao mesmo tempo, o seletor de barbearia.
 
+### V3: app do cliente (mobile)
+
+17. [App do cliente](App-Mobile.md): Expo e Expo Router, o rascunho do agendamento na URL, sessão no SecureStore, testes com fetch falso e Playwright no build web, o que só o simulador mostrou.
+
 ## Em uma frase
 
 Uma API GraphQL de agendamento de barbearia: o cliente acha barbearias perto dele, escolhe barbeiro e serviço e marca um horário que cabe na agenda; cada barbeiro define seus serviços, preços, durações e horários.
 
-## Números (V2, novembro de 2026)
+## Números (V3, novembro de 2026)
 
 - API: 241 testes (165 unitários, 35 de integração, 41 end to end), 4 módulos (`identity`, `shops`, `scheduling`, `notifications`), 7 ADRs, 6 migrations, 2 processos (API e worker).
 - Dashboard: 186 testes de componente e unidade (Vitest) e 7 cenários ponta a ponta (Playwright) contra a API real.
-- Entregas: API em 4 fases (PRs #1 a #4), dashboard em 4 (#5 a #8), V2 com várias barbearias por pessoa.
-- Próximo passo: o app do cliente.
+- App do cliente: 125 testes de unidade e componente (Jest) e 4 cenários ponta a ponta (Playwright no build web) contra a API real.
+- Entregas: API em 4 fases (PRs #1 a #4), dashboard em 4 (#5 a #8), V2 com várias barbearias por pessoa, V3 com o app do cliente.
+- Próximos passos possíveis: push notifications, builds de loja (EAS), deploy.
