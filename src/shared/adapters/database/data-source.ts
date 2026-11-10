@@ -2,6 +2,7 @@ import { DataSource, type DataSourceOptions } from 'typeorm';
 import { RefreshTokenRecord } from '../../../modules/identity/adapters/persistence/refresh-token.record.js';
 import { UserRecord } from '../../../modules/identity/adapters/persistence/user.record.js';
 import { NotificationRecord } from '../../../modules/notifications/adapters/persistence/notification.record.js';
+import { PushTokenRecord } from '../../../modules/notifications/adapters/persistence/push-token.record.js';
 import { schedulingRecords } from '../../../modules/scheduling/adapters/persistence/records.js';
 import { shopsRecords } from '../../../modules/shops/adapters/persistence/records.js';
 import { FileRecord } from '../files/file.record.js';
@@ -9,6 +10,7 @@ import { Identity1793373465720 } from './migrations/1793373465720-identity.js';
 import { Notifications1793375989918 } from './migrations/1793375989918-notifications.js';
 import { NotificationStartsAt1793460000000 } from './migrations/1793460000000-notification-starts-at.js';
 import { ManyShops1793560000000 } from './migrations/1793560000000-many-shops.js';
+import { PushTokens1793900000000 } from './migrations/1793900000000-push-tokens.js';
 import { Scheduling1793375502792 } from './migrations/1793375502792-scheduling.js';
 import { Shops1793374278141 } from './migrations/1793374278141-shops.js';
 
@@ -20,6 +22,7 @@ const entities: NonNullable<DataSourceOptions['entities']> = [
   ...shopsRecords,
   ...schedulingRecords,
   NotificationRecord,
+  PushTokenRecord,
 ];
 const migrations = [
   Identity1793373465720,
@@ -28,6 +31,7 @@ const migrations = [
   Notifications1793375989918,
   NotificationStartsAt1793460000000,
   ManyShops1793560000000,
+  PushTokens1793900000000,
 ];
 
 export function createDataSource(url: string): DataSource {

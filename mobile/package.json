@@ -10,10 +10,12 @@
     "@tanstack/react-query": "^5.106.1",
     "expo": "~58.0.23",
     "expo-constants": "~58.0.15",
+    "expo-dev-client": "~58.0.18",
     "expo-font": "~58.0.11",
     "expo-image": "~58.0.18",
     "expo-linking": "~58.0.16",
     "expo-location": "~58.0.20",
+    "expo-notifications": "~58.1.8",
     "expo-router": "~58.0.30",
     "expo-secure-store": "~58.0.2",
     "expo-splash-screen": "~58.0.13",
@@ -52,8 +54,8 @@
   },
   "scripts": {
     "start": "expo start",
-    "ios": "expo start --ios",
-    "android": "expo start --android",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
     "web": "expo start --web",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -63,7 +65,8 @@
     "codegen": "graphql-codegen --config codegen.ts",
     "export:web": "expo export --platform web --output-dir dist-web",
     "test:e2e": "playwright test",
-    "check": "npm run lint && npm run typecheck && npm run format:check && npm test"
+    "check": "npm run lint && npm run typecheck && npm run format:check && npm test",
+    "test:coverage": "TZ=UTC jest --coverage"
   },
   "private": true,
   "description": "BarberPro app for customers: find a shop, book, cancel and reschedule",
@@ -80,6 +83,26 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/e2e/"
-    ]
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.{ts,tsx}",
+      "!src/**/*.test.{ts,tsx}",
+      "!src/gql/**",
+      "!src/test/**",
+      "!src/app/**"
+    ],
+    "coverageReporters": [
+      "text-summary",
+      "text",
+      "html"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "lines": 95,
+        "statements": 94,
+        "functions": 90,
+        "branches": 85
+      }
+    }
   }
 }

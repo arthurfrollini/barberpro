@@ -3,6 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FakeMailer } from '../../src/modules/shops/testing/in-memory.js';
 import {
   BullMqMailQueue,
+  BullMqPushQueue,
+  BullMqPushReceipts,
   BullMqReminders,
   createQueueConnection,
   startWorkers,
@@ -26,6 +28,10 @@ describe('BullMQ adapters', () => {
   const reminders = new BullMqReminders(connection, prefix, clock);
   const mailer = new FakeMailer();
   const remindersSent: string[] = [];
+  const pushQueue = new BullMqPushQueue(connection, prefix);
+  const pushReceipts = new BullMqPushReceipts(connection, prefix, 0);
+  const pushesSent: unknown[] = [];
+  const receiptChecks: unknown[] = [];
   let workers: Awaited<ReturnType<typeof startWorkers>>;
 
   beforeAll(() => {
@@ -36,12 +42,20 @@ describe('BullMQ adapters', () => {
       sendReminder: async (appointmentId) => {
         remindersSent.push(appointmentId);
       },
+      sendPush: async (job) => {
+        pushesSent.push(job);
+      },
+      checkPushReceipts: async (check) => {
+        receiptChecks.push(check);
+      },
     });
   });
   afterAll(async () => {
     await workers.close();
     await mailQueue.close();
     await reminders.close();
+    await pushQueue.close();
+    await pushReceipts.close();
     connection.disconnect();
   });
 
@@ -50,6 +64,18 @@ describe('BullMQ adapters', () => {
 
     await waitFor(() => mailer.sent.length === 1);
     expect(mailer.sent[0]).toEqual({ to: 'jose@x.com', subject: 'Hi', text: 'Hello' });
+  });
+
+  it('sends queued pushes and checks their receipts through the worker', async () => {
+    const job = { userId: randomUUID(), title: 'Lembrete', body: 'Corte', url: '/avisos' };
+    await pushQueue.enqueue(job);
+    await waitFor(() => pushesSent.length === 1);
+    expect(pushesSent[0]).toEqual(job);
+
+    const check = { tickets: [{ id: 'r1', token: 'ExpoPushToken[a]' }] };
+    await pushReceipts.schedule(check);
+    await waitFor(() => receiptChecks.length === 1);
+    expect(receiptChecks[0]).toEqual(check);
   });
 
   it('keeps one delayed reminder per appointment and removes it on cancel', async () => {

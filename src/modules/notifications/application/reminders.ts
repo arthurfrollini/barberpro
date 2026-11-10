@@ -1,6 +1,8 @@
 import { Notification } from '../domain/notification.js';
 import { clockTime } from './messages.js';
+import { deliver } from './handle-events.js';
 import type { NotifyDeps } from './ports.js';
+import { pushText, pushUrl } from './push-messages.js';
 
 // a job may run a little late; one that runs well before its time belongs to an old schedule
 const EARLY_TOLERANCE_MS = 60_000;
@@ -35,5 +37,16 @@ export async function sendReminder(deps: NotifyDeps, appointmentId: string): Pro
       deps.clock.now(),
     ),
   ]);
-  await deps.mailQueue.enqueue({ to: customer.email, subject: title, text: body });
+  const push = pushText({
+    kind: 'reminder',
+    customer: customer.name,
+    barber: barberUser.name,
+    service: a.serviceName,
+    startsAt: a.startsAt,
+    timeZone: barber.timezone,
+  });
+  await deliver(deps, {
+    email: { to: customer.email, subject: title, text: body },
+    push: { userId: a.customerId, ...push, url: pushUrl('customer', a.id) },
+  });
 }

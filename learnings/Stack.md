@@ -159,6 +159,10 @@ Testes ponta a ponta num Chromium de verdade, contra a API de verdade: o Playwri
 
 React Native desenha componentes nativos (`View`, `Text`, `Pressable`) em vez de HTML. O JavaScript roda no **Hermes**, o motor do React Native, que não é o Node: falta `Intl.RelativeTimeFormat`, por exemplo, e foi isso que quebrou o app na primeira vez no simulador.
 
+### expo-notifications e expo-dev-client
+
+**expo-notifications** pede a permissão, entrega o token de push da Expo e avisa quando um push chega ou é tocado. Push remoto não roda no Expo Go, então o app virou um **development build** (`expo-dev-client`): `npx expo run:ios` compila um app próprio uma vez, e o `npm start` serve o JavaScript para ele. Detalhes em [Push notifications](Push-Notificacoes.md) e no ADR 9.
+
 ### expo-secure-store e expo-location
 
 **SecureStore** guarda a sessão no Keychain (iOS) ou no Keystore (Android), não em texto puro. **expo-location** pede a permissão e lê a posição para "barbearias perto de você".

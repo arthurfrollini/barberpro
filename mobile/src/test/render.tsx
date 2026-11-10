@@ -5,6 +5,7 @@ import { createApiClient } from '@/shared/api/client';
 import { ApiProvider } from '@/shared/api/provider';
 import { createQueryClient } from '@/shared/api/query-client';
 import { createSessionStore, type KeyValueStorage, type Session } from '@/shared/api/session';
+import { noPush, PushProvider, type PushDevice } from '@/features/push/lib/push-device';
 import { fakeApi, type FakeApi, type FakeHandler } from './fake-api';
 
 export const TEST_SESSION: Session = {
@@ -26,10 +27,12 @@ type Options = {
   handlers?: Record<string, FakeHandler>;
   /** Start signed in (the default) or signed out. */
   signedIn?: boolean;
+  /** The phone's notifications; by default, a device without them (as on web). */
+  push?: PushDevice;
 };
 
 /** The real client, session store and query cache over a fake API. */
-export function createTestApp({ handlers = {}, signedIn = true }: Options = {}) {
+export function createTestApp({ handlers = {}, signedIn = true, push = noPush }: Options = {}) {
   const server: FakeApi = fakeApi(handlers);
   const session = createSessionStore({
     storage: memory(),
@@ -48,7 +51,7 @@ export function createTestApp({ handlers = {}, signedIn = true }: Options = {}) 
   });
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <ApiProvider api={api} session={session} queryClient={queryClient}>
-      {children}
+      <PushProvider device={push}>{children}</PushProvider>
     </ApiProvider>
   );
   return { server, session, api, queryClient, Wrapper };

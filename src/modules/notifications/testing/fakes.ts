@@ -3,6 +3,8 @@ import type { Appointment } from '../../scheduling/domain/appointment.js';
 import type {
   AgendaChange,
   MailMessage,
+  PushJob,
+  SavePushToken,
   NotificationRepository,
   NotifyDeps,
 } from '../application/ports.js';
@@ -18,6 +20,7 @@ export function fakeNotifyDeps(
 ) {
   const saved: Notification[] = [];
   const mail: MailMessage[] = [];
+  const pushes: PushJob[] = [];
   const reminderJobs = new Map<string, Date>();
   const agendaChanges: { barberId: string; change: AgendaChange }[] = [];
   const appointmentRows = new Map<string, Appointment>();
@@ -32,11 +35,34 @@ export function fakeNotifyDeps(
     unreadCount: async (userId) => saved.filter((n) => n.userId === userId).length,
   };
 
+  const pushTokens = new Map<string, { userId: string; platform: 'ios' | 'android' }>();
+
   const deps = {
     notifications,
+    pushTokens: {
+      save: async ({ token, userId, platform }: SavePushToken) => {
+        pushTokens.set(token, { userId, platform });
+      },
+      remove: async (token: string, userId: string | null) =>
+        pushTokens.has(token) && (userId === null || pushTokens.get(token)?.userId === userId)
+          ? pushTokens.delete(token)
+          : false,
+      forUser: async (userId: string) =>
+        [...pushTokens]
+          .filter(([, t]) => t.userId === userId)
+          .map(([token, t]) => ({ token, platform: t.platform })),
+      removeTokens: async (tokens: string[]) => {
+        for (const token of tokens) pushTokens.delete(token);
+      },
+    },
     mailQueue: {
       enqueue: async (m: MailMessage) => {
         mail.push(m);
+      },
+    },
+    pushQueue: {
+      enqueue: async (job: PushJob) => {
+        pushes.push(job);
       },
     },
     reminders: {
@@ -61,5 +87,15 @@ export function fakeNotifyDeps(
     logError: (error: unknown) => errors.push(error),
   } satisfies NotifyDeps;
 
-  return { ...deps, saved, mail, reminderJobs, agendaChanges, appointmentRows, errors };
+  return {
+    ...deps,
+    saved,
+    mail,
+    reminderJobs,
+    agendaChanges,
+    appointmentRows,
+    errors,
+    pushes,
+    pushTokenRows: pushTokens,
+  };
 }

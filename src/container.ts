@@ -8,6 +8,7 @@ import { JoseAccessTokens } from './modules/identity/adapters/security/jose-acce
 import { nodeSecrets } from './modules/identity/adapters/security/node-secrets.js';
 import type { IdentityDeps } from './modules/identity/application/ports.js';
 import { TypeOrmNotificationRepository } from './modules/notifications/adapters/persistence/typeorm-notification-repository.js';
+import { TypeOrmPushTokenRepository } from './modules/notifications/adapters/persistence/typeorm-push-token-repository.js';
 import { handleSchedulingEvents } from './modules/notifications/application/handle-events.js';
 import type { NotifyDeps } from './modules/notifications/application/ports.js';
 import { shopsRepositories } from './modules/shops/adapters/persistence/repositories.js';
@@ -22,6 +23,7 @@ import { type AgendaPubSub, createAgendaPubSub } from './shared/adapters/graphql
 import { logSafeError } from './shared/adapters/log-safe-error.js';
 import {
   BullMqMailQueue,
+  BullMqPushQueue,
   BullMqReminders,
   createProducerConnection,
 } from './shared/adapters/queue/bullmq.js';
@@ -74,6 +76,7 @@ export async function createContainer(
       console.error(JSON.stringify({ msg: 'background failure', error: logSafeError(error) })));
   const queueConnection = createProducerConnection(config.redisUrl);
   const mailQueue = new BullMqMailQueue(queueConnection, config.queuePrefix);
+  const pushQueue = new BullMqPushQueue(queueConnection, config.queuePrefix);
   const reminders = new BullMqReminders(queueConnection, config.queuePrefix, clock);
   const agendaPubSub = createAgendaPubSub(config.redisUrl, logError);
 
@@ -137,7 +140,9 @@ export async function createContainer(
 
   const notifications: NotifyDeps = {
     notifications: new TypeOrmNotificationRepository(dataSource.manager),
+    pushTokens: new TypeOrmPushTokenRepository(dataSource.manager),
     mailQueue,
+    pushQueue,
     reminders,
     agenda: {
       publish: async (barberId, change) => {
@@ -181,7 +186,7 @@ export async function createContainer(
     pubSub: agendaPubSub.pubSub,
     async close() {
       agendaPubSub.close();
-      await Promise.all([mailQueue.close(), reminders.close()]);
+      await Promise.all([mailQueue.close(), pushQueue.close(), reminders.close()]);
       queueConnection.disconnect();
       redis.disconnect();
       await dataSource.destroy();

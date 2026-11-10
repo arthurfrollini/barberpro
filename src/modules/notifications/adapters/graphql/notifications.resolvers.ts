@@ -10,6 +10,7 @@ import { ownBarber } from '../../../scheduling/application/lookups.js';
 import type { SchedulingDeps } from '../../../scheduling/application/ports.js';
 import { listNotifications, markNotificationRead } from '../../application/notifications.js';
 import type { NotifyDeps } from '../../application/ports.js';
+import { registerPushToken, unregisterPushToken } from '../../application/push-tokens.js';
 
 export function notificationsGraphQL(
   deps: NotifyDeps,
@@ -30,6 +31,14 @@ export function notificationsGraphQL(
         await markNotificationRead(deps, requireUser(ctx), id);
         return true;
       },
+      registerPushToken: async (_, { token, platform }, ctx) => {
+        await registerPushToken(deps, requireUser(ctx), token, platform);
+        return true;
+      },
+      // no session needed: a phone signing out offline (or with an expired session) still has
+      // its token, and holding it is the proof of being that phone
+      unregisterPushToken: (_, { token }, ctx) =>
+        unregisterPushToken(deps, ctx.currentUserId, token),
     },
     Subscription: {
       agendaChanged: {

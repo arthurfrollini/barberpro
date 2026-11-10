@@ -5,3 +5,4 @@ src/gql
 playwright-report
 test-results
 .expo
+coverage

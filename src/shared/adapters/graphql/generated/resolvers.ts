@@ -191,6 +191,8 @@ export type Mutation = {
   markNotificationRead: Scalars['Boolean']['output'];
   /** Swaps a refresh token for a new session. Errors: INVALID_REFRESH_TOKEN. */
   refreshToken: AuthPayload;
+  /** This phone gets the signed-in user's notifications as pushes; a phone that was someone else's moves to them. token is what Expo's getExpoPushTokenAsync returns. Errors: INVALID_PUSH_TOKEN. */
+  registerPushToken: Scalars['Boolean']['output'];
   /** Errors: NOT_SHOP_OWNER, BARBER_NOT_FOUND. */
   removeBarber: Barber;
   /** Same barber and service, new time. Errors: as bookAppointment, plus CANCELLATION_WINDOW_CLOSED. */
@@ -204,6 +206,8 @@ export type Mutation = {
   signUp: AuthPayload;
   /** Errors: NOT_A_BARBER. */
   unblockDate: Scalars['Boolean']['output'];
+  /** Stops pushes to this phone, on sign-out. Works without a session too (signing out offline, an expired session): only the phone has its token. Signed in, removes only the user's own. False when there was nothing to remove. */
+  unregisterPushToken: Scalars['Boolean']['output'];
   /** Bio and photo of one of the user's barber profiles. Errors: NOT_A_BARBER. */
   updateBarberProfile: Barber;
   /** Errors: NOT_SHOP_OWNER (also for an unknown id). */
@@ -272,6 +276,12 @@ export type MutationRefreshTokenArgs = {
 };
 
 
+export type MutationRegisterPushTokenArgs = {
+  platform: PushPlatform;
+  token: Scalars['String']['input'];
+};
+
+
 export type MutationRemoveBarberArgs = {
   id: Scalars['ID']['input'];
 };
@@ -307,6 +317,11 @@ export type MutationSignUpArgs = {
 export type MutationUnblockDateArgs = {
   barberId: Scalars['ID']['input'];
   date: Scalars['String']['input'];
+};
+
+
+export type MutationUnregisterPushTokenArgs = {
+  token: Scalars['String']['input'];
 };
 
 
@@ -357,6 +372,10 @@ export type NotificationType =
   | 'APPOINTMENT_CANCELED'
   | 'APPOINTMENT_REMINDER'
   | 'APPOINTMENT_RESCHEDULED';
+
+export type PushPlatform =
+  | 'ANDROID'
+  | 'IOS';
 
 export type Query = {
   __typename?: 'Query';
@@ -641,6 +660,7 @@ export type ResolversTypes = {
   NearbyBarbershop: ResolverTypeWrapper<NearbyShopModel>;
   Notification: ResolverTypeWrapper<NotificationModel>;
   NotificationType: NotificationType;
+  PushPlatform: PushPlatform;
   Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
   ScheduleUpdate: ResolverTypeWrapper<ScheduleUpdateModel>;
   Service: ResolverTypeWrapper<ServiceModel>;
@@ -780,6 +800,7 @@ export type MutationResolvers<ContextType = GraphQLContext, ParentType extends R
   inviteBarber?: Resolver<ResolversTypes['Invite'], ParentType, ContextType, RequireFields<MutationInviteBarberArgs, 'email' | 'shopId'>>;
   markNotificationRead?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationMarkNotificationReadArgs, 'id'>>;
   refreshToken?: Resolver<ResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<MutationRefreshTokenArgs, 'token'>>;
+  registerPushToken?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRegisterPushTokenArgs, 'platform' | 'token'>>;
   removeBarber?: Resolver<ResolversTypes['Barber'], ParentType, ContextType, RequireFields<MutationRemoveBarberArgs, 'id'>>;
   rescheduleAppointment?: Resolver<ResolversTypes['Appointment'], ParentType, ContextType, RequireFields<MutationRescheduleAppointmentArgs, 'id' | 'startsAt'>>;
   revokeInvite?: Resolver<ResolversTypes['Invite'], ParentType, ContextType, RequireFields<MutationRevokeInviteArgs, 'id'>>;
@@ -787,6 +808,7 @@ export type MutationResolvers<ContextType = GraphQLContext, ParentType extends R
   signIn?: Resolver<ResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<MutationSignInArgs, 'input'>>;
   signUp?: Resolver<ResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<MutationSignUpArgs, 'input'>>;
   unblockDate?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationUnblockDateArgs, 'barberId' | 'date'>>;
+  unregisterPushToken?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationUnregisterPushTokenArgs, 'token'>>;
   updateBarberProfile?: Resolver<ResolversTypes['Barber'], ParentType, ContextType, RequireFields<MutationUpdateBarberProfileArgs, 'barberId' | 'input'>>;
   updateBarbershop?: Resolver<ResolversTypes['Barbershop'], ParentType, ContextType, RequireFields<MutationUpdateBarbershopArgs, 'id' | 'input'>>;
   updateProfile?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationUpdateProfileArgs, 'input'>>;

@@ -51,7 +51,10 @@ export function useSetMe() {
 
 export const useIsSignedIn = () => useSession() !== null;
 
-/** Signing out empties the cache (ApiProvider) and every screen falls back to signed out. */
+/**
+ * Signing out empties the cache (ApiProvider) and every screen falls back to signed out; the
+ * push registration notices and unregisters this phone.
+ */
 export function useSignOut() {
   const store = useSessionStore();
   return useCallback(() => store.clear(), [store]);

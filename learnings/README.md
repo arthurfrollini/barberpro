@@ -32,14 +32,19 @@ Material de estudo do BarberPro (API, dashboard e app do cliente): como o sistem
 
 17. [App do cliente](App-Mobile.md): Expo e Expo Router, o rascunho do agendamento na URL, sessão no SecureStore, testes com fetch falso e Playwright no build web, o que só o simulador mostrou.
 
+### V4: push notifications
+
+18. [Push notifications](Push-Notificacoes.md): token por aparelho, fila e worker, tickets e recibos da Expo, development build, pedir permissão na hora certa, testar sem credenciais.
+
 ## Em uma frase
 
 Uma API GraphQL de agendamento de barbearia: o cliente acha barbearias perto dele, escolhe barbeiro e serviço e marca um horário que cabe na agenda; cada barbeiro define seus serviços, preços, durações e horários.
 
-## Números (V3, novembro de 2026)
+## Números (V4, novembro de 2026)
 
-- API: 241 testes (165 unitários, 35 de integração, 41 end to end), 4 módulos (`identity`, `shops`, `scheduling`, `notifications`), 7 ADRs, 6 migrations, 2 processos (API e worker).
+- API: 277 testes (unitários, de integração e end to end), 94% das linhas cobertas, 4 módulos (`identity`, `shops`, `scheduling`, `notifications`), 9 ADRs, 7 migrations, 2 processos (API e worker).
 - Dashboard: 186 testes de componente e unidade (Vitest) e 7 cenários ponta a ponta (Playwright) contra a API real.
-- App do cliente: 125 testes de unidade e componente (Jest) e 4 cenários ponta a ponta (Playwright no build web) contra a API real.
+- App do cliente: 166 testes de unidade e componente (Jest), 96% das linhas cobertas (o Jest falha abaixo de 95%), e 4 cenários ponta a ponta (Playwright no build web) contra a API real.
 - Entregas: API em 4 fases (PRs #1 a #4), dashboard em 4 (#5 a #8), V2 com várias barbearias por pessoa, V3 com o app do cliente.
-- Próximos passos possíveis: push notifications, builds de loja (EAS), deploy.
+- V4: push notifications pela Expo, nos dois lados.
+- Próximos passos possíveis: credenciais APNs e FCM, builds de loja (EAS), deploy.
