@@ -30,6 +30,10 @@ export type NotificationType =
   | 'APPOINTMENT_REMINDER'
   | 'APPOINTMENT_RESCHEDULED';
 
+export type PushPlatform =
+  | 'ANDROID'
+  | 'IOS';
+
 export type SignInInput = {
   email: string;
   password: string;
@@ -151,6 +155,21 @@ export type MarkNotificationReadMutationVariables = Exact<{
 
 
 export type MarkNotificationReadMutation = { markNotificationRead: boolean };
+
+export type RegisterPushTokenMutationVariables = Exact<{
+  token: string;
+  platform: PushPlatform;
+}>;
+
+
+export type RegisterPushTokenMutation = { registerPushToken: boolean };
+
+export type UnregisterPushTokenMutationVariables = Exact<{
+  token: string;
+}>;
+
+
+export type UnregisterPushTokenMutation = { unregisterPushToken: boolean };
 
 export type BarbershopQueryVariables = Exact<{
   id: string | number;
@@ -372,6 +391,16 @@ export const MarkNotificationReadDocument = new TypedDocumentString(`
   markNotificationRead(id: $id)
 }
     `) as unknown as TypedDocumentString<MarkNotificationReadMutation, MarkNotificationReadMutationVariables>;
+export const RegisterPushTokenDocument = new TypedDocumentString(`
+    mutation RegisterPushToken($token: String!, $platform: PushPlatform!) {
+  registerPushToken(token: $token, platform: $platform)
+}
+    `) as unknown as TypedDocumentString<RegisterPushTokenMutation, RegisterPushTokenMutationVariables>;
+export const UnregisterPushTokenDocument = new TypedDocumentString(`
+    mutation UnregisterPushToken($token: String!) {
+  unregisterPushToken(token: $token)
+}
+    `) as unknown as TypedDocumentString<UnregisterPushTokenMutation, UnregisterPushTokenMutationVariables>;
 export const BarbershopDocument = new TypedDocumentString(`
     query Barbershop($id: ID!) {
   barbershop(id: $id) {
