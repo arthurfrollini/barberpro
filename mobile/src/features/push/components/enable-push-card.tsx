@@ -1,22 +1,22 @@
-import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button } from '@/shared/ui/button';
 import { Text } from '@/shared/ui/text';
 import { colors, hairline, radius, space } from '@/shared/ui/theme';
-import { useEnablePush, usePushPermission } from '../hooks/use-push';
+import { useCardDismissed, useEnablePush, usePushPermission } from '../hooks/use-push';
 import { usePushDevice } from '../lib/push-device';
 
 /**
  * Asked right after a booking, when a push is clearly useful, never at launch. Shown only
- * while the phone has not answered yet; a no is respected (Conta still has the switch).
+ * while the phone has not answered and the user has not said "Agora não" before; a no is
+ * respected (Conta still has the switch).
  */
 export function EnablePushCard() {
   const device = usePushDevice();
   const permission = usePushPermission();
   const enable = useEnablePush();
-  const [dismissed, setDismissed] = useState(false);
+  const { dismissed, dismiss } = useCardDismissed();
 
-  if (!device.supported || dismissed) return null;
+  if (!device.supported || dismissed !== false) return null;
   if (enable.data === 'granted')
     return (
       <View style={styles.card} accessibilityLiveRegion="polite">
@@ -42,7 +42,7 @@ export function EnablePushCard() {
         loading={enable.isPending}
         onPress={() => enable.mutate()}
       />
-      <Button label="Agora não" variant="ghost" onPress={() => setDismissed(true)} />
+      <Button label="Agora não" variant="ghost" onPress={dismiss} />
     </View>
   );
 }

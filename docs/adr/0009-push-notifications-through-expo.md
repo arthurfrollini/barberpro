@@ -8,7 +8,7 @@ The customer app learned about a change only while open: Avisos polled every min
 
 ## Decision
 
-- The app gets an Expo push token (`expo-notifications`) and registers it with `registerPushToken`. The API keeps one row per token in `push_tokens`; a phone that signs in as someone else moves to them, and signing out unregisters it first.
+- The app gets an Expo push token (`expo-notifications`) and registers it with `registerPushToken`. The API keeps one row per token in `push_tokens`; a phone that signs in as someone else moves to them. When a session ends (sign-out, or one that expired), the app unregisters the token without a session, since only that phone has it; offline, it keeps the token and unregisters it on the next start.
 - Every in-app notification also queues a push. The worker sends it to Expo's push API with a small `fetch` client (no SDK), up to 100 messages per request, with the user's unread count as the badge. Expo forwards to APNs and FCM.
 - Tokens Expo reports as gone (`DeviceNotRegistered`), in the ticket or in the receipt checked 15 minutes later, are deleted.
 - Push text is Portuguese, unlike email and the stored notification: it is read in the phone's notification list, where the app cannot translate it.

@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import type { SignInInput, SignUpInput } from '@/gql/graphql';
 import { useApi, useSession, useSessionStore } from '@/shared/api';
-import { runSignOutTasks } from '@/shared/lib/sign-out-tasks';
 import { fetchMe, signIn, signUp, type Me } from '../api/auth';
 
 export const meKey = ['me'] as const;
@@ -53,14 +52,10 @@ export function useSetMe() {
 export const useIsSignedIn = () => useSession() !== null;
 
 /**
- * Signing out runs the sign-out tasks first, while the session can still authorize them
- * (unregistering this phone from pushes), then empties the cache (ApiProvider) and every
- * screen falls back to signed out.
+ * Signing out empties the cache (ApiProvider) and every screen falls back to signed out; the
+ * push registration notices and unregisters this phone.
  */
 export function useSignOut() {
   const store = useSessionStore();
-  return useCallback(async () => {
-    await runSignOutTasks();
-    store.clear();
-  }, [store]);
+  return useCallback(() => store.clear(), [store]);
 }

@@ -12,7 +12,8 @@ export function PushSetting() {
   const enable = useEnablePush();
   if (!device.supported || !permission.data) return null;
 
-  const state = enable.data ?? permission.data;
+  // the permission query, which the button's answer updates and a return from Ajustes re-reads
+  const state = permission.data;
   return (
     <View style={styles.row}>
       <Text variant="label">Avisos no celular</Text>

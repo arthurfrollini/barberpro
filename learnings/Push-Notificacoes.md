@@ -16,11 +16,11 @@ barbeiro cancela no dashboard
 
 ## Os pedaços
 
-- **Token por aparelho, não por pessoa.** A tabela `push_tokens` tem o token da Expo como chave. Um celular que entra com outra conta passa para a nova pessoa (upsert pelo token), então ninguém recebe aviso de outra pessoa. Sair da conta descadastra o token antes de limpar a sessão.
+- **Token por aparelho, não por pessoa.** A tabela `push_tokens` tem o token da Expo como chave. Um celular que entra com outra conta passa para a nova pessoa (upsert pelo token), então ninguém recebe aviso de outra pessoa. Quando a sessão acaba, o app descadastra o token (detalhes abaixo).
 - **Fila, como o email.** `notify()` põe o email e o push na fila lado a lado; se um falhar ao entrar na fila, o outro segue. A requisição que causou o aviso nunca espera a Expo.
 - **Cliente próprio da API da Expo**, com `fetch`, sem SDK: manda de 100 em 100, lê recibos de 1000 em 1000. 429 e 5xx viram erro, e o BullMQ tenta de novo com espera crescente.
 - **Ticket e recibo.** A Expo responde na hora com um _ticket_ por mensagem (aceitou ou não). O _recibo_, com a resposta da Apple ou do Google, sai minutos depois; a Expo recomenda olhar depois de 15. Nos dois, `DeviceNotRegistered` quer dizer que o app foi desinstalado ou os avisos desligados: o token é apagado.
-- **Badge** é o número de não lidos na hora do envio, então o ícone bate com a aba Avisos.
+- **Badge** é o número de não lidos na hora do envio; com o app aberto, ele acompanha a aba Avisos (e zera ao sair), então o ícone não fica mostrando avisos já lidos.
 - **Texto em português.** O email e o aviso salvo continuam em inglês (decisão antiga), mas o push é lido na lista de notificações do celular, onde o app não traduz nada.
 
 ## No app
@@ -29,7 +29,7 @@ barbeiro cancela no dashboard
 - **Pedir na hora certa.** Nunca na abertura do app: o pedido aparece na tela "Agendado", logo depois do primeiro agendamento, quando o motivo é óbvio. Um "não" é respeitado; Conta tem o botão, e leva para os Ajustes quando o celular já negou.
 - **`PushDevice`**, como o `LocationSource`: uma interface sobre o `expo-notifications`. Os testes passam um aparelho falso que responde à permissão, dá token, simula um push chegando e um toque.
 - **Toque com o app fechado.** O toque que abriu o app chega por `lastTap()` e às vezes também pelo listener. O app guarda o id e abre uma vez só. E só abre caminhos internos (`/agendamento/...`): uma URL de fora no payload é ignorada.
-- **Sair sem rede.** O descadastro no logout tem até 3 segundos. Sem rede, a pessoa sai mesmo assim; o servidor apaga o token quando a Apple ou o Google disserem que ele sumiu.
+- **Sair, com ou sem rede.** Quando a sessão acaba, por logout ou porque expirou, o app descadastra o token **sem precisar de sessão**: só aquele celular tem o token, e isso basta como prova. Sem rede, o token fica guardado no aparelho e é descadastrado na próxima abertura, antes de qualquer novo cadastro. Se a pessoa sai enquanto o cadastro ainda está em andamento, o app desfaz o cadastro quando ele termina.
 
 ## Credenciais
 

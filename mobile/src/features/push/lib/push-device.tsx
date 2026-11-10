@@ -2,6 +2,8 @@ import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { createContext, use, type ReactNode } from 'react';
 import { Linking, Platform } from 'react-native';
+import type { KeyValueStorage } from '@/shared/api/session';
+import { deviceStorage } from '@/shared/api/storage';
 
 export type PushPermission = 'granted' | 'denied' | 'undetermined';
 
@@ -26,7 +28,16 @@ export type PushDevice = {
   lastTap(): Promise<PushTap | null>;
   clearLastTap(): void;
   openSettings(): void;
+  /** The number on the app icon. */
+  setBadge(count: number): Promise<void>;
+  /** What the app keeps on this phone between runs. */
+  store: KeyValueStorage;
 };
+
+/** A token whose unregister failed (signed out offline): retried on the next start. */
+export const PENDING_UNREGISTER = 'barberpro.push.pending';
+/** The user answered "Agora não" to the card after a booking. */
+export const CARD_DISMISSED = 'barberpro.push.dismissed';
 
 const toPermission = (status: Notifications.NotificationPermissionsStatus): PushPermission =>
   status.granted ? 'granted' : status.canAskAgain ? 'undetermined' : 'denied';
@@ -86,6 +97,10 @@ export const devicePush: PushDevice = {
   },
   clearLastTap: () => Notifications.clearLastNotificationResponse(),
   openSettings: () => void Linking.openSettings(),
+  setBadge: async (count) => {
+    await Notifications.setBadgeCountAsync(count);
+  },
+  store: deviceStorage,
 };
 
 /** For the web build and anything without notifications. */
@@ -102,6 +117,12 @@ export const noPush: PushDevice = {
   lastTap: async () => null,
   clearLastTap: () => {},
   openSettings: () => {},
+  setBadge: async () => {},
+  store: {
+    getItem: async () => null,
+    setItem: async () => {},
+    removeItem: async () => {},
+  },
 };
 
 const PushContext = createContext<PushDevice>(devicePush);

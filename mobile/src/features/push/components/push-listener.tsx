@@ -1,7 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter, type Href } from 'expo-router';
 import { useEffect, useRef } from 'react';
+import { useIsSignedIn } from '@/features/auth/hooks/use-auth';
 import { safeReturnPath } from '@/features/auth/lib/return-path';
+import { useUnreadCount } from '@/features/notifications/hooks/use-notifications';
 import { usePushRegistration } from '../hooks/use-push';
 import { usePushDevice, type PushTap } from '../lib/push-device';
 
@@ -23,6 +25,8 @@ export function PushListener() {
       void queryClient.invalidateQueries({ queryKey: ['appointments'] });
     };
     const open = (tap: PushTap) => {
+      // handled: a later launch from the icon must not replay it
+      device.clearLastTap();
       if (opened.current.has(tap.id)) return;
       opened.current.add(tap.id);
       refresh();
@@ -34,15 +38,20 @@ export function PushListener() {
     const offReceive = device.onReceive(refresh);
     const offTap = device.onTap(open);
     void device.lastTap().then((tap) => {
-      if (!tap) return;
-      device.clearLastTap();
-      open(tap);
+      if (tap) open(tap);
     });
     return () => {
       offReceive();
       offTap();
     };
   }, [device, queryClient, router]);
+
+  // the app icon shows what the Avisos tab shows
+  const signedIn = useIsSignedIn();
+  const unread = useUnreadCount();
+  useEffect(() => {
+    if (signedIn && unread.data !== undefined) void device.setBadge(unread.data);
+  }, [device, signedIn, unread.data]);
 
   return null;
 }

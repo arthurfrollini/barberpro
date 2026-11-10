@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { testRouter } from 'expo-router/testing-library';
-import { useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { Text } from 'react-native';
 import { AccountScreen } from '@/features/account/screens/account-screen';
 import { AppointmentScreen } from '@/features/appointments/screens/appointment-screen';
@@ -37,9 +37,18 @@ describe('asking for pushes after the first booking', () => {
     expect(push.calls.request).toBe(1);
   });
 
-  it('can be put off', async () => {
-    await open(fakePush({ permission: 'undetermined' }));
+  it('can be put off, and stays off for the next bookings', async () => {
+    const push = fakePush({ permission: 'undetermined' });
+    await open(push);
     await fireEvent.press(await screen.findByRole('button', { name: 'Agora não' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Ativar avisos no celular' })).toBeNull(),
+    );
+
+    const next = fakePush({ permission: 'undetermined', stored: Object.fromEntries(push.stored) });
+    await open(next);
+    expect(await screen.findByText('Agendado')).toBeTruthy();
+    await act(async () => {});
     expect(screen.queryByRole('button', { name: 'Ativar avisos no celular' })).toBeNull();
   });
 
@@ -72,6 +81,17 @@ describe('the setting in Conta', () => {
     expect(await screen.findByText('Ativados neste celular.')).toBeTruthy();
   });
 
+  it('follows the phone settings after the user turned pushes on there', async () => {
+    const push = fakePush({ permission: 'undetermined', answer: 'denied' });
+    const { queryClient } = await open(push);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Ativar avisos' }));
+    expect(await screen.findByRole('button', { name: 'Abrir Ajustes' })).toBeTruthy();
+    // back from Ajustes, notifications allowed there
+    push.device.permission = async () => 'granted';
+    await act(() => queryClient.invalidateQueries({ queryKey: ['push', 'permission'] }));
+    expect(await screen.findByText('Ativados neste celular.')).toBeTruthy();
+  });
+
   it('sends to the phone settings when they were turned off there', async () => {
     const push = fakePush({ permission: 'denied' });
     await open(push);
@@ -87,16 +107,17 @@ describe('the setting in Conta', () => {
 });
 
 describe('a tapped push', () => {
-  function Root() {
+  function RootLayout() {
     return (
       <>
         <PushListener />
-        <Text>início</Text>
+        <Stack />
       </>
     );
   }
   const routes = {
-    index: Root,
+    _layout: RootLayout,
+    index: () => <Text>início</Text>,
     'agendamento/[id]': () => <Text>agendamento</Text>,
     avisos: () => <Text>avisos</Text>,
   };
@@ -114,9 +135,16 @@ describe('a tapped push', () => {
     await waitFor(() => expect(screen).toHavePathname('/avisos'));
     // the same tap also reaching the listener does not open a second screen
     await act(async () => push.tap({ id: 'n1', url: '/avisos' }));
-    expect(push.calls.clearLastTap).toBe(1);
     await testRouter.back();
     expect(screen).toHavePathname('/');
+    expect(testRouter.canGoBack()).toBe(false);
+  });
+
+  it('forgets a tap once handled, so a later start does not open it again', async () => {
+    const push = fakePush({ permission: 'granted' });
+    await renderAppRouter(routes, { handlers, push: push.device });
+    await act(async () => push.tap({ id: 'n2', url: '/avisos' }));
+    expect(push.calls.clearLastTap).toBe(1);
   });
 
   it('ignores a link that leaves the app', async () => {
@@ -124,6 +152,15 @@ describe('a tapped push', () => {
     await renderAppRouter(routes, { handlers, push: push.device });
     await act(async () => push.tap({ id: 'n1', url: 'https://evil.example' }));
     expect(screen).toHavePathname('/');
+  });
+
+  it('keeps the app icon badge at the unread count', async () => {
+    const push = fakePush({ permission: 'granted' });
+    await renderAppRouter(routes, {
+      handlers: { ...handlers, UnreadNotificationCount: () => ({ unreadNotificationCount: 2 }) },
+      push: push.device,
+    });
+    await waitFor(() => expect(push.calls.badges.at(-1)).toBe(2));
   });
 
   it('refreshes Avisos when a push arrives with the app open', async () => {

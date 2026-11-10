@@ -8,13 +8,16 @@ export function fakePush(
     answer?: PushPermission;
     token?: () => Promise<string>;
     lastTap?: PushTap | null;
+    /** What this phone kept from earlier runs (a token still to unregister, a dismissed card). */
+    stored?: Record<string, string>;
   } = {},
 ) {
   let permission: PushPermission = options.permission ?? 'undetermined';
   let lastTap = options.lastTap ?? null;
   const receivers = new Set<() => void>();
   const tappers = new Set<(tap: PushTap) => void>();
-  const calls = { request: 0, settings: 0, clearLastTap: 0 };
+  const calls = { request: 0, settings: 0, clearLastTap: 0, badges: [] as number[] };
+  const stored = new Map<string, string>(Object.entries(options.stored ?? {}));
 
   const device: PushDevice = {
     supported: true,
@@ -42,11 +45,20 @@ export function fakePush(
     openSettings: () => {
       calls.settings += 1;
     },
+    setBadge: async (count) => {
+      calls.badges.push(count);
+    },
+    store: {
+      getItem: async (key) => stored.get(key) ?? null,
+      setItem: async (key, value) => void stored.set(key, value),
+      removeItem: async (key) => void stored.delete(key),
+    },
   };
 
   return {
     device,
     calls,
+    stored,
     /** A push arrives while the app is open. */
     receive: () => receivers.forEach((listener) => listener()),
     /** The user taps a push. */
