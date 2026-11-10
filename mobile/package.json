@@ -65,7 +65,8 @@
     "codegen": "graphql-codegen --config codegen.ts",
     "export:web": "expo export --platform web --output-dir dist-web",
     "test:e2e": "playwright test",
-    "check": "npm run lint && npm run typecheck && npm run format:check && npm test"
+    "check": "npm run lint && npm run typecheck && npm run format:check && npm test",
+    "test:coverage": "TZ=UTC jest --coverage"
   },
   "private": true,
   "description": "BarberPro app for customers: find a shop, book, cancel and reschedule",
@@ -82,6 +83,26 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/e2e/"
-    ]
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.{ts,tsx}",
+      "!src/**/*.test.{ts,tsx}",
+      "!src/gql/**",
+      "!src/test/**",
+      "!src/app/**"
+    ],
+    "coverageReporters": [
+      "text-summary",
+      "text",
+      "html"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "lines": 95,
+        "statements": 94,
+        "functions": 90,
+        "branches": 85
+      }
+    }
   }
 }

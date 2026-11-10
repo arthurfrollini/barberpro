@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { SignedOut } from '@/features/auth/components/signed-out';
 import { useIsSignedIn, useMe, useSignOut } from '@/features/auth/hooks/use-auth';
 import { nameSchema } from '@/features/auth/lib/schemas';
+import { PushSetting } from '@/features/push/components/push-setting';
 import { isApiError } from '@/shared/api';
 import { messageFor } from '@/shared/lib/error-messages';
 import { Button } from '@/shared/ui/button';
@@ -47,6 +48,8 @@ function Account() {
         <Text>{me.data.email}</Text>
       </View>
       <NameForm name={me.data.name} />
+      <View style={styles.separator} />
+      <PushSetting />
       <View style={styles.separator} />
       <Button label="Sair" variant="danger" onPress={signOut} />
     </View>

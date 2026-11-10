@@ -49,3 +49,46 @@ describe('describeNotification, for the customer', () => {
     ).toEqual({ title: 'Appointment canceled', body: 'English body' });
   });
 });
+
+describe('describeNotification, for a barber who also uses the app', () => {
+  const asBarber = (type: string, cancelReason: string | null = null) =>
+    describeNotification(
+      { ...base, type: type as never, appointment: appt({ cancelReason }) },
+      'someone-else',
+    ).body;
+
+  it('speaks about the customer', () => {
+    expect(asBarber('APPOINTMENT_BOOKED')).toBe('Ana agendou Corte para sex 6/11 às 14:00.');
+    expect(asBarber('APPOINTMENT_RESCHEDULED')).toBe('Ana remarcou Corte para sex 6/11 às 14:00.');
+    expect(asBarber('APPOINTMENT_CANCELED', 'CUSTOMER')).toBe(
+      'Ana cancelou Corte de sex 6/11 às 14:00.',
+    );
+    expect(asBarber('APPOINTMENT_CANCELED', 'BARBER')).toBe(
+      'Você cancelou Corte com Ana em sex 6/11 às 14:00.',
+    );
+  });
+
+  it('explains cancellations by the agenda', () => {
+    expect(asBarber('APPOINTMENT_CANCELED', 'DAY_BLOCKED')).toBe(
+      'Marcos fechou a agenda no dia: Corte em sex 6/11 às 14:00 foi cancelado.',
+    );
+    expect(asBarber('APPOINTMENT_CANCELED', 'SCHEDULE_CHANGED')).toBe(
+      'Marcos mudou os horários de atendimento: Corte com Ana em sex 6/11 às 14:00 foi cancelado.',
+    );
+    expect(asBarber('APPOINTMENT_CANCELED', 'BARBER_REMOVED')).toBe(
+      'Marcos saiu da barbearia: Corte com Ana em sex 6/11 às 14:00 foi cancelado.',
+    );
+    expect(asBarber('APPOINTMENT_CANCELED', null)).toBe(
+      'Corte com Ana em sex 6/11 às 14:00 foi cancelado.',
+    );
+  });
+
+  it('as the customer, says who canceled', () => {
+    expect(
+      describeNotification(
+        { ...base, type: 'APPOINTMENT_CANCELED', appointment: appt({ cancelReason: 'CUSTOMER' }) },
+        'me',
+      ).body,
+    ).toBe('Você cancelou Corte com Marcos em sex 6/11 às 14:00.');
+  });
+});

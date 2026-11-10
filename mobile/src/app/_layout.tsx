@@ -9,9 +9,12 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { api, ApiProvider, createQueryClient, refetchOnForeground, session } from '@/shared/api';
+import { PushListener } from '@/features/push/components/push-listener';
+import { showNotificationsInForeground } from '@/features/push/lib/push-device';
 import { stackScreenOptions } from '@/shared/ui/navigation';
 
 void SplashScreen.preventAutoHideAsync();
+showNotificationsInForeground();
 
 const queryClient = createQueryClient();
 
@@ -38,6 +41,7 @@ export default function RootLayout() {
 
   return (
     <ApiProvider api={api} session={session} queryClient={queryClient}>
+      <PushListener />
       <StatusBar style="light" />
       <Stack screenOptions={stackScreenOptions}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

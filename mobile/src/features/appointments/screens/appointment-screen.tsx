@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
+import { EnablePushCard } from '@/features/push/components/enable-push-card';
 import { mapsUrl } from '@/features/shops/lib/maps';
 import { SignedOut } from '@/features/auth/components/signed-out';
 import { useIsSignedIn } from '@/features/auth/hooks/use-auth';
@@ -93,6 +94,8 @@ function Details({ appointment: a, notice }: { appointment: Appointment; notice?
       ) : null}
 
       <Ticket appointment={a} />
+
+      {notice === 'booked' && booked ? <EnablePushCard /> : null}
 
       <View style={styles.block}>
         <Text variant="muted">Endereço</Text>

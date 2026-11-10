@@ -60,6 +60,40 @@ describe('shop', () => {
   });
 });
 
+describe('when the API fails', () => {
+  it('says so and tries again on request', async () => {
+    let fail = true;
+    await renderAppRouter(routes, {
+      initialUrl: '/barbearia/shop-1',
+      signedIn: false,
+      handlers: {
+        Barbershop: () => (fail ? new Response('down', { status: 502 }) : { barbershop: shop() }),
+      },
+    });
+    expect(
+      await screen.findByText('Não foi possível falar com o servidor. Verifique sua conexão.'),
+    ).toBeTruthy();
+    fail = false;
+    await fireEvent.press(screen.getByRole('button', { name: 'Tentar de novo' }));
+    expect(await screen.findByText('12 anos de casa')).toBeTruthy();
+  });
+
+  it('on the barber page too', async () => {
+    let fail = true;
+    await renderAppRouter(routes, {
+      initialUrl: '/barbeiro/barber-1',
+      signedIn: false,
+      handlers: {
+        Barber: () => (fail ? new Response('down', { status: 502 }) : { barber: barber() }),
+      },
+    });
+    expect(await screen.findByText('Não deu certo')).toBeTruthy();
+    fail = false;
+    await fireEvent.press(screen.getByRole('button', { name: 'Tentar de novo' }));
+    expect(await screen.findByText('Degradê e barba desde 2010.')).toBeTruthy();
+  });
+});
+
 describe('barber', () => {
   it('lists the services with price and duration, and starts a booking', async () => {
     await renderAppRouter(routes, {
