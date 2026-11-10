@@ -1,6 +1,7 @@
 import type { Clock } from '../../../shared/application/clock.js';
 import type { Appointment } from '../../scheduling/domain/appointment.js';
 import type { Notification } from '../domain/notification.js';
+import type { PushPlatform } from '../domain/push-token.js';
 
 export interface NotificationRepository {
   insert(notifications: Notification[]): Promise<void>;
@@ -9,6 +10,19 @@ export interface NotificationRepository {
   /** Marks it read if it belongs to `userId`; false when there is no such notification. */
   markRead(id: string, userId: string, at: Date): Promise<boolean>;
   unreadCount(userId: string): Promise<number>;
+}
+
+export type SavePushToken = { token: string; userId: string; platform: PushPlatform; at: Date };
+
+/** The phones that get a user's notifications as pushes, one row per install of the app. */
+export interface PushTokenRepository {
+  /** Insert, or move an existing token to `userId`. */
+  save(input: SavePushToken): Promise<void>;
+  /** False when the token is not this user's. */
+  remove(token: string, userId: string): Promise<boolean>;
+  forUser(userId: string): Promise<{ token: string; platform: PushPlatform }[]>;
+  /** Tokens Expo reported as no longer registered, whoever they belong to. */
+  removeTokens(tokens: string[]): Promise<void>;
 }
 
 export type MailMessage = { to: string; subject: string; text: string };
@@ -43,6 +57,7 @@ export interface People {
 
 export type NotifyDeps = {
   notifications: NotificationRepository;
+  pushTokens: PushTokenRepository;
   mailQueue: MailQueue;
   reminders: ReminderScheduler;
   agenda: AgendaPublisher;

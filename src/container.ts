@@ -8,6 +8,7 @@ import { JoseAccessTokens } from './modules/identity/adapters/security/jose-acce
 import { nodeSecrets } from './modules/identity/adapters/security/node-secrets.js';
 import type { IdentityDeps } from './modules/identity/application/ports.js';
 import { TypeOrmNotificationRepository } from './modules/notifications/adapters/persistence/typeorm-notification-repository.js';
+import { TypeOrmPushTokenRepository } from './modules/notifications/adapters/persistence/typeorm-push-token-repository.js';
 import { handleSchedulingEvents } from './modules/notifications/application/handle-events.js';
 import type { NotifyDeps } from './modules/notifications/application/ports.js';
 import { shopsRepositories } from './modules/shops/adapters/persistence/repositories.js';
@@ -137,6 +138,7 @@ export async function createContainer(
 
   const notifications: NotifyDeps = {
     notifications: new TypeOrmNotificationRepository(dataSource.manager),
+    pushTokens: new TypeOrmPushTokenRepository(dataSource.manager),
     mailQueue,
     reminders,
     agenda: {

@@ -37,9 +37,18 @@ type Query {
   unreadNotificationCount: Int!
 }
 
+enum PushPlatform {
+  IOS
+  ANDROID
+}
+
 type Mutation {
   "Errors: NOTIFICATION_NOT_FOUND."
   markNotificationRead(id: ID!): Boolean!
+  "This phone gets the signed-in user's notifications as pushes; a phone that was someone else's moves to them. token is what Expo's getExpoPushTokenAsync returns. Errors: INVALID_PUSH_TOKEN."
+  registerPushToken(token: String!, platform: PushPlatform!): Boolean!
+  "Stops pushes to this phone, on sign-out. False when the token is not the user's."
+  unregisterPushToken(token: String!): Boolean!
 }
 
 type Subscription {

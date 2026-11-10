@@ -32,8 +32,32 @@ export function fakeNotifyDeps(
     unreadCount: async (userId) => saved.filter((n) => n.userId === userId).length,
   };
 
+  const pushTokens = new Map<string, { userId: string; platform: 'ios' | 'android' }>();
+
   const deps = {
     notifications,
+    pushTokens: {
+      save: async ({
+        token,
+        userId,
+        platform,
+      }: {
+        token: string;
+        userId: string;
+        platform: 'ios' | 'android';
+      }) => {
+        pushTokens.set(token, { userId, platform });
+      },
+      remove: async (token: string, userId: string) =>
+        pushTokens.get(token)?.userId === userId ? pushTokens.delete(token) : false,
+      forUser: async (userId: string) =>
+        [...pushTokens]
+          .filter(([, t]) => t.userId === userId)
+          .map(([token, t]) => ({ token, platform: t.platform })),
+      removeTokens: async (tokens: string[]) => {
+        for (const token of tokens) pushTokens.delete(token);
+      },
+    },
     mailQueue: {
       enqueue: async (m: MailMessage) => {
         mail.push(m);
@@ -61,5 +85,14 @@ export function fakeNotifyDeps(
     logError: (error: unknown) => errors.push(error),
   } satisfies NotifyDeps;
 
-  return { ...deps, saved, mail, reminderJobs, agendaChanges, appointmentRows, errors };
+  return {
+    ...deps,
+    saved,
+    mail,
+    reminderJobs,
+    agendaChanges,
+    appointmentRows,
+    errors,
+    pushTokenRows: pushTokens,
+  };
 }
