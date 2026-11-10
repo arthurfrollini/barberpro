@@ -24,8 +24,9 @@ This is a rewrite of a 2021 Express project (kept under the [`v2021`](https://gi
 | Web 4 | Owner: getting started, shop page, team, invites                         | done  |
 | V2    | Many shops per owner and per barber, shop switcher in the dashboard      | done  |
 | V3    | Customer app (Expo): find shops, book, cancel, reschedule, notifications | done  |
+| V4    | Push notifications to the app, through Expo's push service               | done  |
 
-The designs are in [`docs/superpowers/specs`](docs/superpowers/specs) (API, dashboard, V2, V3) and each phase has its plan in [`docs/superpowers/plans`](docs/superpowers/plans). Study notes in Portuguese, including a walk through [every piece of the stack](learnings/Stack.md), are in [`learnings/`](learnings/README.md).
+The designs are in [`docs/superpowers/specs`](docs/superpowers/specs) (API, dashboard, V2, V3, V4) and each phase has its plan in [`docs/superpowers/plans`](docs/superpowers/plans). Study notes in Portuguese, including a walk through [every piece of the stack](learnings/Stack.md), are in [`learnings/`](learnings/README.md).
 
 ## Stack
 
@@ -164,7 +165,7 @@ mutation {
 
 Customers and barbers can cancel or reschedule up to 2 hours before. Barbers set weekly hours (`setWeeklySchedule(barberId, ...)`, `HH:MM` in the shop's time zone) and block days (`blockDate(barberId, date)`), per shop. Both cancel the booked appointments 2 or more hours away that no longer fit, and return them. A barber who works in two shops is never offered, or booked, at both at the same time: availability counts their bookings everywhere, and an exclusion constraint in Postgres refuses the overlap under concurrency ([ADR 7](docs/adr/0007-many-shops-per-person.md)).
 
-Each booking, cancellation and reschedule notifies the other party (`notifications`, plus the same text by email through the worker) and schedules the customer's reminder. Barbers can watch their agenda live:
+Each booking, cancellation and reschedule notifies the other party (`notifications`, plus the same text by email and a push to their phones through the worker) and schedules the customer's reminder. Phones register with `registerPushToken(token, platform)` and leave with `unregisterPushToken(token)`. Barbers can watch their agenda live:
 
 ```graphql
 subscription {
@@ -226,18 +227,23 @@ What it does:
 - **Agendar:** a strip of the next 60 days, the free times as a grid in the shop's time zone, and a reminder. Browsing needs no account; confirming does, and the chosen day and time survive signing in or up.
 - **Agendamentos:** upcoming and past bookings. Each opens as a ticket, with cancel and reschedule until 2 hours before.
 - **Avisos:** cancellations by the barber, reschedules and reminders, with the unread count on the tab.
+- **Push notifications:** the same notices reach the phone with the app closed, and a tap opens the appointment. The app asks after the first booking, never at launch ([ADR 9](docs/adr/0009-push-notifications-through-expo.md)).
 
 - Expo SDK 58, React Native 0.88, React 19, TanStack Query, React Hook Form with zod
 - The same shape as the dashboard: feature folders, request functions as the only network code, hooks over TanStack Query, GraphQL Code Generator's client preset with a small `fetch` client
 - The session in the Keychain or Keystore (`expo-secure-store`), `localStorage` on web, with one refresh at a time because refresh tokens are single use
 - Jest with jest-expo and React Native Testing Library, over the real API client and a fake `fetch`; Playwright drives the web build against the real API
 
+The app runs as a development build, not in Expo Go, because remote push needs one. With the API up (`docker compose up` in the repo root):
+
 ```bash
 cd mobile
 npm install
 cp .env.example .env   # EXPO_PUBLIC_API_URL, the API the app talks to
-npm start              # then i for the iOS simulator, a for Android, or scan the QR code with Expo Go
+npx expo run:ios       # once (and after adding a native module): builds and installs the dev client
+npm start              # every day after that: serves the JavaScript to the installed app
 npm run check          # lint, typecheck, format, unit and component tests
+npm run test:coverage  # the same tests with coverage; fails under 95% of lines
 npm run test:e2e       # Playwright on the web build; needs Postgres, Redis and Mailpit from
                        # docker compose, npm install in the repo root and npx playwright install chromium
 npm run codegen        # after changing an operation or the API's schema

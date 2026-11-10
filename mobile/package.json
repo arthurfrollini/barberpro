@@ -54,8 +54,8 @@
   },
   "scripts": {
     "start": "expo start",
-    "ios": "expo start --ios",
-    "android": "expo start --android",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
     "web": "expo start --web",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
