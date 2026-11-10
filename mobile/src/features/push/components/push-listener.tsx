@@ -20,6 +20,7 @@ export function PushListener() {
   const opened = useRef(new Set<string>());
 
   useEffect(() => {
+    if (!device.supported) return;
     const refresh = () => {
       void queryClient.invalidateQueries({ queryKey: ['notifications'] });
       void queryClient.invalidateQueries({ queryKey: ['appointments'] });
@@ -50,7 +51,9 @@ export function PushListener() {
   const signedIn = useIsSignedIn();
   const unread = useUnreadCount();
   useEffect(() => {
-    if (signedIn && unread.data !== undefined) void device.setBadge(unread.data);
+    if (device.supported && signedIn && unread.data !== undefined) {
+      void device.setBadge(unread.data);
+    }
   }, [device, signedIn, unread.data]);
 
   return null;
