@@ -4,6 +4,8 @@ import type {
   MailQueue,
   PushJob,
   PushQueue,
+  PushReceiptScheduler,
+  ReceiptCheck,
   ReminderScheduler,
 } from '../../../modules/notifications/application/ports.js';
 import type { MailMessage, Mailer } from '../../../modules/shops/application/ports.js';
@@ -12,6 +14,10 @@ import type { Clock } from '../../application/clock.js';
 export const MAIL_QUEUE = 'mail';
 export const REMINDER_QUEUE = 'reminders';
 export const PUSH_QUEUE = 'push';
+export const PUSH_RECEIPTS_QUEUE = 'push-receipts';
+
+/** Expo has receipts some minutes after the ticket; it recommends looking after 15. */
+export const RECEIPT_DELAY_MS = 15 * 60_000;
 
 /** For workers: BullMQ needs a connection that waits for Redis instead of giving up. */
 export function createQueueConnection(redisUrl: string): Redis {
@@ -106,6 +112,33 @@ export class BullMqPushQueue implements PushQueue {
   }
 }
 
+/** The receipt check, as a delayed job. */
+export class BullMqPushReceipts implements PushReceiptScheduler {
+  private readonly queue: Queue<ReceiptCheck>;
+
+  constructor(
+    connection: Redis,
+    prefix: string,
+    private readonly delayMs = RECEIPT_DELAY_MS,
+  ) {
+    this.queue = new Queue(PUSH_RECEIPTS_QUEUE, { connection, prefix });
+  }
+
+  async schedule(check: ReceiptCheck): Promise<void> {
+    await this.queue.add('check', check, {
+      delay: this.delayMs,
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 60_000 },
+      removeOnComplete: 1_000,
+      removeOnFail: 1_000,
+    });
+  }
+
+  close(): Promise<void> {
+    return this.queue.close();
+  }
+}
+
 /** One delayed job per appointment, keyed by its id, so scheduling again replaces it. */
 export class BullMqReminders implements ReminderScheduler {
   private readonly queue: Queue<{ appointmentId: string }>;
@@ -160,6 +193,8 @@ export function startWorkers(input: {
   prefix: string;
   mailer: Mailer;
   sendReminder: (appointmentId: string) => Promise<void>;
+  sendPush?: (job: PushJob) => Promise<void>;
+  checkPushReceipts?: (check: ReceiptCheck) => Promise<void>;
   /** An email that failed its last attempt. */
   onMailGaveUp?: (message: MailMessage) => Promise<void>;
   onError?: (error: unknown, job?: Job) => void;
@@ -173,7 +208,20 @@ export function startWorkers(input: {
     (job) => input.sendReminder(job.data.appointmentId),
     { connection: input.connection, prefix: input.prefix },
   );
-  for (const worker of [mail, reminders]) {
+  const optional = [
+    input.sendPush &&
+      new Worker<PushJob>(PUSH_QUEUE, (job) => input.sendPush!(job.data), {
+        connection: input.connection,
+        prefix: input.prefix,
+      }),
+    input.checkPushReceipts &&
+      new Worker<ReceiptCheck>(PUSH_RECEIPTS_QUEUE, (job) => input.checkPushReceipts!(job.data), {
+        connection: input.connection,
+        prefix: input.prefix,
+      }),
+  ].filter((w): w is Worker => Boolean(w));
+  const all = [mail, reminders, ...optional];
+  for (const worker of all) {
     worker.on('failed', (job, error) => input.onError?.(error, job));
   }
   mail.on('failed', (job) => {
@@ -183,7 +231,7 @@ export function startWorkers(input: {
   });
   return {
     async close() {
-      await Promise.all([mail.close(), reminders.close()]);
+      await Promise.all(all.map((worker) => worker.close()));
     },
   };
 }

@@ -14,6 +14,9 @@ const schema = z.object({
   PUBLIC_URL: z.url().default('http://localhost:4000'),
   DASHBOARD_URL: z.url().default('http://localhost:5180'),
   QUEUE_PREFIX: z.string().min(1).default('barberpro'),
+  EXPO_PUSH_URL: z.url().default('https://exp.host/--/api/v2/push'),
+  // only when push security is turned on for the project in Expo's dashboard
+  EXPO_ACCESS_TOKEN: z.string().min(1).optional(),
 });
 
 export type Config = {
@@ -32,6 +35,9 @@ export type Config = {
   dashboardUrl: string;
   /** Namespace of the BullMQ keys in Redis; tests use their own. */
   queuePrefix: string;
+  /** Expo's push API; tests point it at a local fake. */
+  expoPushUrl: string;
+  expoAccessToken: string | undefined;
 };
 
 /** Reads and validates the environment once, at startup, so a bad deploy fails fast. */
@@ -58,5 +64,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     publicUrl: e.PUBLIC_URL,
     dashboardUrl: e.DASHBOARD_URL.replace(/\/$/, ''),
     queuePrefix: e.QUEUE_PREFIX,
+    expoPushUrl: e.EXPO_PUSH_URL.replace(/\/$/, ''),
+    expoAccessToken: e.EXPO_ACCESS_TOKEN,
   };
 }

@@ -4,6 +4,7 @@ import type {
   AgendaChange,
   MailMessage,
   PushJob,
+  SavePushToken,
   NotificationRepository,
   NotifyDeps,
 } from '../application/ports.js';
@@ -39,15 +40,7 @@ export function fakeNotifyDeps(
   const deps = {
     notifications,
     pushTokens: {
-      save: async ({
-        token,
-        userId,
-        platform,
-      }: {
-        token: string;
-        userId: string;
-        platform: 'ios' | 'android';
-      }) => {
+      save: async ({ token, userId, platform }: SavePushToken) => {
         pushTokens.set(token, { userId, platform });
       },
       remove: async (token: string, userId: string) =>

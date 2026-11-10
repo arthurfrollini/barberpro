@@ -40,6 +40,37 @@ export interface PushQueue {
   enqueue(job: PushJob): Promise<void>;
 }
 
+/** One message to one phone, in the shape of Expo's push API. */
+export type PushMessage = {
+  to: string;
+  title: string;
+  body: string;
+  data: { url: string };
+  badge: number;
+  sound: 'default';
+};
+
+type PushError = { status: 'error'; message: string; details?: { error?: string } };
+
+/** Expo's answer per message, in the order sent: accepted (with an id for the receipt) or not. */
+export type PushTicket = { status: 'ok'; id: string } | PushError;
+
+/** What Expo learned from Apple or Google, available a while after the ticket. */
+export type PushReceipt = { status: 'ok' } | PushError;
+
+export interface PushSender {
+  send(messages: PushMessage[]): Promise<PushTicket[]>;
+  /** Receipts by ticket id; an id missing from the result is not ready yet (or expired). */
+  receipts(ids: string[]): Promise<Record<string, PushReceipt>>;
+}
+
+export type ReceiptCheck = { tickets: { id: string; token: string }[] };
+
+/** Looks at the receipts of accepted tickets later, when Expo has them. */
+export interface PushReceiptScheduler {
+  schedule(check: ReceiptCheck): Promise<void>;
+}
+
 /** One delayed job per appointment; scheduling again replaces it. */
 export interface ReminderScheduler {
   schedule(appointmentId: string, runAt: Date): Promise<void>;
