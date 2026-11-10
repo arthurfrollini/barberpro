@@ -43,8 +43,10 @@ export function fakeNotifyDeps(
       save: async ({ token, userId, platform }: SavePushToken) => {
         pushTokens.set(token, { userId, platform });
       },
-      remove: async (token: string, userId: string) =>
-        pushTokens.get(token)?.userId === userId ? pushTokens.delete(token) : false,
+      remove: async (token: string, userId: string | null) =>
+        pushTokens.has(token) && (userId === null || pushTokens.get(token)?.userId === userId)
+          ? pushTokens.delete(token)
+          : false,
       forUser: async (userId: string) =>
         [...pushTokens]
           .filter(([, t]) => t.userId === userId)

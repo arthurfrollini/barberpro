@@ -125,6 +125,19 @@ describe('sendPush', () => {
     expect((await deps.pushTokens.forUser(ANA)).map((t) => t.token)).toEqual(['ExpoPushToken[b]']);
   });
 
+  it('once Expo accepted the messages, a later failure is logged instead of retried', async () => {
+    await register('ExpoPushToken[phone]');
+    const deps = pushDeps();
+    deps.pushReceipts.schedule = async () => {
+      throw new Error('redis down');
+    };
+
+    await expect(sendPush(deps, job)).resolves.toBeUndefined();
+
+    expect(sent).toHaveLength(1);
+    expect(deps.errors).toHaveLength(1);
+  });
+
   it('drops the phones whose receipts say they are gone', async () => {
     await register('ExpoPushToken[gone]');
     await register('ExpoPushToken[fine]');

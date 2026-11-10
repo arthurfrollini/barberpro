@@ -206,7 +206,7 @@ export type Mutation = {
   signUp: AuthPayload;
   /** Errors: NOT_A_BARBER. */
   unblockDate: Scalars['Boolean']['output'];
-  /** Stops pushes to this phone, on sign-out. False when the token is not the user's. */
+  /** Stops pushes to this phone, on sign-out. Works without a session too (signing out offline, an expired session): only the phone has its token. Signed in, removes only the user's own. False when there was nothing to remove. */
   unregisterPushToken: Scalars['Boolean']['output'];
   /** Bio and photo of one of the user's barber profiles. Errors: NOT_A_BARBER. */
   updateBarberProfile: Barber;

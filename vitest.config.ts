@@ -15,6 +15,8 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.test.ts', 'src/**/generated/**', 'src/**/migrations/**'],
       reporter: ['text-summary', 'text', 'html'],
+      // CI runs the coverage task: it fails when coverage drops under these
+      thresholds: { lines: 90, statements: 90, functions: 90, branches: 75 },
     },
     projects: [
       {

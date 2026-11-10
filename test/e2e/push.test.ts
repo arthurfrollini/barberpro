@@ -83,6 +83,21 @@ describe('push tokens over GraphQL', () => {
     expect(await tokensOf(ana.user.id)).toEqual([]);
   });
 
+  it('lets a signed-out phone unregister itself: holding the token is the proof', async () => {
+    const ana = await signUp('ana');
+    await gql(
+      t.app,
+      REGISTER,
+      { token: 'ExpoPushToken[ana-phone]', platform: 'IOS' },
+      ana.accessToken,
+    );
+
+    const result = await gql(t.app, UNREGISTER, { token: 'ExpoPushToken[ana-phone]' });
+
+    expect(result.data).toEqual({ unregisterPushToken: true });
+    expect(await tokensOf(ana.user.id)).toEqual([]);
+  });
+
   it('needs a session and a real Expo token', async () => {
     expect(
       errorCode(await gql(t.app, REGISTER, { token: 'ExpoPushToken[x]', platform: 'IOS' })),

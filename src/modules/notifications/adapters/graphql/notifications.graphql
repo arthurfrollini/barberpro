@@ -47,7 +47,7 @@ type Mutation {
   markNotificationRead(id: ID!): Boolean!
   "This phone gets the signed-in user's notifications as pushes; a phone that was someone else's moves to them. token is what Expo's getExpoPushTokenAsync returns. Errors: INVALID_PUSH_TOKEN."
   registerPushToken(token: String!, platform: PushPlatform!): Boolean!
-  "Stops pushes to this phone, on sign-out. False when the token is not the user's."
+  "Stops pushes to this phone, on sign-out. Works without a session too (signing out offline, an expired session): only the phone has its token. Signed in, removes only the user's own. False when there was nothing to remove."
   unregisterPushToken(token: String!): Boolean!
 }
 

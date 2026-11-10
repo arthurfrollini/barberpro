@@ -18,8 +18,8 @@ export type SavePushToken = { token: string; userId: string; platform: PushPlatf
 export interface PushTokenRepository {
   /** Insert, or move an existing token to `userId`. */
   save(input: SavePushToken): Promise<void>;
-  /** False when the token is not this user's. */
-  remove(token: string, userId: string): Promise<boolean>;
+  /** False when there is no such token (or, given a user, when it is not theirs). */
+  remove(token: string, userId: string | null): Promise<boolean>;
   forUser(userId: string): Promise<{ token: string; platform: PushPlatform }[]>;
   /** Tokens Expo reported as no longer registered, whoever they belong to. */
   removeTokens(tokens: string[]): Promise<void>;

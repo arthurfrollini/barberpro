@@ -157,6 +157,18 @@ describe('handleSchedulingEvents', () => {
     await handleSchedulingEvents(deps, [{ type: 'booked', appointment: a, byUserId: ANA }]);
     expect(deps.mail).toHaveLength(1);
     expect(deps.errors).toHaveLength(1);
+
+    deps.pushQueue.enqueue = async (job) => {
+      deps.pushes.push(job);
+    };
+    deps.mailQueue.enqueue = async () => {
+      throw new Error('smtp queue down');
+    };
+    await handleSchedulingEvents(deps, [
+      { type: 'booked', appointment: appointment('2026-11-02T18:00:00Z'), byUserId: ANA },
+    ]);
+    expect(deps.pushes).toHaveLength(1);
+    expect(deps.errors).toHaveLength(2);
   });
 
   it('still moves the reminder and updates the live agenda when the notification fails', async () => {

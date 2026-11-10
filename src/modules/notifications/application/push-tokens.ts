@@ -16,10 +16,13 @@ export async function registerPushToken(
   });
 }
 
-/** On sign-out. False when the token is not this user's (or not known at all). */
+/**
+ * On sign-out. Signed in, only the user's own phone; signed out, by the token alone, which
+ * only that phone has. False when there was nothing to remove.
+ */
 export async function unregisterPushToken(
   deps: Pick<NotifyDeps, 'pushTokens'>,
-  userId: string,
+  userId: string | null,
   rawToken: string,
 ): Promise<boolean> {
   return deps.pushTokens.remove(rawToken.trim(), userId);

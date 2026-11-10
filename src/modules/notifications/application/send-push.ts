@@ -4,6 +4,7 @@ import type {
   PushMessage,
   PushReceiptScheduler,
   PushSender,
+  PushTicket,
   ReceiptCheck,
 } from './ports.js';
 
@@ -34,7 +35,15 @@ export async function sendPush(deps: PushDeps, job: PushJob): Promise<void> {
   }));
 
   const tickets = await deps.pushSender.send(messages);
+  // past this point Expo has the messages: a failure must not retry the job and push again
+  try {
+    await afterSend(deps, messages, tickets);
+  } catch (error) {
+    deps.logError(error);
+  }
+}
 
+async function afterSend(deps: PushDeps, messages: PushMessage[], tickets: PushTicket[]) {
   const gone: string[] = [];
   const accepted: ReceiptCheck['tickets'] = [];
   // tickets come in the order sent; one past the end names no token and is ignored

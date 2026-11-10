@@ -35,8 +35,10 @@ export function notificationsGraphQL(
         await registerPushToken(deps, requireUser(ctx), token, platform);
         return true;
       },
+      // no session needed: a phone signing out offline (or with an expired session) still has
+      // its token, and holding it is the proof of being that phone
       unregisterPushToken: (_, { token }, ctx) =>
-        unregisterPushToken(deps, requireUser(ctx), token),
+        unregisterPushToken(deps, ctx.currentUserId, token),
     },
     Subscription: {
       agendaChanged: {

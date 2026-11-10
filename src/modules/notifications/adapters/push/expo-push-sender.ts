@@ -1,3 +1,4 @@
+import { UnrecoverableError } from 'bullmq';
 import type { PushMessage, PushReceipt, PushSender, PushTicket } from '../../application/ports.js';
 
 // Expo's limits per request
@@ -23,7 +24,15 @@ export class ExpoPushSender implements PushSender {
   async send(messages: PushMessage[]): Promise<PushTicket[]> {
     const tickets: PushTicket[] = [];
     for (const chunk of chunks(messages, SEND_CHUNK)) {
-      tickets.push(...(await this.post<PushTicket[]>('/send', chunk)));
+      const answer = await this.post<PushTicket[]>('/send', chunk);
+      // tickets are matched to tokens by position: a short or long answer would pair a
+      // "gone" ticket with someone else's live phone
+      if (!Array.isArray(answer) || answer.length !== chunk.length) {
+        throw new Error(
+          `Expo push /send answered ${Array.isArray(answer) ? answer.length : 'no'} tickets for ${chunk.length} messages`,
+        );
+      }
+      tickets.push(...answer);
     }
     return tickets;
   }
@@ -59,7 +68,9 @@ export class ExpoPushSender implements PushSender {
     };
     if (json.errors?.length || json.data === undefined) {
       const error = json.errors?.[0];
-      throw new Error(
+      // a 4xx is a malformed request: retrying sends the same thing and gets the same answer
+      const Failure = response.status >= 400 ? UnrecoverableError : Error;
+      throw new Failure(
         `Expo push ${path} failed: ${error?.code ?? response.status} ${error?.message ?? ''}`.trim(),
       );
     }

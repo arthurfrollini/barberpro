@@ -16,8 +16,11 @@ export class TypeOrmPushTokenRepository implements PushTokenRepository {
     );
   }
 
-  async remove(token: string, userId: string) {
-    const result = await this.manager.delete(PushTokenRecord, { token, userId });
+  async remove(token: string, userId: string | null) {
+    const result = await this.manager.delete(
+      PushTokenRecord,
+      userId === null ? { token } : { token, userId },
+    );
     return (result.affected ?? 0) > 0;
   }
 

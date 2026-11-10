@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { UnrecoverableError } from 'bullmq';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { ExpoPushSender } from '../../src/modules/notifications/adapters/push/expo-push-sender.js';
 
@@ -76,6 +77,23 @@ describe('Expo push sender', () => {
       json: { errors: [{ code: 'PUSH_TOO_MANY_EXPERIENCE_IDS', message: 'mixed' }] },
     });
     await expect(sender.send([message(1)])).rejects.toThrow(/PUSH_TOO_MANY_EXPERIENCE_IDS/);
+  });
+
+  it('refuses an answer with the wrong number of tickets, so no token gets the wrong ticket', async () => {
+    reply = () => ({ status: 200, json: { data: [{ status: 'ok', id: 'only-one' }] } });
+    await expect(new ExpoPushSender(base).send([message(1), message(2)])).rejects.toThrow(
+      /2 messages/,
+    );
+  });
+
+  it('does not retry a request Expo refused as malformed', async () => {
+    reply = () => ({
+      status: 400,
+      json: { errors: [{ code: 'VALIDATION_ERROR', message: 'bad' }] },
+    });
+    await expect(new ExpoPushSender(base).send([message(1)])).rejects.toBeInstanceOf(
+      UnrecoverableError,
+    );
   });
 
   it('sends nothing for no messages', async () => {

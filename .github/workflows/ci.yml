@@ -43,9 +43,8 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run format:check
-      - run: npm run test:unit
-      - run: npm run test:integration
-      - run: npm run test:e2e
+      - name: Tests (unit, integration, e2e) with coverage thresholds
+        run: npm run test:coverage
       - run: npm run build
 
   web:
@@ -87,7 +86,8 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run format:check
-      - run: npm test
+      - name: Tests with coverage thresholds
+        run: npm run test:coverage
       - name: Web build
         run: npm run export:web
 
