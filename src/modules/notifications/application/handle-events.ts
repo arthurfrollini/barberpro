@@ -2,16 +2,21 @@ import type { SchedulingEvent } from '../../scheduling/application/ports.js';
 import type { Appointment } from '../../scheduling/domain/appointment.js';
 import { Notification, type NotificationType } from '../domain/notification.js';
 import { cancelReasonText, when } from './messages.js';
-import type { NotifyDeps } from './ports.js';
+import type { NotifyDeps, PushJob } from './ports.js';
+import { type PushContext, pushText, pushUrl } from './push-messages.js';
 
-/** In-app row plus the same text by email. */
+/**
+ * In-app row, plus the same text by email and a push in Portuguese. Email and push are queued
+ * on their own: one failing to queue does not hold back the other.
+ */
 async function notify(
   deps: NotifyDeps,
-  to: { userId: string; email: string },
+  to: { userId: string; email: string; role: 'customer' | 'barber' },
   type: NotificationType,
   title: string,
   body: string,
   appointment: Appointment,
+  push: PushContext,
 ) {
   await deps.notifications.insert([
     Notification.create(
@@ -26,7 +31,23 @@ async function notify(
       deps.clock.now(),
     ),
   ]);
-  await deps.mailQueue.enqueue({ to: to.email, subject: title, text: body });
+  await deliver(deps, {
+    email: { to: to.email, subject: title, text: body },
+    push: { userId: to.userId, ...pushText(push), url: pushUrl(to.role, appointment.id) },
+  });
+}
+
+export async function deliver(
+  deps: Pick<NotifyDeps, 'mailQueue' | 'pushQueue' | 'logError'>,
+  out: { email: { to: string; subject: string; text: string }; push: PushJob },
+) {
+  const results = await Promise.allSettled([
+    deps.mailQueue.enqueue(out.email),
+    deps.pushQueue.enqueue(out.push),
+  ]);
+  for (const result of results) {
+    if (result.status === 'rejected') deps.logError(result.reason);
+  }
 }
 
 async function scheduleReminder(deps: NotifyDeps, appointment: Appointment) {
@@ -60,9 +81,16 @@ async function notifyOtherParty(deps: NotifyDeps, event: SchedulingEvent) {
     throw new Error(`missing people for appointment ${a.id}`);
 
   const tz = barber.timezone;
-  const toBarber = { userId: barber.userId, email: barberUser.email };
-  const toCustomer = { userId: a.customerId, email: customer.email };
+  const toBarber = { userId: barber.userId, email: barberUser.email, role: 'barber' as const };
+  const toCustomer = { userId: a.customerId, email: customer.email, role: 'customer' as const };
   const byCustomer = event.byUserId === a.customerId;
+  const names = {
+    customer: customer.name,
+    barber: barberUser.name,
+    service: a.serviceName,
+    startsAt: a.startsAt,
+    timeZone: tz,
+  };
 
   switch (event.type) {
     case 'booked':
@@ -73,6 +101,7 @@ async function notifyOtherParty(deps: NotifyDeps, event: SchedulingEvent) {
         'New booking',
         `${customer.name} booked ${a.serviceName} on ${when(a.startsAt, tz)}.`,
         a,
+        { ...names, kind: 'booked' },
       );
     case 'canceled': {
       if (byCustomer) {
@@ -83,6 +112,7 @@ async function notifyOtherParty(deps: NotifyDeps, event: SchedulingEvent) {
           'Appointment canceled',
           `${customer.name} canceled ${a.serviceName} on ${when(a.startsAt, tz)}.`,
           a,
+          { ...names, kind: 'canceled_by_customer' },
         );
       }
       const why = cancelReasonText(a.cancelReason);
@@ -93,6 +123,7 @@ async function notifyOtherParty(deps: NotifyDeps, event: SchedulingEvent) {
         'Appointment canceled',
         `Your ${a.serviceName} with ${barberUser.name} on ${when(a.startsAt, tz)} was canceled${why ? `: ${why}` : ''}.`,
         a,
+        { ...names, kind: 'canceled_for_customer', reason: a.cancelReason },
       );
     }
     case 'rescheduled': {
@@ -105,6 +136,7 @@ async function notifyOtherParty(deps: NotifyDeps, event: SchedulingEvent) {
           'Appointment moved',
           `${customer.name} moved ${a.serviceName} ${moved}.`,
           a,
+          { ...names, kind: 'rescheduled_by_customer' },
         );
       }
       return notify(
@@ -114,6 +146,7 @@ async function notifyOtherParty(deps: NotifyDeps, event: SchedulingEvent) {
         'Appointment moved',
         `Your ${a.serviceName} with ${barberUser.name} moved ${moved}.`,
         a,
+        { ...names, kind: 'rescheduled_by_barber' },
       );
     }
   }

@@ -32,6 +32,14 @@ export interface MailQueue {
   enqueue(message: MailMessage): Promise<void>;
 }
 
+/** A push to every phone of `userId`; `url` is where a tap opens the app. */
+export type PushJob = { userId: string; title: string; body: string; url: string };
+
+/** Pushes leave through a queue too; the worker sends them to Expo. */
+export interface PushQueue {
+  enqueue(job: PushJob): Promise<void>;
+}
+
 /** One delayed job per appointment; scheduling again replaces it. */
 export interface ReminderScheduler {
   schedule(appointmentId: string, runAt: Date): Promise<void>;
@@ -59,6 +67,7 @@ export type NotifyDeps = {
   notifications: NotificationRepository;
   pushTokens: PushTokenRepository;
   mailQueue: MailQueue;
+  pushQueue: PushQueue;
   reminders: ReminderScheduler;
   agenda: AgendaPublisher;
   people: People;

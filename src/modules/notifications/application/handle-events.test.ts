@@ -52,6 +52,14 @@ describe('handleSchedulingEvents', () => {
         appointmentStartsAt: at('2026-11-02T17:00:00Z'),
       }),
     ]);
+    expect(deps.pushes).toEqual([
+      {
+        userId: JOAO,
+        title: 'Novo agendamento',
+        body: 'Ana agendou Corte para seg 2/11 às 14:00.',
+        url: '/avisos',
+      },
+    ]);
     expect(deps.mail).toEqual([
       {
         to: 'joao@x.com',
@@ -87,6 +95,15 @@ describe('handleSchedulingEvents', () => {
 
     expect(deps.saved.map((n) => [n.userId, n.type])).toEqual([[ANA, 'appointment_canceled']]);
     expect(deps.saved[0]!.body).toBe('Your Corte with João on Mon, Nov 2 at 14:00 was canceled.');
+    // the customer's push opens the appointment in the app
+    expect(deps.pushes).toEqual([
+      {
+        userId: ANA,
+        title: 'Agendamento cancelado',
+        body: 'João cancelou Corte de seg 2/11 às 14:00.',
+        url: `/agendamento/${a.id}`,
+      },
+    ]);
     expect(deps.reminderJobs.has(a.id)).toBe(false);
   });
 
@@ -126,7 +143,20 @@ describe('handleSchedulingEvents', () => {
     );
     // the time this notification is about stays fixed, whatever happens to the appointment later
     expect(deps.saved[0]!.appointmentStartsAt).toEqual(at('2026-11-02T19:00:00Z'));
+    expect(deps.pushes.map((p) => [p.userId, p.body])).toEqual([
+      [ANA, 'João remarcou Corte para seg 2/11 às 16:00.'],
+    ]);
     expect(deps.reminderJobs.get(a.id)).toEqual(at('2026-11-02T18:45:00Z'));
+  });
+
+  it('still sends the email when the push cannot be queued, and the other way round', async () => {
+    const a = appointment();
+    deps.pushQueue.enqueue = async () => {
+      throw new Error('redis down');
+    };
+    await handleSchedulingEvents(deps, [{ type: 'booked', appointment: a, byUserId: ANA }]);
+    expect(deps.mail).toHaveLength(1);
+    expect(deps.errors).toHaveLength(1);
   });
 
   it('still moves the reminder and updates the live agenda when the notification fails', async () => {
@@ -220,6 +250,14 @@ describe('sendReminder', () => {
     ]);
     expect(deps.saved[0]!.appointmentStartsAt).toEqual(a.startsAt);
     expect(deps.mail[0]).toMatchObject({ to: 'ana@x.com', subject: 'Reminder: Corte at 14:00' });
+    expect(deps.pushes).toEqual([
+      {
+        userId: ANA,
+        title: 'Lembrete',
+        body: 'Corte com João seg 2/11 às 14:00.',
+        url: `/agendamento/${a.id}`,
+      },
+    ]);
   });
 
   it('sends nothing for a canceled appointment or a job that fires early', async () => {

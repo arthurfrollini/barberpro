@@ -2,6 +2,8 @@ import { type Job, Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import type {
   MailQueue,
+  PushJob,
+  PushQueue,
   ReminderScheduler,
 } from '../../../modules/notifications/application/ports.js';
 import type { MailMessage, Mailer } from '../../../modules/shops/application/ports.js';
@@ -9,6 +11,7 @@ import type { Clock } from '../../application/clock.js';
 
 export const MAIL_QUEUE = 'mail';
 export const REMINDER_QUEUE = 'reminders';
+export const PUSH_QUEUE = 'push';
 
 /** For workers: BullMQ needs a connection that waits for Redis instead of giving up. */
 export function createQueueConnection(redisUrl: string): Redis {
@@ -71,6 +74,31 @@ export class BullMqMailQueue implements MailQueue, Mailer {
 
   send(message: MailMessage): Promise<void> {
     return this.enqueue(message);
+  }
+
+  close(): Promise<void> {
+    return this.queue.close();
+  }
+}
+
+/** Pushes go out from the worker, with retries, like email: Expo being slow never slows a request. */
+export class BullMqPushQueue implements PushQueue {
+  private readonly queue: Queue<PushJob>;
+
+  constructor(connection: Redis, prefix: string) {
+    this.queue = new Queue(PUSH_QUEUE, { connection, prefix });
+  }
+
+  async enqueue(job: PushJob): Promise<void> {
+    await withTimeout(
+      this.queue.add('send', job, {
+        attempts: 5,
+        backoff: { type: 'exponential', delay: 5_000 },
+        removeOnComplete: 1_000,
+        removeOnFail: 5_000,
+      }),
+      'enqueue push',
+    );
   }
 
   close(): Promise<void> {

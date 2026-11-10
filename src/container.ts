@@ -23,6 +23,7 @@ import { type AgendaPubSub, createAgendaPubSub } from './shared/adapters/graphql
 import { logSafeError } from './shared/adapters/log-safe-error.js';
 import {
   BullMqMailQueue,
+  BullMqPushQueue,
   BullMqReminders,
   createProducerConnection,
 } from './shared/adapters/queue/bullmq.js';
@@ -75,6 +76,7 @@ export async function createContainer(
       console.error(JSON.stringify({ msg: 'background failure', error: logSafeError(error) })));
   const queueConnection = createProducerConnection(config.redisUrl);
   const mailQueue = new BullMqMailQueue(queueConnection, config.queuePrefix);
+  const pushQueue = new BullMqPushQueue(queueConnection, config.queuePrefix);
   const reminders = new BullMqReminders(queueConnection, config.queuePrefix, clock);
   const agendaPubSub = createAgendaPubSub(config.redisUrl, logError);
 
@@ -140,6 +142,7 @@ export async function createContainer(
     notifications: new TypeOrmNotificationRepository(dataSource.manager),
     pushTokens: new TypeOrmPushTokenRepository(dataSource.manager),
     mailQueue,
+    pushQueue,
     reminders,
     agenda: {
       publish: async (barberId, change) => {
@@ -183,7 +186,7 @@ export async function createContainer(
     pubSub: agendaPubSub.pubSub,
     async close() {
       agendaPubSub.close();
-      await Promise.all([mailQueue.close(), reminders.close()]);
+      await Promise.all([mailQueue.close(), pushQueue.close(), reminders.close()]);
       queueConnection.disconnect();
       redis.disconnect();
       await dataSource.destroy();

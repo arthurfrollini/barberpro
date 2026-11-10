@@ -3,6 +3,7 @@ import type { Appointment } from '../../scheduling/domain/appointment.js';
 import type {
   AgendaChange,
   MailMessage,
+  PushJob,
   NotificationRepository,
   NotifyDeps,
 } from '../application/ports.js';
@@ -18,6 +19,7 @@ export function fakeNotifyDeps(
 ) {
   const saved: Notification[] = [];
   const mail: MailMessage[] = [];
+  const pushes: PushJob[] = [];
   const reminderJobs = new Map<string, Date>();
   const agendaChanges: { barberId: string; change: AgendaChange }[] = [];
   const appointmentRows = new Map<string, Appointment>();
@@ -63,6 +65,11 @@ export function fakeNotifyDeps(
         mail.push(m);
       },
     },
+    pushQueue: {
+      enqueue: async (job: PushJob) => {
+        pushes.push(job);
+      },
+    },
     reminders: {
       schedule: async (id: string, runAt: Date) => {
         reminderJobs.set(id, runAt);
@@ -93,6 +100,7 @@ export function fakeNotifyDeps(
     agendaChanges,
     appointmentRows,
     errors,
+    pushes,
     pushTokenRows: pushTokens,
   };
 }
