@@ -42,9 +42,9 @@ Uma API GraphQL de agendamento de barbearia: o cliente acha barbearias perto del
 
 ## Números (V4, novembro de 2026)
 
-- API: 272 testes (unitários, de integração e end to end), 94% das linhas cobertas, 4 módulos (`identity`, `shops`, `scheduling`, `notifications`), 9 ADRs, 7 migrations, 2 processos (API e worker).
+- API: 277 testes (unitários, de integração e end to end), 94% das linhas cobertas, 4 módulos (`identity`, `shops`, `scheduling`, `notifications`), 9 ADRs, 7 migrations, 2 processos (API e worker).
 - Dashboard: 186 testes de componente e unidade (Vitest) e 7 cenários ponta a ponta (Playwright) contra a API real.
-- App do cliente: 162 testes de unidade e componente (Jest), 96% das linhas cobertas (o Jest falha abaixo de 95%), e 4 cenários ponta a ponta (Playwright no build web) contra a API real.
+- App do cliente: 166 testes de unidade e componente (Jest), 96% das linhas cobertas (o Jest falha abaixo de 95%), e 4 cenários ponta a ponta (Playwright no build web) contra a API real.
 - Entregas: API em 4 fases (PRs #1 a #4), dashboard em 4 (#5 a #8), V2 com várias barbearias por pessoa, V3 com o app do cliente.
 - V4: push notifications pela Expo, nos dois lados.
 - Próximos passos possíveis: credenciais APNs e FCM, builds de loja (EAS), deploy.
